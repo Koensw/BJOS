@@ -8,10 +8,10 @@
 bool DevantechSonarInterface::isActive(){
     if(!I2C::isStarted()) return false;
     unsigned char data;
-    int ret_val = I2C::read(_address, 0, data, false);
+    int ret_val = I2C::read(_address, 0, data, true);
     if(ret_val < 0) return false;
-    std::cout << data << std::endl;
-    return true;
+//    std::cout << "@" << static_cast<int>(data) << "@" << std::endl;
+    return (data == 11);
 }
 
 double DevantechSonarInterface::getDistance(){

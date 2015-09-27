@@ -33,7 +33,7 @@ void OSInit(){
     BJOS *bjos = BJOS::getOS();
 
     //start i2c
-    I2C::start("dev/i2c-1");
+    I2C::start("/dev/i2c-1");
     
     interface = new DevantechSonarInterface(0x70);
     
@@ -67,9 +67,12 @@ int main(){
     // init
     OSInit();
     
+//    interface->readDistance();
+
     // wait until finished
-    while(Process::isActive()){
-        Log::info("Update ... %d", interface->isActive());
+    while(Process::isActive()){    
+        Log::info("Update ... %f", interface->getDistance());
+	interface->readDistance();
         
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
