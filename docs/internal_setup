@@ -1,0 +1,64 @@
+ROS
+- Ros::init
+* Init node
+
+- Ros::subscribe
+- Ros::publish
+- Ros::rate ??
+* Only do this in interfaces
+
+* Support all others in ROS module interface
+- init
+- start
+- stop
+
+C++ low level interfaces
+* init()
+* start() 
+* stop()
+
+BJOS
+- low level hardware interface
+flightController
+statusController (? raspiController())
+sonarController (? sonarInterface)
+
+--------------------------------------------------------------------
+
+registerController()
+getInterface()
+hasInterface()
+
+1. check which mode we are running (simulation / real etc)
+2. initialize core libraries 
+3. (signal the ai that we are ready)
+
+
+communications
+- (C++) run all in same process (moving active safety to 'os layer')
+- (C++) shared memory whole class
+- (C++) shared memory specific structs
+- (C++) message queues (low level)
+- higher level message queues (zeromq)
+- sockets
+- ros
+
+--------------------------------------------------------------------
+* (access layers)
+* low-level logging
+* i2c
+* event (error state etc)
+
+--------------------------------------------------------------------
+? Start the AI or wait for an AI to start and let it hook in?
+* let all low level interfaces register at BJOS
+? (C++) keep headers in central place 
+? should all higher interfaces communicate through a separate interface
+
+--------------------------------------------------------------------
+* Write a default loader 
+* Export the include and libs so other things can use it
+* Logger
+* I2C and move sonar to this layer
+
+* (Delete shared memory when all bjos instances are gone)
