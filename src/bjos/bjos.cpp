@@ -14,69 +14,95 @@
 #include "bjos/controller/controller.h"
 
 using namespace boost::interprocess;
+using namespace bjos;
 
 /*
  * Implementation of the BJOS
  */
 
-std::atomic_bool _running;
-
 const boost::interprocess::open_only_t BJOS::mutex_open_only = boost::interprocess::open_only;
 
 //TODO: can we find out that the shared memory is actually old ?
-void BJOS::init(){
-    _running = false;
-    
+void BJOS::init(){    
     //remove shared memory and mutex that still exists because of earlier sudden stops
     shared_memory_object::remove("BJOS_SHARED_MEMORY");
     named_mutex::remove("BJOS_MUTEX");
+    
+    //acquire the bjos mutex and lock it
+    Mutex mutex(create_only, "BJOS_MUTEX");
+    std::lock_guard<BJOS::Mutex> lock(mutex);
+    
+    //set the state to available
+    managed_shared_memory shared_memory(create_only, "BJOS_SHARED_MEMORY", BJOS_SHARED_MEM_SIZE);
+    State *current = shared_memory.construct<State>("bjos_state")();
+    *current = ACTIVE;
 }
-void BJOS::finalize(){
-    if(_running){
-        //check if properly closed everything
-        BJOS *bjos = BJOS::getOS();
-        
-        if(!bjos->_controller_map->empty()){
-            bjos->fatal_error("Finishing while not everything is properly closed");
-        }
+void BJOS::finalize(){        
+    const char *error = nullptr;
+    //check if properly closed everything (if we are even active...)
+    BJOS *bjos = BJOS::getOS();
+    if(bjos == nullptr) {
+        fatal_error("Finalizing OS that is not even initialized");
+        return;
     }
+    
+    //acquire the bjos mutex and lock it
+    Mutex mutex(open_only, "BJOS_MUTEX");
+    std::lock_guard<BJOS::Mutex> lock(mutex);
+    
+    if(!bjos->_controller_map->empty()) error = "Finishing while not everything is properly closed";
     
     //remove shared memory
     shared_memory_object::remove("BJOS_SHARED_MEMORY");
     named_mutex::remove("BJOS_MUTEX");
-}
-
-void BJOS::handleSignal(int){
-    //set the running flag to false
-    _running = false;
-}
-
-//TODO: use sigaction instead of std::signal
-void (*BJOS::installSignalHandler())(int){
     
-    std::signal(SIGINT, BJOS::handleSignal);
-    std::signal(SIGQUIT, BJOS::handleSignal);
-    std::signal(SIGABRT, BJOS::handleSignal);
-    std::signal(SIGTERM, BJOS::handleSignal);
-    return BJOS::handleSignal;
+    //print an error if someone went wrong
+    if(error != nullptr) fatal_error(error);
+}
+
+BJOS::State BJOS::getState(){
+    try{
+        //check shared memory available
+        managed_shared_memory check_shared_memory(open_only,"BJOS_SHARED_MEMORY");
+        
+        //acquire the bjos mutex and lock it
+        Mutex mutex(open_only, "BJOS_MUTEX");
+        std::lock_guard<BJOS::Mutex> lock(mutex);
+        
+        //return the state pointer
+        State *current = check_shared_memory.find<State>("bjos_state").first;
+        return *current;
+    }catch(boost::interprocess::interprocess_exception &e){
+        //when an error happens the OS is not initialized
+        return UNINITIALIZED;
+    }
+}
+
+void BJOS::shutdown(){
+    std::lock_guard<BJOS::Mutex> lock(_mutex);
+    
+    State *state = _memory_segment.find<State>("bjos_state").first;
+    *state = SHUTDOWN;
 }
 
 BJOS *BJOS::getOS(){
+    //check if os is active
+    if(getState() == UNINITIALIZED) return nullptr;
+
     //NOTE: only thread safe in C++11
     static BJOS instance;
-    _running = true;
     return &instance;
 }
 
-//ALERT: this opens the memory segment or creates it; we should be absolutely be sure that is properly cleaned before using the first BJOS instance!!!
+//NOTE: we only open the shared memory and the mutex, it should have already been checked that it actually initialized
 //WARNING: we should tweak the size...
 BJOS::BJOS(): 
-    _memory_segment(open_or_create,"BJOS_SHARED_MEMORY", 65536),
+    _memory_segment(open_only,"BJOS_SHARED_MEMORY"),
     _controller_map(0),
-    _mutex(open_or_create, "BJOS_MUTEX")
+    _mutex(open_only, "BJOS_MUTEX")
 {
     ControllerAllocator Controller(_memory_segment.get_segment_manager());
-    
+        
     std::pair<ControllerMap*, managed_shared_memory::size_type> _check_controller = _memory_segment.find<ControllerMap>("bjos_controller_map");
     if(_check_controller.first == 0){
         //we are the first loader...
@@ -130,9 +156,9 @@ bool BJOS::getController(std::string name, Controller *Controller){
     }
 }
 
-bool BJOS::isRunning(){
+/*bool BJOS::isRunning(){
     return _running;
-}
+}*/
 
 int BJOS::getControllerCount(std::string name){
     //lock mutex

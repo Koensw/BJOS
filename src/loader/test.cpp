@@ -8,22 +8,23 @@
 #include <csignal> 
 
 #include "bjos/bjos.h"
+#include "bjos/helpers/process.h"
 #include "../../test/test_controller.h"
 
 /*
  * Test loader for BJOS
  */
 
-using namespace boost::interprocess;
+using namespace bjos;
 
 TestController *test;
 
 /* Initialize the OS */
 void OSInit(){
     BJOS::init();
-    BJOS::installSignalHandler();
+    Process::installSignalHandler();    
     BJOS *bjos = BJOS::getOS();
-    
+
     test = new TestController;
     bjos->initController(test);
     *test->_id = 1;
@@ -39,13 +40,16 @@ void OSTest(){
     if(c == false) return;
     
     int cnt = 0;
-    while(bjos->isRunning() && ++cnt < 5){
+    while(Process::isActive() && ++cnt < 5){
         std::cout << "(2) " << test.getID() << std::endl;
         sleep(1);
     }
 }
 
 void OSFinalize(){   
+    //shutdown the OS client
+    BJOS::getOS()->shutdown();
+    
     while(!test->canFinalize()){
         std::cout << "waiting for clients" << std::endl;
         sleep(1);
