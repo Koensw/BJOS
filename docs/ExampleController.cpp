@@ -8,7 +8,11 @@
 #include <thread>
 
 #include "bjos/bjos.h"
+#include "bjos/helpers/process.h"
 #include "bjos/controller/controller.h"
+
+//especially this line should not be in a header...
+using namespace bjos;
 
 //WARNING: do not store pointers or STL objects here if not absolutely necessary
 //NOTE: if you need to store a pointer use boost::offset_ptr (note that arrays can also be pointers...)
@@ -111,7 +115,7 @@ void mainProcess(){
     BJOS::init();
     
     //most likely you want to install the signal handler to make sure that we can exit properly on SIGTERM etc.
-    BJOS::installSignalHandler();
+    Process::installSignalHandler();
     
     //get a link to the BJOS
     BJOS *bjos = BJOS::getOS();
@@ -123,7 +127,7 @@ void mainProcess(){
     bjos->initController(example);
     
     //do things until we got a request to stop the program
-    while(bjos->isRunning()){
+    while(Process::isActive()){
         std::cout << example->getInt() << std::endl;
         sleep(1);
     }
@@ -143,7 +147,7 @@ void mainProcess(){
 
 void otherProcess(){
     //most likely you want to install the signal handler to make sure that we can exit properly on SIGTERM etc.
-    BJOS::installSignalHandler();
+    Process::installSignalHandler();
     
     //get a link to the BJOS
     BJOS *bjos = BJOS::getOS();

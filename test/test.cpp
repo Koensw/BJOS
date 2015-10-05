@@ -8,6 +8,8 @@
 #include <utility>
 
 #include "bjos/bjos.h"
+#include "bjos/helpers/process.h"
+
 #include "test_controller.h"
 
 /*
@@ -16,18 +18,16 @@
  *  TODO: implement separate testcases
  */
 
-using namespace boost::interprocess;
+using namespace bjos;
 
 int main(){
-    BJOS::installSignalHandler();
+    Process::installSignalHandler();
+    //BJOS::init();
     BJOS *bjos = BJOS::getOS();
-    
-    //named_mutex mutex;
-    //named_mutex mutex(open_or_create, "testtestest", 644);
-    //mutex.unlock();
-    //scoped_lock<named_mutex> lock(mutex);
-    
-    std::cout << "lock succeeded" << std::endl;
+    if(bjos == nullptr){
+        std::cout << "BJOS is not available..." << std::endl;
+        return 0;
+    }
     
     TestController test;
     bjos->getController("flight", &test);
@@ -39,7 +39,9 @@ int main(){
     
     std::cout << test.getID() << std::endl;
         
-    sleep(10);
+    while(Process::isActive()){
+        sleep(1);
+    }
     
     //mutex.unlock();
 }

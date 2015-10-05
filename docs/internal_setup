@@ -62,3 +62,10 @@ communications
 * I2C and move sonar to this layer
 
 * (Delete shared memory when all bjos instances are gone)
+--------------------------------------------------------------------
+*** let init set _running instead of the BJOS instance
+*** implement shutdown method that triggers a global shutdown
+??? implement local is running
+--> actually should have a separate process tool and a global BJOS
+--> something like helpers/signal installSignalHandler and sig_handler->isRunning() ??
+*** set _running to false in finalize

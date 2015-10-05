@@ -10,7 +10,10 @@
  * Controller that is used for testing purposes
  */
 
-class TestController: public Controller{
+//WARNING: dont put this in header
+using namespace bjos;
+
+class TestController: public bjos::Controller{
 public:
     TestController(): _id(0) {}
     ~TestController(){
