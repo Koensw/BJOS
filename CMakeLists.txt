@@ -53,3 +53,10 @@ add_executable(bjos_example
     docs/ExampleController.cpp
 )
 target_link_libraries(bjos_example bjos)
+
+#### INSTALL ####
+install(TARGETS bjos
+        RUNTIME DESTINATION /usr/local/bin
+        LIBRARY DESTINATION /usr/local/lib
+        ARCHIVE DESTINATION /usr/local/lib/static)
+install(DIRECTORY include/ DESTINATION /usr/local/include/)

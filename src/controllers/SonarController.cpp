@@ -7,10 +7,10 @@
 
 using namespace bjos;
 
-int SonarController::registerInterface(SonarInterface *interface){
+int SonarController::registerInterface(SonarInterface *interface, bool global){
     if(_interfaces.size() == SharedSonarControllerData::SONAR_SIZE) BJOS::fatal_error("Registering SonarInterface not possible, limit reached! Recompile with large SONAR_SIZE.");
     
-    _interfaces.push_back(interface);
+    _interfaces.push_back(std::make_pair(interface, global));
     return _interfaces.size()-1;
 }
 
@@ -43,8 +43,8 @@ void SonarController::init(BJOS *bjos){
     //TODO: log a warning if no interfaces attached
     
     //init interfaces
-    for(size_t i=0; i<_data->sonar_size; ++i){
-        _data->sonars[i].distance = _interfaces[i]->getMaxRange();
+    for(size_t i=0; i<_interfaces.size(); ++i){
+        _data->sonars[i].distance = _interfaces[i].first->getMaxRange();
         //TODO: set pose
         //_data->sonars[i].pose
     }
@@ -59,11 +59,22 @@ void SonarController::load(bjos::BJOS *bjos){
 }
 
 void SonarController::update_sonars(){
+    bool frst = true;
     while(_thrd_running){
-        {
+        if(!frst){
             std::lock_guard<bjos::BJOS::Mutex> lock(*mutex);
-        
             
+            //update data
+            for(size_t i=0; i<_interfaces.size(); ++i){
+                _data->sonars[i].distance = _interfaces[i].first->getDistance();
+            }
+        }
+        frst = false;
+        
+        //trigger new read
+        for(size_t i=0; i<_interfaces.size(); ++i){
+            if(!_global_read) _interfaces[i].first->readDistance();
+            else if(_interfaces[i].second) _interfaces[i].first->globalReadDistance();
         }
         
         try{

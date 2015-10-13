@@ -38,6 +38,8 @@ void OSInit(){
     interface = new DevantechSonarInterface(0x70);
     
     sonar = new SonarController;
+    sonar->registerInterface(interface);
+    
     bjos->initController(sonar);
     sonar->setUpdateTime(1);
 }
@@ -67,12 +69,13 @@ int main(){
     // init
     OSInit();
     
-//    interface->readDistance();
-
     // wait until finished
     while(Process::isActive()){    
-        Log::info("Update ... %f", interface->getDistance());
-	interface->readDistance();
+        Log::info("Update ...");
+	std::vector<SonarData> data = sonar->getData();
+        for(size_t i=0; i<data.size(); ++i){
+            Log::info(" %d: %f", i, data[i].distance);
+        }
         
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
