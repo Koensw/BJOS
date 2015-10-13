@@ -41,18 +41,25 @@ struct SonarInterface;
 class SonarController : public bjos::Controller{
 public:
     /* Initialize the controller for the main instance */
-    SonarController(): _data(nullptr), _thrd_running(false) {}
+    SonarController(bool global = false): _data(nullptr), _thrd_running(false), _global_read(global) {}
     
     /* Register a new sonar
        WARNING: all should be added before init
      */
-    int registerInterface(SonarInterface *);
+    int registerInterface(SonarInterface *, bool global = false);
+    
+    /* Get / set global flag (WARNING: only recognized by main instance) */
+    void setGlobalRead(bool global){
+        _global_read = global;
+    }
+    bool getGlobalRead(){
+        return _global_read;
+    }
     
     /* Return data for a registered sonar */
     SonarData getData(int id);
     std::vector<SonarData> getData();
     
-    /* Get / set the update time for the sonars */
     void setUpdateTime(double time){
         std::lock_guard<bjos::BJOS::Mutex> lock(*mutex);
         _data->update_time = time;
@@ -86,9 +93,10 @@ private:
     SharedSonarControllerData *_data;
     
     //NOTE: only used by main instance
-    std::vector<SonarInterface*> _interfaces;
+    std::vector<std::pair<SonarInterface*, bool> > _interfaces;
     boost::thread _thrd;
     std::atomic_bool _thrd_running;
+    bool _global_read;
 };
 
 #endif
