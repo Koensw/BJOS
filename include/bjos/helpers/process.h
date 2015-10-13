@@ -1,5 +1,5 @@
-#ifndef _BLUEJAY_BJOS_SIGNAL
-#define _BLUEJAY_BJOS_SIGNAL
+#ifndef _BLUEJAY_BJOS_PROCESS
+#define _BLUEJAY_BJOS_PROCESS
 
 #include <atomic>
 

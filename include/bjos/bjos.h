@@ -57,6 +57,13 @@ namespace bjos{
         /* Init Controller (should only be done once */
         void initController(Controller *Controller);
         
+        /* Get memory segmenter if needs own memory
+           WARNING: check exclicitly for bad_alloc
+        */
+        boost::interprocess::managed_shared_memory &getMemoryManager(){
+            return _memory_segment;
+        }
+        
         /* Get Controller for clients 
         * NOTE: only get one time for a class, doing it another time has no effect
         */
@@ -67,6 +74,18 @@ namespace bjos{
         //NOTE: using new seems to fix this?
         typedef boost::interprocess::named_mutex Mutex;
         static const boost::interprocess::open_only_t mutex_open_only;
+        
+        /* ERROR FUNCTIONS */
+        //call this when an status is reached that should be impossible
+        //TODO: switch to throwing exception instead
+        inline static void fatal_error(std::string msg){
+            //TODO: integrate with logger
+            std::cout << "[BJOS] PANIC: Reaching state that should never be possible..." << std::endl;
+            std::cout << "[BJOS] MESSAGE: " << msg << std::endl;
+            std::cout << "[BJOS] EXITING..." << std::endl;
+            std::exit(127);
+        }
+        
     private:  
         /* PREVENT CONSTRUCT AND COPY */
         BJOS();
@@ -179,17 +198,6 @@ namespace bjos{
         
         /* Give back the amount of open links to a controller */
         int getControllerCount(std::string name);
-        
-        /* ERROR FUNCTIONS */
-        //call this when an status is reached that should be impossible
-        //TODO: switch to throwing exception instead
-        inline static void fatal_error(std::string msg){
-            //TODO: integrate with logger
-            std::cout << "[BJOS] PANIC: Reaching state that should never be possible..." << std::endl;
-            std::cout << "[BJOS] MESSAGE: " << msg << std::endl;
-            std::cout << "[BJOS] EXITING..." << std::endl;
-            std::exit(127);
-        }
         
         /* SHARED MEMORY */
         boost::interprocess::managed_shared_memory _memory_segment;

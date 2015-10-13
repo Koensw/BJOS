@@ -7,7 +7,7 @@ namespace bjos{
     class Controller{
         friend class BJOS;
     public:
-        Controller(): _bjos_instance(0) {}
+        Controller(): _bjos_instance(0), _main_instance(false) {}
         
         /* Init module is only called for the main node */
         virtual void init(BJOS *bjos) = 0;

@@ -1,0 +1,25 @@
+integrate helpers/SonarReader in SonarController
+make a DevantechSonarController and a SonarController
+let the DevantechSonarController be intern (prefixed with a _) and let the applications uses SonarController that acts as abstraction layer (and let it support various sort of controllers)
+start a thread in the SonarController to read and write to the sonars
+let the SonarController load all its supported controllers
+specify the amount of sonars statically before compiling so we can easier share the data
+SonarInfo
+
+- address
+- position
+- orientation
+SharedSonarControllerData{
+    static SonarInfo array
+    int array_size
+    
+    double update_time
+    static char / int sonar_type_id (devantech / maxbotix)
+}
+
+add a BJOSSonarInterface to the active safety layer
+give each sonar a specific ID so the interface can read that specific sonar
+save the sonar position in the controller
+
+
+*** SUPPORT A LOADING STATE IN BJOS FOR THE LOADER TO COMPLETE ***

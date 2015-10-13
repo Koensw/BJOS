@@ -1,6 +1,6 @@
 /* Example implementation of a controller 
  *
- * NOTE: all methods are defined in the .cpp here but is in the real controller you also want a header of course
+ * NOTE: all methods are defined in the .cpp here but in the real controller you also want a header of course
  */
 
 #include <cstdlib>

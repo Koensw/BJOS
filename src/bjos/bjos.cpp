@@ -101,7 +101,7 @@ BJOS::BJOS():
     _controller_map(0),
     _mutex(open_only, "BJOS_MUTEX")
 {
-    ControllerAllocator Controller(_memory_segment.get_segment_manager());
+    ControllerAllocator controller_allocator(_memory_segment.get_segment_manager());
         
     std::pair<ControllerMap*, managed_shared_memory::size_type> _check_controller = _memory_segment.find<ControllerMap>("bjos_controller_map");
     if(_check_controller.first == 0){
@@ -109,7 +109,7 @@ BJOS::BJOS():
         
         //load the map
         _controller_map = _memory_segment.construct<ControllerMap>("bjos_controller_map")      //object name
-                                (std::less<interprocess::char_string>(), Controller);    
+                                (std::less<interprocess::char_string>(), controller_allocator);    
     }else _controller_map = _check_controller.first;
 }
 
@@ -155,10 +155,6 @@ bool BJOS::getController(std::string name, Controller *Controller){
         return true;
     }
 }
-
-/*bool BJOS::isRunning(){
-    return _running;
-}*/
 
 int BJOS::getControllerCount(std::string name){
     //lock mutex
