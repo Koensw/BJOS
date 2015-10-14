@@ -5,12 +5,14 @@
 
 #include <iostream>
 
+using namespace bjos;
+
 bool DevantechSonarInterface::isActive(){
     if(!I2C::isStarted()) return false;
     unsigned char data;
     int ret_val = I2C::read(_address, 0, data, true);
     if(ret_val < 0) return false;
-//    std::cout << "@" << static_cast<int>(data) << "@" << std::endl;
+    //check for correct software revision
     return (data == 11);
 }
 

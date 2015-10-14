@@ -44,9 +44,15 @@ void SonarController::init(BJOS *bjos){
     
     //init interfaces
     for(size_t i=0; i<_interfaces.size(); ++i){
+        _data->sonars[i].id = i;
         _data->sonars[i].distance = _interfaces[i].first->getMaxRange();
+        
+        _data->sonars[i].max_range = _interfaces[i].first->getMaxRange();
+        _data->sonars[i].min_range = _interfaces[i].first->getMinRange();
+        _data->sonars[i].field_of_view = _interfaces[i].first->getFieldOfView();
+        
         //TODO: set pose
-        //_data->sonars[i].pose
+        //_data->sonars[i].pose;
     }
     
     //start update thread
@@ -61,6 +67,8 @@ void SonarController::load(bjos::BJOS *bjos){
 void SonarController::update_sonars(){
     bool frst = true;
     while(_thrd_running){
+        //TODO: handle sonars that are not active
+        
         if(!frst){
             std::lock_guard<bjos::BJOS::Mutex> lock(*mutex);
             

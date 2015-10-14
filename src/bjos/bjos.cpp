@@ -24,6 +24,8 @@ const boost::interprocess::open_only_t BJOS::mutex_open_only = boost::interproce
 
 //TODO: can we find out that the shared memory is actually old ?
 void BJOS::init(){    
+    //TODO: use a check loaded file on the filesystem!
+    
     //remove shared memory and mutex that still exists because of earlier sudden stops
     shared_memory_object::remove("BJOS_SHARED_MEMORY");
     named_mutex::remove("BJOS_MUTEX");

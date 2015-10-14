@@ -7,42 +7,43 @@
 
 #include "SonarInterface.h"
 
-/* special devantech range values */
-const int DEVANTECH_FOV = 1.04719755;
-const int DEVANTECH_MIN_RANGE = 0.03;
-const int DEVANTECH_MAX_RANGE = 5;
+namespace bjos{
+    /* special devantech range values */
+    const int DEVANTECH_FOV = 1.04719755;
+    const int DEVANTECH_MIN_RANGE = 0.03;
+    const int DEVANTECH_MAX_RANGE = 5;
 
-const int DEVANTECH_ERROR_RANGE = 10;
+    const int DEVANTECH_ERROR_RANGE = 10;
 
-//TODO: not threadsafe currently
-class DevantechSonarInterface : public SonarInterface{
-public:
-    DevantechSonarInterface(unsigned char addr): _address(addr) {}
-    
-    /* Check if still active */
-    bool isActive();
-    
-    /* Get the distance after read */
-    double getDistance();
+    //TODO: not threadsafe currently
+    class DevantechSonarInterface : public SonarInterface{
+    public:
+        DevantechSonarInterface(unsigned char addr): _address(addr) {}
+        
+        /* Check if still active */
+        bool isActive();
+        
+        /* Get the distance after read */
+        double getDistance();
 
-    /* Read from sonar  */
-    //FIXME: this should actually have been static but that is impossible for virtual members...
-    bool readDistance();
-    bool globalReadDistance();
-    
-    /* Getter for sonar info */
-    double getFieldOfView(){
-        return DEVANTECH_FOV;
-    }
-    double getMinRange(){
-        return DEVANTECH_MIN_RANGE;
-    }
-    double getMaxRange(){
-        return DEVANTECH_MAX_RANGE;
-    }
-private:
-    unsigned char _address;
-};
-
+        /* Read from sonar  */
+        //FIXME: this should actually have been static but that is impossible for virtual members...
+        bool readDistance();
+        bool globalReadDistance();
+        
+        /* Getter for sonar info */
+        double getFieldOfView(){
+            return DEVANTECH_FOV;
+        }
+        double getMinRange(){
+            return DEVANTECH_MIN_RANGE;
+        }
+        double getMaxRange(){
+            return DEVANTECH_MAX_RANGE;
+        }
+    private:
+        unsigned char _address;
+    };
+}
 
 #endif

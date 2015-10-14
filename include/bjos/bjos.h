@@ -69,6 +69,9 @@ namespace bjos{
         */
         bool getController(std::string name, Controller *Controller);
         
+        /* Utility functions for amount of controllers */
+        int getControllerCount(std::string name);
+        
         /* TYPEDEFS */
         //TODO: we are using a boost named_mutex but it is currently giving an unitialised value error, so we maybe want to fix this by an extra layer?
         //NOTE: using new seems to fix this?
@@ -195,9 +198,6 @@ namespace bjos{
                 fatal_error("Trying to deregister an Controller that is not registered!");
             }
         }
-        
-        /* Give back the amount of open links to a controller */
-        int getControllerCount(std::string name);
         
         /* SHARED MEMORY */
         boost::interprocess::managed_shared_memory _memory_segment;

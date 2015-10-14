@@ -23,8 +23,9 @@ add_library(i2c SHARED
 add_library(bjos SHARED
     src/bjos/bjos.cpp
     src/bjos/helpers/process.cpp
+    src/controllers/SonarController.cpp
 )
-target_link_libraries(bjos pthread rt geometry i2c)
+target_link_libraries(bjos ${Boost_THREAD_LIBRARY} pthread rt geometry i2c)
 
 #### LOADERS ####
 # build the test loader
@@ -36,7 +37,6 @@ target_link_libraries(test_loader bjos)
 # sonar loader
 add_executable(sonar_loader
     src/controllers/sonar/DevantechSonarInterface.cpp
-    src/controllers/SonarController.cpp
     src/loader/test_sonar.cpp
 )
 target_link_libraries(sonar_loader ${Boost_THREAD_LIBRARY} ${Boost_SYSTEM_LIBRARY} bjos)
@@ -59,4 +59,4 @@ install(TARGETS bjos
         RUNTIME DESTINATION /usr/local/bin
         LIBRARY DESTINATION /usr/local/lib
         ARCHIVE DESTINATION /usr/local/lib/static)
-install(DIRECTORY include/ DESTINATION /usr/local/include/)
+install(DIRECTORY include/ DESTINATION /usr/local/include/bjos)
