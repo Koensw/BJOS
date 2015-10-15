@@ -10,7 +10,7 @@
 #include "bjos/bjos.h"
 #include "bjos/helpers/process.h"
 
-#include "test_controller.h"
+#include "controllers/FlightController.h"
 
 /*
  *  General test file

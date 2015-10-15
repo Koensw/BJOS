@@ -11,7 +11,7 @@
 #include "bjos/helpers/process.h"
 
 #include "controllers/FlightController.h"
-#include "mavlink/include/mavlink/v1.0/common/mavlink.h" 
+#include <mavlink/v1.0/common/mavlink.h>
 
 /*
  * Test loader for BJOS

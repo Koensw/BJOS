@@ -25,8 +25,10 @@ add_library(bjos SHARED
     src/bjos/helpers/error.cpp
     src/bjos/helpers/process.cpp
     src/controllers/SonarController.cpp
+    src/controllers/FlightController.cpp
+    src/controllers/flight/serial_port.cpp
 )
-target_link_libraries(bjos ${Boost_THREAD_LIBRARY} pthread rt geometry i2c)
+target_link_libraries(bjos ${Boost_THREAD_LIBRARY} ${Boost_SYSTEM_LIBRARY} pthread rt geometry i2c)
 
 #### LOADERS ####
 # build the test loader
@@ -34,6 +36,12 @@ add_executable(test_loader
     src/loader/test.cpp
 )
 target_link_libraries(test_loader bjos)
+
+# flight loader
+add_executable(flight_loader
+    src/loader/test_flight.cpp
+)
+target_link_libraries(flight_loader ${Boost_THREAD_LIBRARY} ${Boost_SYSTEM_LIBRARY} bjos)
 
 # sonar loader
 add_executable(sonar_loader

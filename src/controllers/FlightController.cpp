@@ -29,12 +29,13 @@ get_time_usec()
 //TODO: neater exceptions
 void FlightController::init(BJOS *bjos) {
 	bool ret = Controller::init(bjos, "flight", _data);
-	if (!ret) 
+	if (!ret)
 		throw ControllerInitializationError(this, "Controller::init failed");
-	
+
 	//open a uart connection to the pixhawk
 	//NOTE: uses default uart="/dev/ttyAMA0", baudrate = "57600"
 	serial_port = new Serial_Port();
+	serial_port->start();
 	//give the serial port some time
 	usleep(100000);
 	//check the status of the port
@@ -42,10 +43,10 @@ void FlightController::init(BJOS *bjos) {
 		throw ControllerInitializationError(this, "Serial port not open");
 	//acquire mutex
 	serial_port_mutex = new BJOS::Mutex(BJOS::mutex_open_only, "flight_serial_port"); ///Q: what to do with this name?
-	
+
 	//start read thread
 	_read_thrd_running = true;
-	_read_thrd = boost::thread(read_thread);
+	_read_thrd = boost::thread(&FlightController::read_thread, this);
 
 	// read_thread initialises 'initial_position' and signals this by setting _init_set
 	std::cout << "Receiving initial position ...";
@@ -54,12 +55,12 @@ void FlightController::init(BJOS *bjos) {
 		usleep(500000); //2 Hz
 		std::cout << " ...";
 	}
-	std::cout << " Received!" << std::endl
+	std::cout << " Received!" << std::endl;
 	log.info("FlightController::init", "Initial position: xyz=[%.4f %.4f %.4f] vxvyvz=[%.4f %.4f %.4f]", initial_position.x, initial_position.y, initial_position.z, initial_position.vx, initial_position.y, initial_position.z);
 
 	// write_thread initialises 'current_setpoint': all velocities 0
-	_write_thrd = boost::thread(write_thread);
-	
+	_write_thrd = boost::thread(&FlightController::write_thread, this);
+
 	//wait until write_thread starts
 	while (_write_thrd_running == false)
 		usleep(100000); //10 Hz
@@ -70,7 +71,7 @@ void FlightController::init(BJOS *bjos) {
 		throw ControllerInitializationError(this, "Could not set offboard mode: unable to write message on serial port");
 	else if (result == 0)
 		log.warn("FlightController::init", "double (de-)activation of offboard mode [ignored]");
-	
+
 	// Done!
 }
 

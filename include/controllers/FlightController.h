@@ -36,7 +36,7 @@
 #include "bjos/helpers/error.h"
 
 #include "flight/serial_port.h"
-#include "mavlink/include/mavlink/v1.0/common/mavlink.h" 
+#include <mavlink/v1.0/common/mavlink.h>
 
 // ------------------------------------------------------------------------------
 //   MAVLink info
@@ -69,27 +69,27 @@ uint64_t get_time_usec();
 namespace bjos {
 	struct SharedFlightControllerData {
 		//NOTE: class variables are double's not floats
-		Pose pose; 
-		Heading heading;		
+		Pose pose;
+		Heading heading;
 	};
 
-	class FlightController : public Controller { 
+	class FlightController : public Controller {
 	public:
-		FlightController() : _data(nullptr), _read_thrd_running(false), _write_thrd_running(false), system_id(0), autopilot_id(0), _init_set(false) {}
+		FlightController() : system_id(0), autopilot_id(0),_data(nullptr), _read_thrd_running(false), _write_thrd_running(false), _init_set(false) {}
 
 		/* get methods retrieve their payload from the private variables of the class
 		 * the private variables are constantly updated via the threaded private readMessages() method
 		 * therefor, a lock has to be applied when reading these values	 */
-		float getRoll(); 
+		float getRoll();
 		float getPitch();
-		float getYaw();	 
+		float getYaw();
 
-		float* getAttitude(); 
-		float* getPosition(); 
-		float* getVelocity(); 
-		
+		float* getAttitude();
+		float* getPosition();
+		float* getVelocity();
+
 		/**
-		 * setTarget updates private variable current_setpoint 
+		 * setTarget updates private variable current_setpoint
 		 * its first argument is a type_mask that specifies which of its other arguments should be used and which should be ignored, according to:
 		 * bit 1: position
 		 * bit 2: velocity
@@ -123,6 +123,7 @@ namespace bjos {
 				_read_thrd.join();
 				_write_thrd.join();
 
+                                serial_port->stop();
 				delete serial_port;
 			}
 
