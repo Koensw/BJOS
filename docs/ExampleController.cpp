@@ -36,7 +36,7 @@ public:
     int getInt(){
         //WARNING: for anything that modifies or reads shared data the mutex needs to be locked first
         //NOTE: you can also do mutex->lock() and mutex->unlock manually if needed, but normally you want to use a lock_guard (this also works with exceptions and guarentees unlocking)
-        std::lock_guard<BJOS::Mutex> lock(*mutex);
+        std::lock_guard<BJOS::Mutex> lock(*shared_data_mutex);
         
         //do something with the data
         return _data->int_data;
@@ -45,9 +45,9 @@ public:
     }
     void setInt(int int_data){
         //NOTE: example of manual lock and unlock (that you normally dont want to to do)
-        mutex->lock();
+        shared_data_mutex->lock();
         _data->int_data = int_data;
-        mutex->unlock();
+        shared_data_mutex->unlock();
     }
     
     /* If necessary you can overload the isAvailable method of the superclass */

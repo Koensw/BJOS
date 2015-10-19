@@ -41,7 +41,7 @@ namespace bjos{
             bool ret = bjos->registerController(name, mem);
             if(ret){
                 //acquire mutex
-                mutex = new BJOS::Mutex(BJOS::mutex_open_only, name.c_str());
+                shared_data_mutex = new BJOS::Mutex(BJOS::mutex_open_only, name.c_str());
                 
                 return true;
             }else return false;
@@ -58,7 +58,7 @@ namespace bjos{
             bjos->loadController(name, mem);
         
             //create the mutex
-            mutex = new BJOS::Mutex(BJOS::mutex_open_only, name.c_str());
+            shared_data_mutex = new BJOS::Mutex(BJOS::mutex_open_only, name.c_str());
         }
         /* Finish this controller */
         template <typename Type> void finalize(){
@@ -66,7 +66,7 @@ namespace bjos{
             if(_bjos_instance == 0) return;
             
             //remove the mutex
-            delete mutex;
+            delete shared_data_mutex;
             
             if(_main_instance) _bjos_instance->deregisterController<Type>(_controller_name);
             else _bjos_instance->unloadController(_controller_name);
@@ -80,7 +80,7 @@ namespace bjos{
             return _controller_name;
         }
         
-        BJOS::Mutex *mutex;
+        BJOS::Mutex *shared_data_mutex;
     private:
         std::string _controller_name;
         BJOS *_bjos_instance;

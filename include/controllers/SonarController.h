@@ -41,9 +41,9 @@ namespace bjos{
         double update_time;
     };
 
-    class SonarController : public bjos::Controller{
+    class SonarController : public Controller{
     public:
-        /* Initialize the controller for the main instance */
+        /* Initialize the sonar controller (global variable only used by main instance) */
         SonarController(bool global = false): _data(nullptr), _thrd_running(false), _global_read(global) {}
         
         /* Register a new sonar
@@ -65,11 +65,11 @@ namespace bjos{
         std::vector<SonarData> getData();
         
         void setUpdateTime(double time){
-            std::lock_guard<bjos::BJOS::Mutex> lock(*mutex);
+            std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
             _data->update_time = time;
         }
         double getUpdateTime(){
-            std::lock_guard<bjos::BJOS::Mutex> lock(*mutex);
+            std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
             return _data->update_time;
         }
         
@@ -91,6 +91,7 @@ namespace bjos{
         }
 
     private:
+        //NOTE: only used by main instance
         /* Thread to update the sonars */
         void update_sonars();
         
