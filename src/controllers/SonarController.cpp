@@ -1,16 +1,19 @@
 #include "controllers/SonarController.h"
-
+ 
 #include <chrono>
 #include <thread>
+
+#include "geometry.h"
 
 #include "controllers/sonar/SonarInterface.h"
 
 using namespace bjos;
 
-int SonarController::registerInterface(SonarInterface *interface, bool global){
+int SonarController::registerInterface(SonarInterface *interface, Pose pose, bool global){
     if(_interfaces.size() == SharedSonarControllerData::SONAR_SIZE) BJOS::fatal_error("Registering SonarInterface not possible, limit reached! Recompile with large SONAR_SIZE.");
     
     _interfaces.push_back(std::make_pair(interface, global));
+    _poses.push_back(pose);
     return _interfaces.size()-1;
 }
 
@@ -52,7 +55,7 @@ void SonarController::init(BJOS *bjos){
         _data->sonars[i].field_of_view = _interfaces[i].first->getFieldOfView();
         
         //TODO: set pose
-        //_data->sonars[i].pose;
+        _data->sonars[i].pose = _poses[i];
     }
     
     //start update thread

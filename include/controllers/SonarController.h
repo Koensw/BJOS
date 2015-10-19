@@ -50,7 +50,7 @@ namespace bjos{
         WARNING: all should be added before init
         WARNING: the controller will delete those interfaces when finalizing
         */
-        int registerInterface(SonarInterface *, bool global = false);
+        int registerInterface(SonarInterface *, Pose pose, bool global = false);
         
         /* Get / set global flag (WARNING: only recognized by main instance) */
         void setGlobalRead(bool global){
@@ -103,6 +103,7 @@ namespace bjos{
         
         //NOTE: only used by main instance
         std::vector<std::pair<SonarInterface*, bool> > _interfaces;
+        std::vector<Pose> _poses;
         boost::thread _thrd;
         std::atomic_bool _thrd_running;
         bool _global_read;
