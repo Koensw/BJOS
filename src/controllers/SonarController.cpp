@@ -18,12 +18,12 @@ int SonarController::registerInterface(SonarInterface *interface, Pose pose, boo
 }
 
 SonarData SonarController::getData(int id){
-    std::lock_guard<bjos::BJOS::Mutex> lock(*mutex);
+    std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
     return _data->sonars[id];
 }
 
 std::vector<SonarData> SonarController::getData(){
-    std::lock_guard<bjos::BJOS::Mutex> lock(*mutex);
+    std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
     std::vector<SonarData> res;
     for(size_t i=0; i<_data->sonar_size; ++i){
         res.push_back(_data->sonars[i]);
@@ -73,7 +73,7 @@ void SonarController::update_sonars(){
         //TODO: handle sonars that are not active
         
         if(!frst){
-            std::lock_guard<bjos::BJOS::Mutex> lock(*mutex);
+            std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
             
             //update data
             for(size_t i=0; i<_interfaces.size(); ++i){
