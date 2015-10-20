@@ -44,6 +44,22 @@ public:
 };
 
 /*
+ * Velocity in a frame
+ * vx - forward/back
+ * vy - left/right
+ * vz - up/down
+ */
+class Velocity {
+public:
+	Velocity() : vx(0), vy(0), vz(0) {}
+	Velocity(double vx_, double vy_, double vz_) : vx(vx_), vy(vy_), vz(vz_) {}
+
+	double vx;
+	double vy;
+	double vz;
+};
+
+/*
  * Orientation in a frame
  * r - left right roll
  * p - up down 
