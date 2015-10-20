@@ -12,6 +12,7 @@
 
 #include "bjos/bjos.h"
 #include "bjos/controller/controller.h"
+#include "bjos/helpers/error.h"
 
 using namespace boost::interprocess;
 using namespace bjos;
@@ -44,7 +45,7 @@ void BJOS::finalize(){
     //check if properly closed everything (if we are even active...)
     BJOS *bjos = BJOS::getOS();
     if(bjos == nullptr) {
-        fatal_error("Finalizing OS that is not even initialized");
+        throw BJOSError("Finalizing OS that is not even initialized");
         return;
     }
     
@@ -59,7 +60,7 @@ void BJOS::finalize(){
     named_mutex::remove("BJOS_MUTEX");
     
     //print an error if someone went wrong
-    if(error != nullptr) fatal_error(error);
+    if(error != nullptr) throw BJOSError(error);
 }
 
 BJOS::State BJOS::getState(){
@@ -128,11 +129,11 @@ void BJOS::unloadController(std::string name){
         --iter->second;
         if(iter->second <= 0){
             //ALERT: unloading after master node or multiple times
-            fatal_error("Unload a controller multiple times or unloading a node that is already deregistered!");
+            throw BJOSError("Unload a controller multiple times or unloading a node that is already deregistered!");
         }
     }else{
         //ALERT: unloading an controller that is never loaded... this should be impossible
-        fatal_error("Trying to unload an controller that is not loaded!");
+        throw BJOSError("Trying to unload an controller that is not loaded!");
     }
 }
 

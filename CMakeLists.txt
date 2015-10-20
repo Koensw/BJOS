@@ -22,6 +22,7 @@ add_library(i2c SHARED
 # build the bjos library
 add_library(bjos SHARED
     src/bjos/bjos.cpp
+    src/bjos/helpers/error.cpp
     src/bjos/helpers/process.cpp
     src/controllers/SonarController.cpp
 )

@@ -1,26 +1,31 @@
 #include "controllers/SonarController.h"
-
+ 
 #include <chrono>
 #include <thread>
+#include <stdexcept>
+
+#include "geometry.h"
 
 #include "controllers/sonar/SonarInterface.h"
+#include "bjos/helpers/error.h"
 
 using namespace bjos;
 
-int SonarController::registerInterface(SonarInterface *interface, bool global){
-    if(_interfaces.size() == SharedSonarControllerData::SONAR_SIZE) BJOS::fatal_error("Registering SonarInterface not possible, limit reached! Recompile with large SONAR_SIZE.");
+int SonarController::registerInterface(SonarInterface *interface, Pose pose, bool global){
+    if(_interfaces.size() == SharedSonarControllerData::SONAR_SIZE) throw std::out_of_range("Registering SonarInterface not possible, limit reached! Recompile with large SONAR_SIZE.");
     
     _interfaces.push_back(std::make_pair(interface, global));
+    _poses.push_back(pose);
     return _interfaces.size()-1;
 }
 
 SonarData SonarController::getData(int id){
-    std::lock_guard<bjos::BJOS::Mutex> lock(*mutex);
+    std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
     return _data->sonars[id];
 }
 
 std::vector<SonarData> SonarController::getData(){
-    std::lock_guard<bjos::BJOS::Mutex> lock(*mutex);
+    std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
     std::vector<SonarData> res;
     for(size_t i=0; i<_data->sonar_size; ++i){
         res.push_back(_data->sonars[i]);
@@ -34,8 +39,7 @@ void SonarController::init(BJOS *bjos){
     
     if(!ret){
         //controller cannot be initialized...
-        std::cout << "Cannot initialize controller " << getControllerName() << std::endl;
-        std::exit(0);
+        throw ControllerInitializationError(this, "Cannot initialize controller"); 
     }
     
     //set the size of all the available interfaces
@@ -52,7 +56,7 @@ void SonarController::init(BJOS *bjos){
         _data->sonars[i].field_of_view = _interfaces[i].first->getFieldOfView();
         
         //TODO: set pose
-        //_data->sonars[i].pose;
+        _data->sonars[i].pose = _poses[i];
     }
     
     //start update thread
@@ -70,7 +74,7 @@ void SonarController::update_sonars(){
         //TODO: handle sonars that are not active
         
         if(!frst){
-            std::lock_guard<bjos::BJOS::Mutex> lock(*mutex);
+            std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
             
             //update data
             for(size_t i=0; i<_interfaces.size(); ++i){

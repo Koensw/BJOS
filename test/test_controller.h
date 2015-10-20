@@ -21,7 +21,7 @@ public:
     }
     
     int getID(){
-        std::lock_guard<BJOS::Mutex> lock(*mutex);
+        std::lock_guard<BJOS::Mutex> lock(*shared_data_mutex);
         int id = *_id;
         return id;
     }

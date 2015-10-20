@@ -11,8 +11,9 @@
 
 #include "geometry.h"
 
-#include "../bjos/bjos.h"
-#include "../bjos/controller/controller.h"
+#include "bjos/bjos.h"
+#include "bjos/controller/controller.h"
+#include "bjos/helpers/error.h"
 
 #include "sonar/SonarInterface.h"
 
@@ -41,16 +42,16 @@ namespace bjos{
         double update_time;
     };
 
-    class SonarController : public bjos::Controller{
+    class SonarController : public Controller{
     public:
-        /* Initialize the controller for the main instance */
+        /* Initialize the sonar controller (global variable only used by main instance) */
         SonarController(bool global = false): _data(nullptr), _thrd_running(false), _global_read(global) {}
         
         /* Register a new sonar
         WARNING: all should be added before init
         WARNING: the controller will delete those interfaces when finalizing
         */
-        int registerInterface(SonarInterface *, bool global = false);
+        int registerInterface(SonarInterface *, Pose pose, bool global = false);
         
         /* Get / set global flag (WARNING: only recognized by main instance) */
         void setGlobalRead(bool global){
@@ -65,11 +66,11 @@ namespace bjos{
         std::vector<SonarData> getData();
         
         void setUpdateTime(double time){
-            std::lock_guard<bjos::BJOS::Mutex> lock(*mutex);
+            std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
             _data->update_time = time;
         }
         double getUpdateTime(){
-            std::lock_guard<bjos::BJOS::Mutex> lock(*mutex);
+            std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
             return _data->update_time;
         }
         
@@ -91,6 +92,7 @@ namespace bjos{
         }
 
     private:
+        //NOTE: only used by main instance
         /* Thread to update the sonars */
         void update_sonars();
         
@@ -103,6 +105,7 @@ namespace bjos{
         
         //NOTE: only used by main instance
         std::vector<std::pair<SonarInterface*, bool> > _interfaces;
+        std::vector<Pose> _poses;
         boost::thread _thrd;
         std::atomic_bool _thrd_running;
         bool _global_read;
