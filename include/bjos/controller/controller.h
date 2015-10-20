@@ -6,6 +6,7 @@
 namespace bjos{
     class Controller{
         friend class BJOS;
+        friend class ControllerInitializationError;
     public:
         Controller(): _bjos_instance(0), _main_instance(false) {}
         
@@ -32,10 +33,11 @@ namespace bjos{
     protected:
         /* Register the controller */
         template <typename Type> bool init(BJOS *bjos, std::string name, Type *&mem){
+            _controller_name = name;
+            
             //check if already inited (WARNING: this should normally not be possible)
             if(_bjos_instance != 0) return false;
             
-            _controller_name = name;
             _bjos_instance = bjos;
             _main_instance = true;
             bool ret = bjos->registerController(name, mem);
@@ -48,11 +50,12 @@ namespace bjos{
         }
         /* Loads a new instance of the controller */
         template <typename Type> void load(BJOS *bjos, std::string name, Type *&mem){
+            _controller_name = name;
+            
             //check if already loaded then stop
             if(_bjos_instance != 0) return;
             
             //load
-            _controller_name = name;
             _bjos_instance = bjos;
             _main_instance = false;
             bjos->loadController(name, mem);

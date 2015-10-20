@@ -11,8 +11,9 @@
 
 #include "geometry.h"
 
-#include "../bjos/bjos.h"
-#include "../bjos/controller/controller.h"
+#include "bjos/bjos.h"
+#include "bjos/controller/controller.h"
+#include "bjos/helpers/error.h"
 
 #include "sonar/SonarInterface.h"
 

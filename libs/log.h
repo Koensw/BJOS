@@ -12,39 +12,40 @@
 
 class Log{
 public:
-    static void fatal( const char* format, ... ) {
+    static void fatal(const char *origin, const char* format, ... ) {
         va_list args;
         fprintf( stderr, "[FATAL] " );
+        fprintf( stderr, "%s: ", origin);
         va_start( args, format );
         vfprintf( stderr, format, args );
         va_end( args );
         fprintf( stderr, "\n" ); 
-        
-        //FIXME: we should never want to randomly stop processes in a logger...
-        std::exit(0);
     }
     
-    static void warn( const char* format, ... ) {
+    static void warn(const char *origin, const char* format, ... ) {
         va_list args;
         fprintf( stderr, "[WARN] " );
+        fprintf( stderr, "%s: ", origin);
         va_start( args, format );
         vfprintf( stderr, format, args );
         va_end( args );
         fprintf( stderr, "\n" ); 
     }
     
-    static void error( const char* format, ... ) {
+    static void error(const char *origin, const char* format, ... ) {
         va_list args;
         fprintf( stderr, "[ERROR] " );
+        fprintf( stderr, "%s: ", origin);
         va_start( args, format );
         vfprintf( stderr, format, args );
         va_end( args );
         fprintf( stderr, "\n" ); 
     }
     
-    static void info( const char* format, ... ) {
+    static void info(const char *origin, const char* format, ... ) {
         va_list args;
         fprintf( stdout, "[INFO] " );
+        fprintf( stderr, "%s: ", origin);
         va_start( args, format );
         vfprintf( stdout, format, args );
         va_end( args );

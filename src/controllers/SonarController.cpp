@@ -2,15 +2,17 @@
  
 #include <chrono>
 #include <thread>
+#include <stdexcept>
 
 #include "geometry.h"
 
 #include "controllers/sonar/SonarInterface.h"
+#include "bjos/helpers/error.h"
 
 using namespace bjos;
 
 int SonarController::registerInterface(SonarInterface *interface, Pose pose, bool global){
-    if(_interfaces.size() == SharedSonarControllerData::SONAR_SIZE) BJOS::fatal_error("Registering SonarInterface not possible, limit reached! Recompile with large SONAR_SIZE.");
+    if(_interfaces.size() == SharedSonarControllerData::SONAR_SIZE) throw std::out_of_range("Registering SonarInterface not possible, limit reached! Recompile with large SONAR_SIZE.");
     
     _interfaces.push_back(std::make_pair(interface, global));
     _poses.push_back(pose);
@@ -37,8 +39,7 @@ void SonarController::init(BJOS *bjos){
     
     if(!ret){
         //controller cannot be initialized...
-        std::cout << "Cannot initialize controller " << getControllerName() << std::endl;
-        std::exit(0);
+        throw ControllerInitializationError(this, "Cannot initialize controller"); 
     }
     
     //set the size of all the available interfaces

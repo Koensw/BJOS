@@ -15,6 +15,8 @@
 #include <boost/interprocess/allocators/allocator.hpp>
 #include <boost/interprocess/offset_ptr.hpp>
 
+#include "bjos/helpers/error.h"
+
 /**
  *  Controller to the OS
  */
@@ -30,9 +32,9 @@ namespace bjos{
         typedef basic_string<char, std::char_traits<char>, char_allocator>   char_string;
     }
     
-    struct Controller;
+    class Controller;
     
-    
+    /* BJOS main class */
     class BJOS{
         friend class Controller;
     public:
@@ -81,13 +83,13 @@ namespace bjos{
         /* ERROR FUNCTIONS */
         //call this when an status is reached that should be impossible
         //TODO: switch to throwing exception instead
-        inline static void fatal_error(std::string msg){
+        /*inline static void fatal_error(std::string msg){
             //TODO: integrate with logger
             std::cout << "[BJOS] PANIC: Reaching state that should never be possible..." << std::endl;
             std::cout << "[BJOS] MESSAGE: " << msg << std::endl;
             std::cout << "[BJOS] EXITING..." << std::endl;
             std::exit(127);
-        }
+        }*/
         
     private:  
         /* PREVENT CONSTRUCT AND COPY */
@@ -148,7 +150,7 @@ namespace bjos{
                 
                 if(res.first == 0){
                     //ALERT: Controller is registered but its handler is not found... this should never be possible
-                    fatal_error("Shared memory belonging to Controller is not available!");
+                    throw BJOSError("Shared memory belonging to controller is not available!");
                 }
                 
                 //check if mutex is available
@@ -156,14 +158,14 @@ namespace bjos{
                     Mutex mutex(mutex_open_only, name.c_str());
                 }catch(boost::interprocess::interprocess_exception e){
                     //ALERT: mutex is not avaible... this should never be possible
-                    fatal_error("Mutex belonging to Controller not available!");
+                    throw BJOSError("Mutex belonging to controller not available!");
                 }
                             
                 //load the Controller
                 type = res.first;
             }else{
                 //ALERT: trying to load a Controller that is not registered... this should never be possible
-                fatal_error("Trying to load an Controller that is not registered first!");
+                throw BJOSError("Trying to load an controller that is not registered first!");
             }
         }
         /* Unloads an Controller from the OS */
@@ -182,7 +184,7 @@ namespace bjos{
                 --iter->second;
                 if(iter->second != 0){
                     //ALERT: unloading after master node or multiple times
-                    fatal_error("Deregistering a node multiple times or deregistering before all other instances are unloaded!");
+                    throw BJOSError("Deregistering a controller multiple times or deregistering before all other instances are unloaded!");
                 }
                 
                 //unload the loaded memory
@@ -195,7 +197,7 @@ namespace bjos{
                 _controller_map->erase(ipc_name);
             }else{
                 //ALERT: unloading an Controller that is never loaded... this should be impossible
-                fatal_error("Trying to deregister an Controller that is not registered!");
+                throw BJOSError("Trying to deregister an controller that is not registered!");
             }
         }
         
