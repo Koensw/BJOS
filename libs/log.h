@@ -45,7 +45,7 @@ public:
     static void info(const char *origin, const char* format, ... ) {
         va_list args;
         fprintf( stdout, "[INFO] " );
-        fprintf( stderr, "%s: ", origin);
+        fprintf( stdout, "%s: ", origin);
         va_start( args, format );
         vfprintf( stdout, format, args );
         va_end( args );
