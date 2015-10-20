@@ -31,7 +31,9 @@
 
 #include "../bjos/bjos.h"
 #include "../bjos/controller/controller.h"
+
 #include "log.h"
+#include "bjos/helpers/error.h"
 
 #include "flight/serial_port.h"
 #include "mavlink/include/mavlink/v1.0/common/mavlink.h" 
@@ -61,11 +63,14 @@
 #define SET_TARGET_YAW_ANGLE	0b000100
 #define SET_TARGET_YAW_RATE		0b001000
 
+/* helper function */
+uint64_t get_time_usec();
+
 namespace bjos {
 	struct SharedFlightControllerData {
 		//NOTE: class variables are double's not floats
 		Pose pose; 
-		Velocity velocity;		
+		Heading heading;		
 	};
 
 	class FlightController : public Controller { 
@@ -110,12 +115,15 @@ namespace bjos {
 		/* Finalize this controller */
 		~FlightController() {
 			if (isMainInstance()) {
-				//stop thread, wait for finish
-				bool time_to_exit = true;
+				//stop threads, wait for finish
 				_read_thrd_running = false;
 				_write_thrd_running = false;
-				_read_thrd_ptr->join();
-				_write_thrd_ptr->join();
+				_read_thrd.interrupt();
+				_write_thrd.interrupt();
+				_read_thrd.join();
+				_write_thrd.join();
+
+				delete serial_port;
 			}
 
 			Controller::finalize<SharedFlightControllerData>();
@@ -123,11 +131,11 @@ namespace bjos {
 
 	private:
 		Serial_Port *serial_port;
+		BJOS::Mutex *serial_port_mutex;
 		Log log;
 
 		/* Set offboard mode - has to be done in order to send setpoints */
-		//NOTE: return -1 on double (de-)activation, return 0 on write error, return 1 on success;
-		//TODO: neater errors
+		//NOTE: returns -1 on write error, returns 0 on double (de-)activation, returns 1 on success;
 		int toggle_offboard_control(bool flag);
 
 		//Used by messaging part

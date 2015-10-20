@@ -29,15 +29,12 @@ int main(){
         return 0;
     }
     
-    TestController test;
+    FlightController test;
     bjos->getController("flight", &test);
     if(!test.isAvailable()){
         std::cout << "failed" << std::endl;
         return 0;
     }
-    *test._id = 2;
-    
-    std::cout << test.getID() << std::endl;
         
     while(Process::isActive()){
         sleep(1);

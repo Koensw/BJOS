@@ -74,6 +74,22 @@ public:
     double y;
 };
 
+/*
+* Angular velocity in a frame
+* vr - rollspeed
+* vp - pitchspeed
+* vy - yawspeed
+*/
+class AngularVelocity {
+public:
+	AngularVelocity() : vr(0), vp(0), vy(0) {}
+	AngularVelocity(double vr_, double vp_, double vy_) : vr(vr_), vp(vp_), vy(vy_) {}
+
+	double vr;
+	double vp;
+	double vy;
+};
+
 /* 
  * Position and orientation in a frame 
  */
@@ -81,6 +97,15 @@ class Pose{
 public:
     Point position;
     Orientation orientation;
+};
+
+/*
+* Velocity and angular velocity in a frame
+*/
+class Heading {
+public:
+	Velocity velocity;
+	AngularVelocity angular_velocity;
 };
 
 /* Translation vector */
