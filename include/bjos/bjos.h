@@ -80,17 +80,6 @@ namespace bjos{
         typedef boost::interprocess::named_mutex Mutex;
         static const boost::interprocess::open_only_t mutex_open_only;
         
-        /* ERROR FUNCTIONS */
-        //call this when an status is reached that should be impossible
-        //TODO: switch to throwing exception instead
-        /*inline static void fatal_error(std::string msg){
-            //TODO: integrate with logger
-            std::cout << "[BJOS] PANIC: Reaching state that should never be possible..." << std::endl;
-            std::cout << "[BJOS] MESSAGE: " << msg << std::endl;
-            std::cout << "[BJOS] EXITING..." << std::endl;
-            std::exit(127);
-        }*/
-        
     private:  
         /* PREVENT CONSTRUCT AND COPY */
         BJOS();
