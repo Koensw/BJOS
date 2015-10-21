@@ -122,7 +122,6 @@ read_message(mavlink_message_t &message)
 
 	// this function locks the port during read
 	int result = _read_port(cp);
-
     //printf("TEST");
     //fflush(stdout);
 	// --------------------------------------------------------------------------
@@ -132,13 +131,12 @@ read_message(mavlink_message_t &message)
 	{
 		// the parsing
 		msgReceived = mavlink_parse_char(MAVLINK_COMM_1, cp, &message, &status);
-
 		// check for dropped packets
-		if ( (lastStatus.packet_rx_drop_count != status.packet_rx_drop_count) && debug )
+		if ( (lastStatus.packet_rx_drop_count != status.packet_rx_drop_count) )//&& debug
 		{
-			printf("ERROR: DROPPED %d PACKETS\n", status.packet_rx_drop_count);
+        		printf("ERROR: DROPPED %d PACKETS\n", status.packet_rx_drop_count);
 			unsigned char v=cp;
-			fprintf(stderr,"%02x ", v);
+        			fprintf(stderr,"%02x ", v);
 		}
 		lastStatus = status;
 	}
@@ -152,7 +150,7 @@ read_message(mavlink_message_t &message)
 	// --------------------------------------------------------------------------
 	//   DEBUGGING REPORTS
 	// --------------------------------------------------------------------------
-	if(msgReceived && debug)
+	if(msgReceived )//&& debug
 	{
 		// Report info
 		printf("Received message from serial with ID #%d (sys:%d|comp:%d):\n", message.msgid, message.sysid, message.compid);
@@ -182,6 +180,7 @@ read_message(mavlink_message_t &message)
 		}
 	}
 
+        std::cout.flush();
 	// Done!
 	return msgReceived;
 }

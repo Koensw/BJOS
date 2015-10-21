@@ -35,8 +35,10 @@ int main(){
         std::cout << "failed" << std::endl;
         return 0;
     }
-        
+    std::cout << "???" << std::endl;        
     while(Process::isActive()){
+        Pose pose = test.getPose();
+        std::cout << pose.position.x << " " << pose.position.y << " " << pose.position.z << std::endl;
         sleep(1);
     }
     

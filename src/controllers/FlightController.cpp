@@ -1,3 +1,4 @@
+
 /**
 * @file flightController.cpp
 *
@@ -41,8 +42,6 @@ void FlightController::init(BJOS *bjos) {
 	//check the status of the port
 	if (not serial_port->status == 1) //SERIAL_PORT_OPEN
 		throw ControllerInitializationError(this, "Serial port not open");
-	//acquire mutex
-	serial_port_mutex = new BJOS::Mutex(BJOS::mutex_open_only, "flight_serial_port"); ///Q: what to do with this name?
 
 	//start read thread
 	_read_thrd_running = true;
@@ -52,7 +51,7 @@ void FlightController::init(BJOS *bjos) {
 	std::cout << "Receiving initial position ...";
 	while (_init_set == false) {
 		//TODO: timeout
-		usleep(500000); //2 Hz
+		usleep(100000); //10 Hz
 		std::cout << " ...";
 	}
 	std::cout << " Received!" << std::endl;
@@ -76,7 +75,7 @@ void FlightController::init(BJOS *bjos) {
 }
 
 void FlightController::load(bjos::BJOS *bjos) {
-	Controller::init(bjos, "flight", _data);
+	Controller::load(bjos, "flight", _data);
 }
 
 void FlightController::read_thread() {
@@ -85,7 +84,7 @@ void FlightController::read_thread() {
 		read_messages();
 
 		try {
-			boost::this_thread::sleep_for(boost::chrono::milliseconds(100)); //10 Hz
+			boost::this_thread::sleep_for(boost::chrono::microseconds(500)); //2000 Hz
 		}
 		catch (boost::thread_interrupted) {
 			//if interrupt, stop and let the controller finish resources
@@ -100,7 +99,7 @@ void FlightController::read_thread() {
 void FlightController::read_messages() {
 	mavlink_message_t message;
 
-	std::lock_guard<bjos::BJOS::Mutex> lock(*serial_port_mutex);
+	std::lock_guard<std::mutex> lock(serial_port_mutex);
 	bool success = serial_port->read_message(message);
 	
 	if (success) {
@@ -132,6 +131,7 @@ void FlightController::read_messages() {
 					mavlink_msg_local_position_ned_decode(&message, &initial_position);
 					_init_set = true;
 				}
+				break;
 			}
 			case MAVLINK_MSG_ID_ATTITUDE:
 			{
@@ -149,6 +149,7 @@ void FlightController::read_messages() {
 				_data->heading.angular_velocity.vp = attitude.pitchspeed;
 				_data->heading.angular_velocity.vr = attitude.rollspeed;
 				_data->heading.angular_velocity.vy = attitude.yawspeed;
+				break;
 			}
 			default:
 			{
@@ -157,7 +158,7 @@ void FlightController::read_messages() {
 		}
 	}
 	else {
-		log.warn("FlightController::read_messages", "Failed to read message from serial_port");
+//                log.warn("",".");
 	}
 
 	return;
@@ -226,12 +227,12 @@ void FlightController::write_setpoint() {
 	// --------------------------------------------------------------------------
 
 	// do the write
-	std::lock_guard<bjos::BJOS::Mutex> lock(*serial_port_mutex);
+	std::lock_guard<std::mutex> lock(serial_port_mutex);
 	int len = serial_port->write_message(message);
-	
+
 	// check the write
 	if (not len > 0)
-		log.warn("FlightController::write_setpoint", "Failed to write on port");
+                std::cout << ".";
 	else {
 		//TODO: log writing of setpoint per type_mask
 		//log.info("FlightController::write_setpoint", "Wrote setpoint");
@@ -260,7 +261,7 @@ int FlightController::toggle_offboard_control(bool flag) {
 		mavlink_msg_command_long_encode(system_id, autopilot_id, &message, &com);
 
 		// Send
-		std::lock_guard<bjos::BJOS::Mutex> lock(*serial_port_mutex);
+		std::lock_guard<std::mutex> lock(serial_port_mutex);
 		int success = serial_port->write_message(message);
 		*/
 		bool success = true;
@@ -274,3 +275,14 @@ int FlightController::toggle_offboard_control(bool flag) {
 		}
 	}
 }
+
+Pose FlightController::getPose() {
+        std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+        return _data->pose;
+}
+
+Heading FlightController::getHeading() {
+	std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+        return _data->heading;
+}
+

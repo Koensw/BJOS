@@ -65,10 +65,10 @@ int main(){
     OSInit();
     
     // wait until finished
-    while(Process::isActive()){            
+    while(Process::isActive()){
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
-    
+    std::cout << "pre OSFinalize()" << std::endl;
     //finalize
     OSFinalize();
 }

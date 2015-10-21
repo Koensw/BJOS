@@ -27,6 +27,8 @@
 #include <string.h>
 #include <inttypes.h>
 
+#include <iostream>
+
 #include "geometry.h"
 
 #include "../bjos/bjos.h"
@@ -84,9 +86,10 @@ namespace bjos {
 		float getPitch();
 		float getYaw();
 
-		float* getAttitude();
-		float* getPosition();
-		float* getVelocity();
+                /* Returns a Pose struct that contains Point and Orientation structs */
+		Pose getPose();
+		/* Returns a Heading struct that contains a Velocity and AngularVelocity structs */
+		Heading getHeading();
 
 		/**
 		 * setTarget updates private variable current_setpoint
@@ -114,6 +117,7 @@ namespace bjos {
 		///Q: correct?
 		/* Finalize this controller */
 		~FlightController() {
+                        std::cout << "FlightController destructor" << std::endl;
 			if (isMainInstance()) {
 				//stop threads, wait for finish
 				_read_thrd_running = false;
@@ -132,7 +136,7 @@ namespace bjos {
 
 	private:
 		Serial_Port *serial_port;
-		BJOS::Mutex *serial_port_mutex;
+		std::mutex serial_port_mutex;
 		Log log;
 
 		/* Set offboard mode - has to be done in order to send setpoints */
