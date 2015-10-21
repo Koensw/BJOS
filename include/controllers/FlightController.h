@@ -39,6 +39,7 @@
 
 #include "flight/serial_port.h"
 #include <mavlink/v1.0/common/mavlink.h>
+#include "mavlink\include\mavlink\v1.0\common\mavlink.h"
 
 // ------------------------------------------------------------------------------
 //   MAVLink info
@@ -59,11 +60,11 @@
 //   Defines
 // ------------------------------------------------------------------------------
 
-//				bit number:		87654321
-#define SET_TARGET_POSITION		0b000001
-#define SET_TARGET_VELOCITY		0b000010
-#define SET_TARGET_YAW_ANGLE	0b000100
-#define SET_TARGET_YAW_RATE		0b001000
+//													bit number:	  210987654321
+#define MAVLINK_MSG_SET_POSITION_TARGET_LOCAL_NED_POSITION	0b0000110111111000; //3576
+#define MAVLINK_MSG_SET_POSITION_TARGET_LOCAL_NED_VELOCITY	0b0000110111000111; //3527
+#define MAVLINK_MSG_SET_POSITION_TARGET_LOCAL_NED_YAW_ANGLE 0b0000100111111111; //2559
+#define MAVLINK_MSG_SET_POSITION_TARGET_LOCAL_NED_YAW_RATE	0b0000010111111111; //1535
 
 /* helper function */
 uint64_t get_time_usec();
@@ -86,7 +87,7 @@ namespace bjos {
 		float getPitch();
 		float getYaw();
 
-                /* Returns a Pose struct that contains Point and Orientation structs */
+		/* Returns a Pose struct that contains Point and Orientation structs */
 		Pose getPose();
 		/* Returns a Heading struct that contains a Velocity and AngularVelocity structs */
 		Heading getHeading();
@@ -106,7 +107,7 @@ namespace bjos {
 		 * Example for velocity and yaw rate:
 		 * uint8_t type_mask = SET_TARGET_VELOCITY & SET_TARGET_YAW_RATE;
 		 */
-		int setTarget(uint8_t type_mask, float xyx[3], float vxvyvz[3], float yaw_angle, float yaw_rate);
+		int setTarget(uint8_t type_mask, Pose pose, Heading heading);
 
 		int setCurrentPosition(float xyz[3]);	
 		int setCurrentVelocity(float vxvyvz[3]);
@@ -137,6 +138,7 @@ namespace bjos {
 	private:
 		Serial_Port *serial_port;
 		std::mutex serial_port_mutex;
+		std::mutex current_setpoint_mutex;
 		Log log;
 
 		/* Set offboard mode - has to be done in order to send setpoints */
@@ -174,14 +176,6 @@ namespace bjos {
 		void read_messages();
 		/* initialiser check */
 		std::atomic_bool _init_set;
-
-
-		/* private 'defines' */
-		static const uint16_t MAVLINK_MSG_SET_POSITION_TARGET_LOCAL_NED_POSITION	= 0b0000110111111000; //3576
-		static const uint16_t MAVLINK_MSG_SET_POSITION_TARGET_LOCAL_NED_VELOCITY	= 0b0000110111000111; //3527
-		static const uint16_t MAVLINK_MSG_SET_POSITION_TARGET_LOCAL_NED_YAW_ANGLE	= 0b0000100111111111; //2559
-		static const uint16_t MAVLINK_MSG_SET_POSITION_TARGET_LOCAL_NED_YAW_RATE	= 0b0000010111111111; //1535
-
 	};
 
 }

@@ -205,6 +205,7 @@ void FlightController::write_setpoint() {
 	// --------------------------------------------------------------------------
 
 	// pull from position target
+	std::lock_guard<std::mutex> lock(current_setpoint_mutex);
 	mavlink_set_position_target_local_ned_t sp = current_setpoint;
 
 	// double check some system parameters
@@ -284,5 +285,27 @@ Pose FlightController::getPose() {
 Heading FlightController::getHeading() {
 	std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
         return _data->heading;
+}
+
+//ALERT: can NOT be used to set roll, pitch, rollspeed or pitchspeed
+int FlightController::setTarget(uint8_t type_mask, Pose pose, Heading heading) {
+	//TODO: mutex lock writing and reading 'current_setpoint'
+	mavlink_set_position_target_local_ned_t sp;
+
+	sp.type_mask = type_mask;
+
+	sp.x = pose.position.x;
+	sp.y = pose.position.y;
+	sp.z = pose.position.z;
+
+	sp.vx = heading.velocity.vx;
+	sp.vy = heading.velocity.vy;
+	sp.vz = heading.velocity.vz;
+
+	sp.yaw = pose.orientation.y;
+	sp.yaw_rate = heading.angular_velocity.vy;
+
+	std::lock_guard<std::mutex> lock(current_setpoint_mutex);
+	current_setpoint = sp;
 }
 
