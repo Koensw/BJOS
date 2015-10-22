@@ -150,7 +150,7 @@ read_message(mavlink_message_t &message)
 	// --------------------------------------------------------------------------
 	//   DEBUGGING REPORTS
 	// --------------------------------------------------------------------------
-	if(msgReceived )//&& debug
+	if(msgReceived && debug)//&& debug
 	{
 		// Report info
 		printf("Received message from serial with ID #%d (sys:%d|comp:%d):\n", message.msgid, message.sysid, message.compid);

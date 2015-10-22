@@ -9,8 +9,6 @@
 * @author Joep Linssen,	<joep.linssen@bluejayeindhoven.nl>
 */
 
-//TODO: implement basic toggle_offboard_control
-
 #include "controllers/FlightController.h"
 
 #include <chrono>
@@ -55,7 +53,7 @@ void FlightController::init(BJOS *bjos) {
 		std::cout << " ...";
 	}
 	std::cout << " Received!" << std::endl;
-	log.info("FlightController::init", "Initial position: xyz=[%.4f %.4f %.4f] vxvyvz=[%.4f %.4f %.4f]", initial_position.x, initial_position.y, initial_position.z, initial_position.vx, initial_position.y, initial_position.z);
+	Log::info("FlightController::init", "Initial position: xyz=[%.4f %.4f %.4f] vxvyvz=[%.4f %.4f %.4f]", initial_position.x, initial_position.y, initial_position.z, initial_position.vx, initial_position.y, initial_position.z);
 
 	// write_thread initialises 'current_setpoint': all velocities 0
 	_write_thrd = boost::thread(&FlightController::write_thread, this);
@@ -69,7 +67,7 @@ void FlightController::init(BJOS *bjos) {
 	if (result == -1)
 		throw ControllerInitializationError(this, "Could not set offboard mode: unable to write message on serial port");
 	else if (result == 0)
-		log.warn("FlightController::init", "double (de-)activation of offboard mode [ignored]");
+		Log::warn("FlightController::init", "double (de-)activation of offboard mode [ignored]");
 
 	// Done!
 }
@@ -112,7 +110,7 @@ void FlightController::read_messages() {
 		switch (message.msgid) {
 			case MAVLINK_MSG_ID_LOCAL_POSITION_NED:
 			{
-				log.info("FlightController::read_messages", "MAVLINK_MSG_LOCAL_POSITION_NED");
+				Log::info("FlightController::read_messages", "MAVLINK_MSG_LOCAL_POSITION_NED");
 				
 				//decode
 				mavlink_local_position_ned_t local_position_ned;
@@ -135,7 +133,7 @@ void FlightController::read_messages() {
 			}
 			case MAVLINK_MSG_ID_ATTITUDE:
 			{
-				log.info("FlightController::read_messages", "MAVLINK_MSG_ATTITUDE");
+				Log::info("FlightController::read_messages", "MAVLINK_MSG_ATTITUDE");
 
 				//decode
 				mavlink_attitude_t attitude;
@@ -153,12 +151,12 @@ void FlightController::read_messages() {
 			}
 			default:
 			{
-				log.info("FlightController::read_messages", "Not handling this message: %" PRIu8, message.msgid);
+				Log::info("FlightController::read_messages", "Not handling this message: %" PRIu8, message.msgid);
 			}
 		}
 	}
 	else {
-//                log.warn("",".");
+//                Log::warn("",".");
 	}
 
 	return;
@@ -167,8 +165,8 @@ void FlightController::read_messages() {
 void FlightController::write_thread() {
 	//prepare an initial setpoint: all velocities 0
 	mavlink_set_position_target_local_ned_t sp;
-	sp.type_mask = MAVLINK_MSG_SET_POSITION_TARGET_LOCAL_NED_VELOCITY &
-				   MAVLINK_MSG_SET_POSITION_TARGET_LOCAL_NED_YAW_RATE;
+	sp.type_mask = SET_TARGET_VELOCITY &
+				   SET_TARGET_YAW_RATE;
 	sp.coordinate_frame = MAV_FRAME_BODY_NED;
 	sp.vx = 0;
 	sp.vy = 0;
@@ -236,20 +234,20 @@ void FlightController::write_setpoint() {
                 std::cout << ".";
 	else {
 		//TODO: log writing of setpoint per type_mask
-		//log.info("FlightController::write_setpoint", "Wrote setpoint");
+		//Log::info("FlightController::write_setpoint", "Wrote setpoint");
 	}
 
 	return;
 }
 
-//WARNING: do not use this function in multiple threads
+//TODO: check mode in order to handle outside mode switching (by a telemetry command for instance)
 int FlightController::toggle_offboard_control(bool flag) {
 	static bool offboard = false;
 
 	if (offboard == flag) return 0;
 	else {
 		// Prepare command for off-board mode
-		/*
+		
 		mavlink_command_long_t com;
 		com.target_system		= system_id;
 		com.target_component	= autopilot_id;
@@ -264,7 +262,7 @@ int FlightController::toggle_offboard_control(bool flag) {
 		// Send
 		std::lock_guard<std::mutex> lock(serial_port_mutex);
 		int success = serial_port->write_message(message);
-		*/
+		
 		bool success = true;
 		if (success) {
 			offboard = flag;
@@ -289,7 +287,7 @@ Heading FlightController::getHeading() {
 
 //ALERT: can NOT be used to set roll, pitch, rollspeed or pitchspeed
 void FlightController::setTarget(uint16_t type_mask, Pose pose, Heading heading) {
-	//TODO: mutex lock writing and reading 'current_setpoint'
+	//TODO: edit coordinate system
 	mavlink_set_position_target_local_ned_t sp;
 
 	sp.type_mask = type_mask;
