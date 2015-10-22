@@ -7,6 +7,9 @@
 #include <cassert>
 #include <utility>
 
+#include <chrono>
+#include <thread>
+
 #include "bjos/bjos.h"
 #include "bjos/helpers/process.h"
 
@@ -35,11 +38,17 @@ int main(){
         std::cout << "failed" << std::endl;
         return 0;
     }
-    std::cout << "???" << std::endl;        
+        
+    
+    Heading head;
+    head.velocity.vz = -1;
+    test.setTarget(MAVLINK_MSG_SET_POSITION_TARGET_LOCAL_NED_VELOCITY, Pose(), head);
+    
     while(Process::isActive()){
         Pose pose = test.getPose();
         std::cout << pose.position.x << " " << pose.position.y << " " << pose.position.z << std::endl;
-        sleep(1);
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        //sleep(1);
     }
     
     //mutex.unlock();

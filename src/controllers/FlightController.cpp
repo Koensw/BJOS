@@ -228,7 +228,7 @@ void FlightController::write_setpoint() {
 	// --------------------------------------------------------------------------
 
 	// do the write
-	std::lock_guard<std::mutex> lock(serial_port_mutex);
+	//std::lock_guard<std::mutex> lock(serial_port_mutex);
 	int len = serial_port->write_message(message);
 
 	// check the write
@@ -288,7 +288,7 @@ Heading FlightController::getHeading() {
 }
 
 //ALERT: can NOT be used to set roll, pitch, rollspeed or pitchspeed
-int FlightController::setTarget(uint8_t type_mask, Pose pose, Heading heading) {
+void FlightController::setTarget(uint16_t type_mask, Pose pose, Heading heading) {
 	//TODO: mutex lock writing and reading 'current_setpoint'
 	mavlink_set_position_target_local_ned_t sp;
 

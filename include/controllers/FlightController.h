@@ -39,7 +39,7 @@
 
 #include "flight/serial_port.h"
 #include <mavlink/v1.0/common/mavlink.h>
-#include "mavlink\include\mavlink\v1.0\common\mavlink.h"
+//#include "mavlink\include\mavlink\v1.0\common\mavlink.h"
 
 // ------------------------------------------------------------------------------
 //   MAVLink info
@@ -61,10 +61,10 @@
 // ------------------------------------------------------------------------------
 
 //													bit number:	  210987654321
-#define MAVLINK_MSG_SET_POSITION_TARGET_LOCAL_NED_POSITION	0b0000110111111000; //3576
-#define MAVLINK_MSG_SET_POSITION_TARGET_LOCAL_NED_VELOCITY	0b0000110111000111; //3527
-#define MAVLINK_MSG_SET_POSITION_TARGET_LOCAL_NED_YAW_ANGLE 0b0000100111111111; //2559
-#define MAVLINK_MSG_SET_POSITION_TARGET_LOCAL_NED_YAW_RATE	0b0000010111111111; //1535
+#define MAVLINK_MSG_SET_POSITION_TARGET_LOCAL_NED_POSITION	0b0000110111111000 //3576
+#define MAVLINK_MSG_SET_POSITION_TARGET_LOCAL_NED_VELOCITY	0b0000110111000111 //3527
+#define MAVLINK_MSG_SET_POSITION_TARGET_LOCAL_NED_YAW_ANGLE     0b0000100111111111 //2559
+#define MAVLINK_MSG_SET_POSITION_TARGET_LOCAL_NED_YAW_RATE	0b0000010111111111 //1535
 
 /* helper function */
 uint64_t get_time_usec();
@@ -107,11 +107,11 @@ namespace bjos {
 		 * Example for velocity and yaw rate:
 		 * uint8_t type_mask = SET_TARGET_VELOCITY & SET_TARGET_YAW_RATE;
 		 */
-		int setTarget(uint8_t type_mask, Pose pose, Heading heading);
+		void setTarget(uint16_t type_mask, Pose pose, Heading heading);
 
-		int setCurrentPosition(float xyz[3]);	
-		int setCurrentVelocity(float vxvyvz[3]);
-		int setCurrentAttitude(float rpy[3]);
+		void setCurrentPosition(float xyz[3]);	
+		void setCurrentVelocity(float vxvyvz[3]);
+		void setCurrentAttitude(float rpy[3]);
 
 		int write_message(mavlink_message_t message);
 
