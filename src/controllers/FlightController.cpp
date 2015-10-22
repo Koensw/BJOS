@@ -97,7 +97,6 @@ void FlightController::read_thread() {
 void FlightController::read_messages() {
 	mavlink_message_t message;
 
-	std::lock_guard<std::mutex> lock(serial_port_mutex);
 	bool success = serial_port->read_message(message);
 	
 	if (success) {
@@ -174,8 +173,8 @@ void FlightController::write_thread() {
 	sp.yaw_rate = 0;
 
 	// set target
-	current_setpoint = sp;
-	
+	_data->current_setpoint = sp;
+
 	// write a message and signal writing
 	write_setpoint();
 	_write_thrd_running = true;
@@ -203,8 +202,9 @@ void FlightController::write_setpoint() {
 	// --------------------------------------------------------------------------
 
 	// pull from position target
-	std::lock_guard<std::mutex> lock(current_setpoint_mutex);
-	mavlink_set_position_target_local_ned_t sp = current_setpoint;
+        std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+        mavlink_set_position_target_local_ned_t sp = _data->current_setpoint;
+        Log::info("FlightController::write_setpoint","current_setpoint: %.4f %.4f %.4f", sp.vx, sp.vy, sp.vz);
 
 	// double check some system parameters
 	if (not sp.time_boot_ms)
@@ -226,7 +226,6 @@ void FlightController::write_setpoint() {
 	// --------------------------------------------------------------------------
 
 	// do the write
-	//std::lock_guard<std::mutex> lock(serial_port_mutex);
 	int len = serial_port->write_message(message);
 
 	// check the write
@@ -243,11 +242,10 @@ void FlightController::write_setpoint() {
 //TODO: check mode in order to handle outside mode switching (by a telemetry command for instance)
 int FlightController::toggle_offboard_control(bool flag) {
 	static bool offboard = false;
-
+        Log::info("FlightController::toggle_offboard_control", "entered toggle_offboard_control %i", flag);
 	if (offboard == flag) return 0;
 	else {
 		// Prepare command for off-board mode
-		
 		mavlink_command_long_t com;
 		com.target_system		= system_id;
 		com.target_component	= autopilot_id;
@@ -260,11 +258,9 @@ int FlightController::toggle_offboard_control(bool flag) {
 		mavlink_msg_command_long_encode(system_id, autopilot_id, &message, &com);
 
 		// Send
-		std::lock_guard<std::mutex> lock(serial_port_mutex);
 		int success = serial_port->write_message(message);
-		
-		bool success = true;
 		if (success) {
+		        Log::info("FlightController::toggle_offboard_control", "successful write on port");
 			offboard = flag;
 			return 1;
 		}
@@ -287,6 +283,7 @@ Heading FlightController::getHeading() {
 
 //ALERT: can NOT be used to set roll, pitch, rollspeed or pitchspeed
 void FlightController::setTarget(uint16_t type_mask, Pose pose, Heading heading) {
+        Log::info("FlightController::setTarget","new setpoint: %.4f %.4f %.4f", heading.velocity.vx, heading.velocity.vy, heading.velocity.vz);
 	//TODO: edit coordinate system
 	mavlink_set_position_target_local_ned_t sp;
 
@@ -303,7 +300,7 @@ void FlightController::setTarget(uint16_t type_mask, Pose pose, Heading heading)
 	sp.yaw = pose.orientation.y;
 	sp.yaw_rate = heading.angular_velocity.vy;
 
-	std::lock_guard<std::mutex> lock(current_setpoint_mutex);
-	current_setpoint = sp;
+        std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+	_data->current_setpoint = sp;
 }
 

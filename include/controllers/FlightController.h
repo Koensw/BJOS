@@ -39,7 +39,7 @@
 
 #include "flight/serial_port.h"
 #include <mavlink/v1.0/common/mavlink.h>
-#include "mavlink\include\mavlink\v1.0\common\mavlink.h"
+//#include "mavlink\include\mavlink\v1.0\common\mavlink.h"
 //TODO: OS-based includes of mavlink
 
 // ------------------------------------------------------------------------------
@@ -75,6 +75,10 @@ namespace bjos {
 		//NOTE: class variables are double's not floats
 		Pose pose;
 		Heading heading;
+
+		//Used to constantly send setpoints to the drone
+		//TODO: make an array-form message, in order to meet the need for sending a path of ~20 setpoints
+		mavlink_set_position_target_local_ned_t current_setpoint;
 	};
 
 	class FlightController : public Controller {
@@ -146,8 +150,6 @@ namespace bjos {
 
 	private:
 		Serial_Port *serial_port;
-		std::mutex serial_port_mutex;
-		std::mutex current_setpoint_mutex;
 
 		/* Set offboard mode - has to be done in order to send setpoints */
 		//NOTE: returns -1 on write error, returns 0 on double (de-)activation, returns 1 on success;
@@ -156,10 +158,6 @@ namespace bjos {
 		//Used by messaging part
 		int system_id;
 		int autopilot_id;
-
-		//Used to constantly send setpoints to the drone
-		//TODO: make an array-form message, in order to meet the need for sending a path of ~20 setpoints
-		mavlink_set_position_target_local_ned_t current_setpoint;
 
 		//Used as reference for every setpoint (init_pos is considered [0, 0, 0] @ higher level, this is the abstractor)
 		mavlink_local_position_ned_t initial_position;

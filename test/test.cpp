@@ -42,11 +42,12 @@ int main(){
     
     Heading head;
     head.velocity.vz = -1;
-    test.setTarget(MAVLINK_MSG_SET_POSITION_TARGET_LOCAL_NED_VELOCITY, Pose(), head);
+//    test.setTarget(SET_TARGET_VELOCITY, Pose(), head);
     
     while(Process::isActive()){
         Pose pose = test.getPose();
         std::cout << pose.position.x << " " << pose.position.y << " " << pose.position.z << std::endl;
+        test.setTarget(SET_TARGET_VELOCITY, Pose(), head);
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
         //sleep(1);
     }
