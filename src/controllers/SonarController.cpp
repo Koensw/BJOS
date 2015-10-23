@@ -4,7 +4,7 @@
 #include <thread>
 #include <stdexcept>
 
-#include "geometry.h"
+#include "libs/geometry.h"
 
 #include "controllers/sonar/SonarInterface.h"
 #include "bjos/helpers/error.h"

@@ -1,7 +1,7 @@
 #include "controllers/sonar/DevantechSonarInterface.h"
  
-#include "geometry.h"
-#include "i2c.h"
+#include "libs/geometry.h"
+#include "libs/i2c.h"
 
 #include <iostream>
 

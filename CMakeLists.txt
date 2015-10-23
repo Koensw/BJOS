@@ -8,17 +8,8 @@ set(CMAKE_CXX_FLAGS "-g -Wall -Wextra -pedantic --std=c++11 ${CMAKE_CXX_FLAGS}")
 
 # include the headers
 include_directories(include/)
-include_directories(libs/)
 
 #### LIBS ####
-# build temporary libs
-add_library(geometry SHARED
-    libs/geometry.cpp
-)
-add_library(i2c SHARED
-    libs/i2c.cpp
-)
-
 # build the bjos library
 add_library(bjos SHARED
     src/bjos/bjos.cpp
@@ -27,8 +18,10 @@ add_library(bjos SHARED
     src/controllers/SonarController.cpp
     src/controllers/FlightController.cpp
     src/controllers/flight/serial_port.cpp
+    src/libs/i2c.cpp
+    src/libs/geometry.cpp
 )
-target_link_libraries(bjos ${Boost_THREAD_LIBRARY} ${Boost_SYSTEM_LIBRARY} pthread rt geometry i2c)
+target_link_libraries(bjos ${Boost_THREAD_LIBRARY} ${Boost_SYSTEM_LIBRARY} pthread rt)
 
 #### LOADERS ####
 # build the test loader
@@ -69,3 +62,7 @@ install(TARGETS bjos
         LIBRARY DESTINATION /usr/local/lib
         ARCHIVE DESTINATION /usr/local/lib/static)
 install(DIRECTORY include/ DESTINATION /usr/local/include/bjos)
+
+# TODO: BETTER INSTALL PLACE
+# install(DIRECTORY libs/ DESTINATION /usr/local/include/bjos/libs)
+
