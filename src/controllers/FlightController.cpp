@@ -37,7 +37,7 @@ void FlightController::init(BJOS *bjos) {
 	//give the serial port some time
 	usleep(100000);
 	//check the status of the port
-	if (not serial_port->status == 1) //SERIAL_PORT_OPEN
+	if (serial_port->status != 1) //SERIAL_PORT_OPEN
 		throw ControllerInitializationError(this, "Serial port not open");
 
 	//start read thread
@@ -228,7 +228,7 @@ void FlightController::write_setpoint() {
 	int len = serial_port->write_message(message);
 
 	// check the write
-	if (not len > 0)
+	if (len <= 0)
                 std::cout << ".";
 	else {
 		//TODO: log writing of setpoint per type_mask
