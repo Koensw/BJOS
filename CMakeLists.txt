@@ -43,6 +43,12 @@ add_executable(sonar_loader
 )
 target_link_libraries(sonar_loader ${Boost_THREAD_LIBRARY} ${Boost_SYSTEM_LIBRARY} bjos)
 
+add_executable(default_loader
+    src/controllers/sonar/DevantechSonarInterface.cpp
+    src/loader/test_default.cpp
+)
+target_link_libraries(default_loader ${Boost_THREAD_LIBRARY} ${Boost_SYSTEM_LIBRARY} bjos)
+
 #### TEST ####
 # build the test executable
 add_executable(test_test

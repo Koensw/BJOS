@@ -282,7 +282,7 @@ Heading FlightController::getHeading() {
 
 //ALERT: can NOT be used to set roll, pitch, rollspeed or pitchspeed
 void FlightController::setTarget(uint16_t type_mask, Pose pose, Heading heading) {
-        Log::info("FlightController::setTarget","new setpoint: %.4f %.4f %.4f", heading.velocity.vx, heading.velocity.vy, heading.velocity.vz);
+        //Log::info("FlightController::setTarget","new setpoint: %.4f %.4f %.4f", heading.velocity.vx, heading.velocity.vy, heading.velocity.vz);
 	//TODO: edit coordinate system
 	mavlink_set_position_target_local_ned_t sp;
 
