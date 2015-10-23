@@ -38,23 +38,23 @@
 #include "bjos/helpers/error.h"
 
 #include "flight/serial_port.h"
+
+#ifdef _WIN32
+#include "mavlink\include\mavlink\v1.0\common\mavlink.h"
+#else
 #include <mavlink/v1.0/common/mavlink.h>
-//#include "mavlink\include\mavlink\v1.0\common\mavlink.h"
-//TODO: OS-based includes of mavlink
+#endif
 
 // ------------------------------------------------------------------------------
 //   MAVLink info
 // ------------------------------------------------------------------------------
 /*
 * MAVLink messages used per implemented function:
-*	int setTargetPosition(...)	--- SET_POSITION_TARGET_LOCAL_NED with ~.type_mask = 3576
-*	int setTargetVelocity(...)	--- SET_POSITION_TARGET_LOCAL_NED with ~.type_mask = 3527
+*	int setTarget(...)			--- SET_POSITION_TARGET_LOCAL_NED
 *	int setCurrentPosition(...)	--- ATT_POS_MOCAP with ~.q = {1 0 0 0}
-*	int setStreamFreq(...)		--- COMMAND_LONG with MAV_CMD_SET_MESSAGE_INTERVAL
-*	void readMessages(...)		--- Decodes incoming messages of type as given by its argument
+*	void readMessages(...)		--- Decodes incoming ATTITUDE and LOCAL_POSITION_NED messages
 *
-*	no further communicion is possible with the drone (as of now)
-*		setYaw (via setCurrentAttitude(...)) is first to be implemented
+*	no further communication is possible with the drone (as of now)
 */
 
 // ------------------------------------------------------------------------------
@@ -117,8 +117,6 @@ namespace bjos {
 		void setCurrentPosition(float xyz[3]);	
 		void setCurrentVelocity(float vxvyvz[3]);
 		void setCurrentAttitude(float rpy[3]);
-
-		int write_message(mavlink_message_t message);
 
 		///Q: correct?
 		/* Finalize this controller */

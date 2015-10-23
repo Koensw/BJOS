@@ -25,7 +25,6 @@ get_time_usec()
 
 
 //WARNING: blocks while no initial messages are received from the drone
-//TODO: neater exceptions
 void FlightController::init(BJOS *bjos) {
 	bool ret = Controller::init(bjos, "flight", _data);
 	if (!ret)
