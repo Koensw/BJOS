@@ -70,6 +70,8 @@ void SonarController::load(bjos::BJOS *bjos){
 
 void SonarController::update_sonars(){
     bool frst = true;
+    
+    //FIXME: interrupted over whole block
     while(_thrd_running){
         //TODO: handle sonars that are not active
         

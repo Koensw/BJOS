@@ -35,7 +35,7 @@ void OSInit(){
         //start i2c
         I2C::start("/dev/i2c-1");
         
-        sonar = new SonarController(true);
+        sonar = new SonarController(false);
         unsigned char address[3] = {0x70, 0x71, 0x72};
         double yaw[3] = {1.57079632679, -1.57079632679, 0};
         for(int i=0; i<3; ++i){
@@ -81,7 +81,13 @@ int main(){
     
     // wait until finished
     while(Process::isActive()){            
-        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+	Log::info("sonar_loader", "DISTANCES: ");
+	std::vector<SonarData> data = sonar->getData();
+	for(size_t i=0; i<data.size(); ++i){
+		Log::info("sonar_loader", "%f", data[i].distance);
+	}
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(300));
     }
     
     //finalize
