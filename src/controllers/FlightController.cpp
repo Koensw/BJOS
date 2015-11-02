@@ -78,9 +78,9 @@ void FlightController::load(bjos::BJOS *bjos) {
 void FlightController::read_thread() {
 	while (_read_thrd_running)
 	{
-		read_messages();
-
 		try {
+		        read_messages();
+		
 			boost::this_thread::sleep_for(boost::chrono::microseconds(500)); //2000 Hz
 		}
 		catch (boost::thread_interrupted) {
@@ -182,15 +182,15 @@ void FlightController::write_thread() {
 	while (_write_thrd_running) {
 		try {
 			boost::this_thread::sleep_for(boost::chrono::milliseconds(100)); //Stream at 10 Hz
+			
+			write_setpoint();
 		}
 		catch (boost::thread_interrupted) {
 			//if interrupt, stop and let the controller finish resources
 			///Q: wha??
 			return;
 		}
-
-		write_setpoint();
-	}
+        }
 
 	return;
 }
@@ -282,7 +282,7 @@ Heading FlightController::getHeading() {
 
 //ALERT: can NOT be used to set roll, pitch, rollspeed or pitchspeed
 void FlightController::setTarget(uint16_t type_mask, Pose pose, Heading heading) {
-        Log::info("FlightController::setTarget","new setpoint: %.4f %.4f %.4f", heading.velocity.vx, heading.velocity.vy, heading.velocity.vz);
+        //Log::info("FlightController::setTarget","new setpoint: %.4f %.4f %.4f", heading.velocity.vx, heading.velocity.vy, heading.velocity.vz);
 	//TODO: edit coordinate system
 	mavlink_set_position_target_local_ned_t sp;
 
