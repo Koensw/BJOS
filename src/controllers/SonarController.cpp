@@ -12,7 +12,7 @@
 using namespace bjos;
 
 int SonarController::registerInterface(SonarInterface *interface, Pose pose, bool global){
-    if(_interfaces.size() == SharedSonarControllerData::SONAR_SIZE) throw std::out_of_range("Registering SonarInterface not possible, limit reached! Recompile with large SONAR_SIZE.");
+    if(_interfaces.size() == SharedSonarControllerData::SONAR_SIZE) throw std::out_of_range("Registering SonarInterface not possible, limit reached! Recompile with larger SONAR_SIZE.");
     
     _interfaces.push_back(std::make_pair(interface, global));
     _poses.push_back(pose);
@@ -73,23 +73,24 @@ void SonarController::update_sonars(){
     while(_thrd_running){
         //TODO: handle sonars that are not active
         
-        if(!frst){
-            std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
-            
-            //update data
-            for(size_t i=0; i<_interfaces.size(); ++i){
-                _data->sonars[i].distance = _interfaces[i].first->getDistance();
-            }
-        }
-        frst = false;
-        
-        //trigger new read
-        for(size_t i=0; i<_interfaces.size(); ++i){
-            if(!_global_read) _interfaces[i].first->readDistance();
-            else if(_interfaces[i].second) _interfaces[i].first->globalReadDistance();
-        }
         
         try{
+            if(!frst){
+                std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+                
+                //update data
+                for(size_t i=0; i<_interfaces.size(); ++i){
+                    _data->sonars[i].distance = _interfaces[i].first->getDistance();
+                }
+            }
+            frst = false;
+            
+            //trigger new read
+            for(size_t i=0; i<_interfaces.size(); ++i){
+                if(!_global_read) _interfaces[i].first->readDistance();
+                else if(_interfaces[i].second) _interfaces[i].first->globalReadDistance();
+            }
+            
             boost::this_thread::sleep_for(boost::chrono::milliseconds(static_cast<int>(1000*_data->update_time)));
         }catch(boost::thread_interrupted){
             //if interrupt, stop and let the controller finish resources
