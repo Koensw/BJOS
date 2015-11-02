@@ -39,14 +39,15 @@ void OSInit(){
         
         //load the sonar controller
         sonar = new SonarController(true);
-        /*unsigned char address[3] = {0x70, 0x71, 0x72};
-        double yaw[3] = {1.57079632679, -1.57079632679, 0};
+        unsigned char address[3] = {0x70, 0x71, 0x72};
+        //double yaw[3] = {-1.57079632679, 3.14159265, 1.57079632679};
+        double yaw[3] = {0, 1.57079632679, 3.14159265};
         for(int i=0; i<3; ++i){
             SonarInterface *interface = new DevantechSonarInterface(address[i]);
             Pose pose;
             pose.orientation.y = yaw[i];
             sonar->registerInterface(interface, pose, (i == 0));
-        }*/
+        }
         
         bjos->initController(sonar);
         sonar->setUpdateTime(0.1);
