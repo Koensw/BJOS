@@ -4,7 +4,6 @@
 #include <cmath>
 #include <limits>
 
-//FIXME: add to BJOS namespace
 //TODO: better use a tested geometry library (Eigen?)
 
 /* 
@@ -144,27 +143,42 @@ public:
     double z;
 };
 
+/* Rotation matrix */
+class RotationMatrix{
+public:
+	RotationMatrix() { memset(elem, 0, sizeof(elem[0][0]) * 3 * 3); }
+	RotationMatrix(double angle, char type) {
+		switch (type) {
+			case 'x':
+				initRx(angle);
+				break;
+			case 'y':
+				initRy(angle);
+				break;
+			case 'z':
+				initRz(angle);
+				break;
+			default:
+				memset(elem, 0, sizeof(elem[0][0]) * 3 * 3);
+				break;
+		}
+	}
+
+	Point rotatePoint(Point point);
+	Velocity rotateVelocity(Velocity vel);
+
+	void initRx(double r);
+	void initRy(double p);
+	void initRz(double y);
+
+    double elem[3][3];
+};
+
 /* Operators */
 Vector operator+(const Vector &v1, const Vector &v2);
 Vector operator-(const Vector &v1, const Vector &v2);
 
 Orientation operator-(const Orientation &o);
-
-/* Rotation matrix */
-class RotationMatrix{
-public:
-    /* Initalizes a rotation matrix using the yall, roll, pitch Euler angles (Tait-Bryan) */
-    RotationMatrix(double y, double p, double r){
-        init(y, p, r);
-    }
-    /* Converts a orientation to a rotation matrix from the default frame */
-    RotationMatrix(Orientation o){
-        init(o.y, o.p, o.r);
-    }
-    
-    double elem[3][3];
-private:
-    void init(double y, double p, double r);
-};
+RotationMatrix operator*(const RotationMatrix &rm1, const RotationMatrix &rm2);
 
 #endif
