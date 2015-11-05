@@ -45,9 +45,9 @@ int main(){
 //    test.setTarget(SET_TARGET_VELOCITY, Pose(), head);
     
     while(Process::isActive()){
-        Pose pose = test.getPose();
+        Pose pose = test.getPoseNED();
         std::cout << pose.position.x << " " << pose.position.y << " " << pose.position.z << std::endl;
-        test.setTarget(SET_TARGET_VELOCITY, Pose(), head);
+        test.setTargetCF(SET_TARGET_VELOCITY, Pose(), head);
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
         //sleep(1);
     }
