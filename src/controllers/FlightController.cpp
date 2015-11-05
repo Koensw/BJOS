@@ -116,12 +116,12 @@ void FlightController::read_messages() {
 
 				//put position and velocity data into _data
 				std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
-				_data->pose.position.x = local_position_ned.x;
-				_data->pose.position.y = local_position_ned.y;
-				_data->pose.position.z = local_position_ned.z;
-				_data->heading.velocity.vx = local_position_ned.vx;
-				_data->heading.velocity.vy = local_position_ned.vy;
-				_data->heading.velocity.vz = local_position_ned.vz;
+				_data->poseNED.position.x = local_position_ned.x;
+				_data->poseNED.position.y = local_position_ned.y;
+				_data->poseNED.position.z = local_position_ned.z;
+				_data->headingNED.velocity.vx = local_position_ned.vx;
+				_data->headingNED.velocity.vy = local_position_ned.vy;
+				_data->headingNED.velocity.vz = local_position_ned.vz;
 			
 				if (!_init_set) {
 					mavlink_msg_local_position_ned_decode(&message, &initial_position);
@@ -139,12 +139,12 @@ void FlightController::read_messages() {
 
 				//put attitude data into _data
 				std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
-				_data->pose.orientation.p = attitude.pitch;
-				_data->pose.orientation.r = attitude.roll;
-				_data->pose.orientation.y = attitude.yaw;
-				_data->heading.angular_velocity.vp = attitude.pitchspeed;
-				_data->heading.angular_velocity.vr = attitude.rollspeed;
-				_data->heading.angular_velocity.vy = attitude.yawspeed;
+				_data->poseNED.orientation.p = attitude.pitch;
+				_data->poseNED.orientation.r = attitude.roll;
+				_data->poseNED.orientation.y = attitude.yaw;
+				_data->headingNED.angular_velocity.vp = attitude.pitchspeed;
+				_data->headingNED.angular_velocity.vr = attitude.rollspeed;
+				_data->headingNED.angular_velocity.vy = attitude.yawspeed;
 				break;
 			}
 			default:
@@ -165,7 +165,7 @@ void FlightController::write_thread() {
 	mavlink_set_position_target_local_ned_t sp;
 	sp.type_mask = SET_TARGET_VELOCITY &
 				   SET_TARGET_YAW_RATE;
-	sp.coordinate_frame = MAV_FRAME_BODY_NED;
+	sp.coordinate_frame = MAV_FRAME_BODY_OFFSET_NED;
 	sp.vx = 0;
 	sp.vy = 0;
 	sp.vz = 0;
@@ -270,36 +270,72 @@ int FlightController::toggle_offboard_control(bool flag) {
 	}
 }
 
-Pose FlightController::getPose() {
+Pose FlightController::getPoseNED() {
         std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
-        return _data->pose;
+        return _data->poseNED;
 }
 
-Heading FlightController::getHeading() {
+Orientation FlightController::getOrientationCF() {
 	std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
-        return _data->heading;
+	return _data->orientationCF;
 }
+
+Heading FlightController::getHeadingNED() {
+	std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+        return _data->headingNED;
+}
+
+Heading FlightController::getHeadingCF() {
+	std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+	return _data->headingCF;
+}
+
 
 //ALERT: can NOT be used to set roll, pitch, rollspeed or pitchspeed
-void FlightController::setTarget(uint16_t type_mask, Pose pose, Heading heading) {
-        Log::info("FlightController::setTarget","new setpoint: %.4f %.4f %.4f", heading.velocity.vx, heading.velocity.vy, heading.velocity.vz);
-	//TODO: edit coordinate system
+void FlightController::setTargetCF(uint16_t type_mask, Pose poseCF, Heading headingCF) {
+	Log::info("FlightController::setTarget","new setpoint CF: %.4f %.4f %.4f", headingCF.velocity.vx, headingCF.velocity.vy, headingCF.velocity.vz);
+	
+	std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+
+	/* Tranform given position, velocity and yaw from CF frame to NED */
+	Point pointNED = CFtoNED(poseCF.position, _data->poseNED.orientation.y, _data->poseNED.position);
+	Velocity headingNED = CFtoNED(headingCF.velocity, _data->poseNED.orientation.y);
+	double yawNED = poseCF.orientation.y + _data->poseNED.orientation.y;
+
 	mavlink_set_position_target_local_ned_t sp;
 
 	sp.type_mask = type_mask;
 
-	sp.x = pose.position.x;
-	sp.y = pose.position.y;
-	sp.z = pose.position.z;
+	sp.x = pointNED.x;
+	sp.y = pointNED.y;
+	sp.z = pointNED.z;
 
-	sp.vx = heading.velocity.vx;
-	sp.vy = heading.velocity.vy;
-	sp.vz = heading.velocity.vz;
+	sp.vx = headingNED.vx;
+	sp.vy = headingNED.vy;
+	sp.vz = headingNED.vz;
 
-	sp.yaw = pose.orientation.y;
-	sp.yaw_rate = heading.angular_velocity.vy;
+	sp.yaw = yawNED;
+	sp.yaw_rate = headingCF.angular_velocity.vy; //yaw velocity is independent of frame
 
-        std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+	sp.coordinate_frame = MAV_FRAME_LOCAL_NED;
+
+    std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
 	_data->current_setpoint = sp;
 }
 
+Point FlightController::CFtoNED(Point pointCF, double yaw_P, Point pointP) {
+	RotationMatrix Rz(-yaw_P, 'z');
+	RotationMatrix Rx(M_PI, 'x');
+	RotationMatrix R = Rz*Rx;
+
+	Point pointRot = R.rotatePoint(pointCF);
+	return pointRot + pointP;
+}
+
+Velocity FlightController::CFtoNED(Velocity headingCF, double yaw_P) {
+	RotationMatrix Rz(-yaw_P, 'z');
+	RotationMatrix Rx(M_PI, 'x');
+	RotationMatrix R = Rz*Rx;
+
+	return R.rotateVelocity(headingCF);
+}

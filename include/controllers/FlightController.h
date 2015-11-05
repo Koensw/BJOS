@@ -50,7 +50,7 @@
 // ------------------------------------------------------------------------------
 /*
 * MAVLink messages used per implemented function:
-*	int setTarget(...)			--- SET_POSITION_TARGET_LOCAL_NED
+*	int setTargetCF(...)		--- SET_POSITION_TARGET_LOCAL_NED
 *	int setCurrentPosition(...)	--- ATT_POS_MOCAP with ~.q = {1 0 0 0}
 *	void readMessages(...)		--- Decodes incoming ATTITUDE and LOCAL_POSITION_NED messages
 *
@@ -64,7 +64,7 @@
 //						bit number:	  210987654321
 #define SET_TARGET_POSITION		0b0000110111111000 //3576
 #define SET_TARGET_VELOCITY		0b0000110111000111 //3527
-#define SET_TARGET_YAW_ANGLE            0b0000100111111111 //2559
+#define SET_TARGET_YAW_ANGLE	0b0000100111111111 //2559
 #define SET_TARGET_YAW_RATE		0b0000010111111111 //1535
 
 /* helper function */
@@ -73,8 +73,14 @@ uint64_t get_time_usec();
 namespace bjos {
 	struct SharedFlightControllerData {
 		//NOTE: class variables are double's not floats
-		Pose pose;
-		Heading heading;
+		/* Structs storing pose and heading of the drone in different frames; Local NED (Pixhawk), Control Frame and World Frame */
+		Pose poseNED;
+		Heading headingNED;
+		//NOTE: position of drone in CF frame is always 0 (its a drone-fixed frame)
+		Orientation orientationCF;
+		Heading headingCF;
+		Pose poseWF;
+		Heading headingWF;
 
 		//Used to constantly send setpoints to the drone
 		//TODO: make an array-form message, in order to meet the need for sending a path of ~20 setpoints
@@ -85,38 +91,34 @@ namespace bjos {
 	public:
 		FlightController() : system_id(0), autopilot_id(0),_data(nullptr), _read_thrd_running(false), _write_thrd_running(false), _init_set(false) {}
 
-		/* get methods retrieve their payload from the private variables of the class
-		 * the private variables are constantly updated via the threaded private readMessages() method
-		 * therefor, a lock has to be applied when reading these values	 */
 		float getRoll();
 		float getPitch();
 		float getYaw();
 
 		/* Returns a Pose struct that contains Point and Orientation structs */
-		Pose getPose();
-		/* Returns a Heading struct that contains a Velocity and AngularVelocity structs */
-		Heading getHeading();
+		Pose getPoseNED();
+		// Control Frame always has position 0, to remind users of these get functions of that, only a Orientation struct is returned
+		Orientation getOrientationCF();
+		/* Returns a Heading struct that contains Velocity and AngularVelocity structs */
+		Heading getHeadingNED();
+		Heading getHeadingCF();
 
 		/**
-		 * setTarget updates private variable current_setpoint
-		 * its first argument is a type_mask that specifies which of its other arguments should be used and which should be ignored, according to:
-		 * bit 1: position
-		 * bit 2: velocity
-		 * bit 3: yaw
-		 * bit 4: yaw_rate
-		 * remaining bits unused
+		 * setTargetCF updates private variable current_setpoint
+		 * its first argument is a type_mask that specifies which of its other arguments should be used and which should be ignored
 		 *
 		 * With this header comes a set of bitmasks which should be used with this function: SET_TARGET_*		 
 		 * These can be combined with bitwise &
 		 *
 		 * Example for velocity and yaw rate:
-		 * uint8_t type_mask = SET_TARGET_VELOCITY & SET_TARGET_YAW_RATE;
+		 * uint16_t type_mask = SET_TARGET_VELOCITY & SET_TARGET_YAW_RATE;
 		 */
-		void setTarget(uint16_t type_mask, Pose pose, Heading heading);
+		void setTargetCF(uint16_t type_mask, Pose poseCF, Heading headingCF);
 
-		void setCurrentPosition(float xyz[3]);	
-		void setCurrentVelocity(float vxvyvz[3]);
-		void setCurrentAttitude(float rpy[3]);
+		/* setCurrent* functions are to be used by a computer vision algorithm supplying the drone with external absolute measurements of its states */
+		void setCurrentPositionWF(float xyz[3]);	
+		void setCurrentVelocityWF(float vxvyvz[3]);
+		void setCurrentAttitudeWF(float rpy[3]);
 
 		///Q: correct?
 		/* Finalize this controller */
@@ -166,6 +168,16 @@ namespace bjos {
 		void load(bjos::BJOS *bjos);
 
 		SharedFlightControllerData *_data;
+
+		/* Frame conversion functions 
+		 *
+		 * The frames used in this program are defined in the Frame Specification.pdf file!
+		 */
+		Point CFtoNED(Point pointCF, double yaw_P, Point pointP);
+		Velocity CFtoNED(Velocity headingCF, double yaw_P);
+		Pose NEDtoCF(Pose poseNED);
+		Heading NEDtoCF(Heading headingNED);
+		/* World Frame conversions ommitted for now (since no module uses WF yet) */
 
 		//NOTE: only used by main instance
 		boost::thread _read_thrd;
