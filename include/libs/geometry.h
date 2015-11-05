@@ -107,8 +107,8 @@ public:
 */
 class Heading {
 public:
-	Velocity velocity;
-	AngularVelocity angular_velocity;
+    Velocity velocity;
+    AngularVelocity angular_velocity;
 };
 
 /* Translation vector */
@@ -176,6 +176,9 @@ public:
 
     double elem[3][3];
 };
+
+// TODO: use a combination of RotationMatrix to do this
+RotationMatrix getTaitBryanMatrix(Orientation o);
 
 /* Operators */
 Vector operator+(const Vector &v1, const Vector &v2);

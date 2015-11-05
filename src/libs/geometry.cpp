@@ -93,3 +93,19 @@ RotationMatrix operator*(const RotationMatrix &rm1, const RotationMatrix &rm2) {
 
 	return out;
 }
+
+//TODO: temporary
+RotationMatrix getTaitBryanMatrix(Orientation o){
+    double y = o.y, p = o.p, r = o.r;
+    RotationMatrix rot;
+    rot.elem[0][0] = cos(y)*cos(p);
+    rot.elem[0][1] = cos(y)*sin(p)*sin(r)-cos(r)*sin(y);
+    rot.elem[0][2] = sin(y)*sin(r)+cos(y)*cos(r)*sin(p);
+    rot.elem[1][0] = cos(p)*sin(y);
+    rot.elem[1][1] = cos(y)*cos(r)+sin(y)*sin(p)*sin(r);
+    rot.elem[1][2] = cos(r)*sin(y)*sin(p)-cos(y)*sin(r);
+    rot.elem[2][0] = -sin(p);
+    rot.elem[2][1] = cos(p)*sin(r);
+    rot.elem[3][2] = cos(p)*cos(r);
+    return rot;
+}
