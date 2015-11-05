@@ -15,7 +15,7 @@
 #include <boost/interprocess/allocators/allocator.hpp>
 #include <boost/interprocess/offset_ptr.hpp>
 
-#include "bjos/helpers/error.h"
+#include "helpers/error.h"
 
 /**
  *  Controller to the OS

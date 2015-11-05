@@ -11,6 +11,7 @@
 #include "bjos/helpers/process.h"
 
 #include "controllers/SonarController.h"
+#include "controllers/FlightController.h"
 #include "controllers/sonar/DevantechSonarInterface.h"
 
 /*
@@ -20,11 +21,12 @@
 using namespace bjos;
 
 SonarController *sonar;
+FlightController *flight;
 
 /* Initialize the OS */
 void OSInit(){
     try{
-        Log::info("sonar_loader", "Starting loader %s", "test_sonar");
+        Log::info("default_loader", "Starting loader %s", "test_sonar");
         //if(BJOS::getState() != BJOS::UNINITIALIZED) Log::warn("BJOS already running... expecting incorrect shutdown so will continue.");
         
         //init the OS
@@ -35,9 +37,11 @@ void OSInit(){
         //start i2c
         I2C::start("/dev/i2c-1");
         
-        sonar = new SonarController(false);
+        //load the sonar controller
+        sonar = new SonarController(true);
         unsigned char address[3] = {0x70, 0x71, 0x72};
-        double yaw[3] = {1.57079632679, -1.57079632679, 0};
+        //double yaw[3] = {-1.57079632679, 3.14159265, 1.57079632679};
+        double yaw[3] = {0, 1.57079632679, 3.14159265};
         for(int i=0; i<3; ++i){
             SonarInterface *interface = new DevantechSonarInterface(address[i]);
             Pose pose;
@@ -47,6 +51,10 @@ void OSInit(){
         
         bjos->initController(sonar);
         sonar->setUpdateTime(0.1);
+        
+        //load the flight controller
+        flight = new FlightController();
+        bjos->initController(flight);        
     }catch(ControllerInitializationError &init_err){
         Log::fatal(init_err.getControllerName(), init_err.what());
         std::exit(0);
@@ -60,19 +68,20 @@ void OSFinalize(){
     bjos->shutdown();
     
     //wait for finalizing clients
-    while(!sonar->canFinalize()){
-        Log::info("sonar_loader", "Waiting for %d clients to finish...", bjos->getControllerCount("sonar")-1);
+    while(!sonar->canFinalize() || !flight->canFinalize()){
+        Log::info("default_loader", "Waiting for %d clients to finish...", bjos->getControllerCount("sonar")+bjos->getControllerCount("flight")-2);
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
     //delete pointers
     delete sonar;
+    delete flight;
     
     //stop i2c
     I2C::stop();
     
     //stop os
     BJOS::finalize();
-    Log::info("sonar_loader", "Successfull shutdown!");
+    Log::info("default_loader", "Successfull shutdown!");
 }
 
 int main(){
@@ -81,13 +90,7 @@ int main(){
     
     // wait until finished
     while(Process::isActive()){            
-	Log::info("sonar_loader", "DISTANCES: ");
-	std::vector<SonarData> data = sonar->getData();
-	for(size_t i=0; i<data.size(); ++i){
-		Log::info("sonar_loader", "%f", data[i].distance);
-	}
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(300));
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
     
     //finalize

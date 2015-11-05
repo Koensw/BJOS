@@ -3,8 +3,8 @@
 #include <thread>
 #include <chrono>
 
-#include "i2c.h"
-#include "log.h"
+#include "libs/i2c.h"
+#include "libs/log.h"
 
 #include "bjos/bjos.h"
 #include "bjos/helpers/error.h"

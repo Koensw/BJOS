@@ -1,7 +1,8 @@
 #include "controllers/sonar/DevantechSonarInterface.h"
- 
-#include "geometry.h"
-#include "i2c.h"
+
+#include "libs/log.h" 
+#include "libs/geometry.h"
+#include "libs/i2c.h"
 
 #include <iostream>
 
@@ -36,6 +37,7 @@ double DevantechSonarInterface::getDistance(){
 }
 
 bool DevantechSonarInterface::readDistance(){    
+    //Log::info("devantech", "Sending from %d", _address);
     //request for a distance read in cm
     int ret_val = I2C::write(_address, 0, 0x51);
     return (ret_val >= 0);

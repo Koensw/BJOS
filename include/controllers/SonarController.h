@@ -9,11 +9,11 @@
 #include <boost/interprocess/allocators/allocator.hpp>
 #include <boost/interprocess/containers/vector.hpp>
 
-#include "geometry.h"
+#include "../libs/geometry.h"
 
-#include "bjos/bjos.h"
-#include "bjos/controller/controller.h"
-#include "bjos/helpers/error.h"
+#include "../bjos/bjos.h"
+#include "../bjos/controller/controller.h"
+#include "../bjos/helpers/error.h"
 
 #include "sonar/SonarInterface.h"
 

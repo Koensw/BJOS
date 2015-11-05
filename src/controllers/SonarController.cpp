@@ -4,7 +4,7 @@
 #include <thread>
 #include <stdexcept>
 
-#include "geometry.h"
+#include "libs/geometry.h"
 
 #include "controllers/sonar/SonarInterface.h"
 #include "bjos/helpers/error.h"
@@ -70,6 +70,8 @@ void SonarController::load(bjos::BJOS *bjos){
 
 void SonarController::update_sonars(){
     bool frst = true;
+    
+    //FIXME: interrupted over whole block
     while(_thrd_running){
         //TODO: handle sonars that are not active
         

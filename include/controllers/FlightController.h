@@ -29,13 +29,12 @@
 
 #include <iostream>
 
-#include "geometry.h"
+#include "../libs/geometry.h"
+#include "../libs/log.h"
 
 #include "../bjos/bjos.h"
 #include "../bjos/controller/controller.h"
-
-#include "log.h"
-#include "bjos/helpers/error.h"
+#include "../bjos/helpers/error.h"
 
 #include "flight/serial_port.h"
 
