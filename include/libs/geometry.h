@@ -4,6 +4,9 @@
 #include <cmath>
 #include <limits>
 
+#include <cstdlib>
+#include <cstring>
+
 //TODO: better use a tested geometry library (Eigen?)
 
 /* 

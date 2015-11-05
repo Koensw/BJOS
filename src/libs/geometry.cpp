@@ -1,4 +1,4 @@
-#include "geometry.h"
+#include "libs/geometry.h"
 
 Point::Point(const Vector &p) {
     x = p.x; y = p.y; z = p.z;
