@@ -328,8 +328,10 @@ Point FlightController::CFtoNED(Point pointCF, double yaw_P, Point pointP) {
 	RotationMatrix Rx(M_PI, 'x');
 	RotationMatrix R = Rz*Rx;
 
-	Point pointRot = R.rotatePoint(pointCF);
-	return pointRot + pointP;
+	Vector v(pointP);
+
+	TransformationMatrix tm(R, v);
+	return tm.transformPoint(pointCF);
 }
 
 Velocity FlightController::CFtoNED(Velocity headingCF, double yaw_P) {
@@ -338,4 +340,28 @@ Velocity FlightController::CFtoNED(Velocity headingCF, double yaw_P) {
 	RotationMatrix R = Rz*Rx;
 
 	return R.rotateVelocity(headingCF);
+}
+
+Point FlightController::NEDtoCF(Point pointNED, double yaw_P, Point pointP) {
+	RotationMatrix Rz(-yaw_P, 'z');
+	RotationMatrix Rx(M_PI, 'x');
+	RotationMatrix R = Rz*Rx;
+
+	Vector v(pointP);
+
+	TransformationMatrix tm_foo(R, v);
+
+	TransformationMatrix tm = tm_foo.inverse();
+
+	return tm.transformPoint(pointNED);
+}
+
+Velocity FlightController::NEDtoCF(Velocity headingNED, double yaw_P) {
+	RotationMatrix Rz(-yaw_P, 'z');
+	RotationMatrix Rx(M_PI, 'x');
+	RotationMatrix R_foo = Rz*Rx;
+
+	RotationMatrix R = R_foo.transpose();
+
+	return R.rotateVelocity(headingNED);
 }

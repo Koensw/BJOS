@@ -171,11 +171,13 @@ namespace bjos {
 		/* Frame conversion functions 
 		 *
 		 * The frames used in this program are defined in the Frame Specification.pdf file!
+		 *
+		 * yaw_P is the yaw as returned by the Pixhawk, this can be retreived from _data->headingNED.orientation.y
 		 */
 		Point CFtoNED(Point pointCF, double yaw_P, Point pointP);
 		Velocity CFtoNED(Velocity headingCF, double yaw_P);
-		Pose NEDtoCF(Pose poseNED);
-		Heading NEDtoCF(Heading headingNED);
+		Point NEDtoCF(Point pointNED, double yaw_P, Point pointP);
+		Velocity FlightController::NEDtoCF(Velocity headingNED, double yaw_P);
 		/* World Frame conversions ommitted for now (since no module uses WF yet) */
 
 		//NOTE: only used by main instance

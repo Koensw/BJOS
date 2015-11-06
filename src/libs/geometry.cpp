@@ -62,6 +62,7 @@ void RotationMatrix::initRz(double y) {
 	elem[2][2] = 1;
 }
 
+//TODO: use matrix-vector multiplication operator to perform this rotation
 Point RotationMatrix::rotatePoint(Point point) {
 	Point out;
 	out.x = elem[0][0] * point.x + elem[0][1] * point.y + elem[0][2] * point.z;
@@ -71,6 +72,7 @@ Point RotationMatrix::rotatePoint(Point point) {
 	return out;
 }
 
+//TODO: use matrix-vector multiplication operator to perform this rotation
 Velocity RotationMatrix::rotateVelocity(Velocity vel) {
 	Velocity out;
 	out.vx = elem[0][0] * vel.vx + elem[0][1] * vel.vy + elem[0][2] * vel.vz;
@@ -78,6 +80,15 @@ Velocity RotationMatrix::rotateVelocity(Velocity vel) {
 	out.vz = elem[2][0] * vel.vx + elem[2][1] * vel.vy + elem[2][2] * vel.vz;
 
 	return out;
+}
+
+RotationMatrix RotationMatrix::transpose() {
+	RotationMatrix out;
+	for (int i = 0; i < 3; i++) {
+		for (int j = 0; j < 3; j++) {
+			out.elem[i][j] = elem[j][i];
+		}
+	}
 }
 
 RotationMatrix operator*(const RotationMatrix &rm1, const RotationMatrix &rm2) {
@@ -94,6 +105,15 @@ RotationMatrix operator*(const RotationMatrix &rm1, const RotationMatrix &rm2) {
 	return out;
 }
 
+RotationMatrix operator-(const RotationMatrix &rm) {
+	RotationMatrix out;
+	for (int i = 0; i < 3; i++) {
+		for (int j = 0; j < 3; j++) {
+			out.elem[i][j] = -rm.elem[i][j];
+		}
+	}
+}
+
 //TODO: temporary
 RotationMatrix getTaitBryanMatrix(Orientation o){
     double y = o.y, p = o.p, r = o.r;
@@ -108,4 +128,111 @@ RotationMatrix getTaitBryanMatrix(Orientation o){
     rot.elem[2][1] = cos(p)*sin(r);
     rot.elem[3][2] = cos(p)*cos(r);
     return rot;
+}
+
+TransformationMatrix::TransformationMatrix(RotationMatrix R, Vector v) {
+	_R = R;
+	_v = v;
+
+	constructMatrix(_R, _v);
+}
+
+TransformationMatrix::TransformationMatrix(double m[4][4]) {
+	for (int i = 0; i < 4; i++) {
+		for (int j = 0; j < 4; j++) {
+			elem[i][j] = m[i][j];
+		}
+	}
+}
+
+void TransformationMatrix::constructMatrix(RotationMatrix R, Vector v) {
+	for (int i = 0; i < 3; i++) {
+		elem[i][1] = R.elem[i][1];
+		elem[i][2] = R.elem[i][2];
+		elem[i][3] = R.elem[i][3];
+		elem[i][4] = v[i];
+
+		elem[4][i] = 0;
+	}
+	elem[4][4] = 1;
+}
+
+TransformationMatrix TransformationMatrix::inverse() {
+	RotationMatrix R_inv = _R.transpose();
+	Vector v_temp = (-R_inv*_v);
+
+	constructMatrix(R_inv, v_temp);
+
+	return TransformationMatrix(elem);
+}
+
+/* matrix-vector multiplications */
+Vector operator*(const RotationMatrix &rm, Vector &v) {
+	Vector out;
+
+	for (int i = 0; i < 3; i++) {
+		for (int j = 0; j < 3; j++) {
+			out[i] += rm.elem[i][j] * v[j];
+		}
+	}
+}
+
+// very nasty non-mathimatical 3x1 = 4x4 * 3x1 matrix multiplication
+Vector operator*(const TransformationMatrix &tm, Vector &v) {
+	Vector out;
+
+	double v_hg[4] = { v[1], v[2], v[3], 1 };
+	double o_hg[4] = { 0, 0, 0, 0 };
+
+	for (int i = 0; i < 4; i++) {
+		for (int j = 0; j < 4; j++) {
+			o_hg[i] += tm.elem[i][j] * v_hg[j];
+		}
+	}
+
+	out[1] = o_hg[1];
+	out[2] = o_hg[2];
+	out[3] = o_hg[3];
+
+	return out;
+}
+
+//TODO: use matrix-vector multiplication operator to perform this rotation
+Point TransformationMatrix::transformPoint(Point point) {
+	Point out;
+
+	double p_hg[4] = { point.x, point.y, point.z, 1 };
+	double o_hg[4] = { 0, 0, 0, 0 };
+
+	for (int i = 0; i < 4; i++) {
+		for (int j = 0; j < 4; j++) {
+			o_hg[i] += elem[i][j] * p_hg[j];
+		}
+	}
+
+	out.x = o_hg[1];
+	out.y = o_hg[2];
+	out.z = o_hg[3];
+
+	return out;
+}
+
+//TODO: use matrix-vector multiplication operator to perform this rotation
+Velocity TransformationMatrix::transformVelocity(Velocity vel) {
+	Velocity out;
+
+	double v_hg[4] = { vel.vx, vel.vy, vel.vz, 1 };
+	double o_hg[4] = { 0, 0, 0, 0 };
+
+	for (int i = 0; i < 4; i++) {
+		for (int j = 0; j < 4; j++) {
+			o_hg[i] += elem[i][j] * v_hg[j];
+		}
+	}
+
+	out.vx = o_hg[1];
+	out.vy = o_hg[2];
+	out.vz = o_hg[3];
+
+	return out;
 }

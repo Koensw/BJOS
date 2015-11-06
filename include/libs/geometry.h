@@ -7,7 +7,10 @@
 #include <cstdlib>
 #include <cstring>
 
+#include <stdexcept>
+
 //TODO: better use a tested geometry library (Eigen?)
+//TODO: make Point and Velocity inherited classes of Vector (for usage of [] operator and matrix-multiplications)
 
 /* 
  * Provides geometry interfaces
@@ -140,7 +143,20 @@ public:
         y *= factor;
         z *= factor;
     }
-    
+	
+	double& operator[](const int i) {
+		switch (i) {
+		case 0:
+			return x;
+		case 1:
+			return y;
+		case 2:
+			return z;
+		default:
+			throw std::out_of_range("Vector[] out of range");
+		}
+	}
+
     double x;
     double y;
     double z;
@@ -169,12 +185,34 @@ public:
 
 	Point rotatePoint(Point point);
 	Velocity rotateVelocity(Velocity vel);
+	
+	RotationMatrix transpose();
 
 	void initRx(double r);
 	void initRy(double p);
 	void initRz(double y);
 
     double elem[3][3];
+};
+
+/* Transformation matrix */
+class TransformationMatrix {
+public:
+	TransformationMatrix() { memset(elem, 0, sizeof(elem[0][0]) * 4 * 4); }
+	TransformationMatrix(double m[4][4]);
+	TransformationMatrix(RotationMatrix R, Vector v);
+
+	Point transformPoint(Point point);
+	Velocity transformVelocity(Velocity vel);
+
+	TransformationMatrix inverse();
+
+	double elem[4][4];
+
+	RotationMatrix _R;
+	Vector _v;
+private:
+	void constructMatrix(RotationMatrix R, Vector v);
 };
 
 // TODO: use a combination of RotationMatrix to do this
@@ -185,6 +223,11 @@ Vector operator+(const Vector &v1, const Vector &v2);
 Vector operator-(const Vector &v1, const Vector &v2);
 
 Orientation operator-(const Orientation &o);
+RotationMatrix operator-(const RotationMatrix &rm);
 RotationMatrix operator*(const RotationMatrix &rm1, const RotationMatrix &rm2);
+
+/* matrix-vector multiplications */
+Vector operator*(const RotationMatrix &rm, const Vector &v);
+Vector operator*(const TransformationMatrix &rm, Vector &v);
 
 #endif
