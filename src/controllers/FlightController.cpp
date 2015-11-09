@@ -147,6 +147,14 @@ void FlightController::read_messages() {
 				_data->headingNED.angular_velocity.vy = attitude.yawspeed;
 				break;
 			}
+			case MAVLINK_MSG_ID_STATUSTEXT:
+			{
+				mavlink_statustext_t statustext;
+				mavlink_msg_statustext_decode(&message, &statustext);
+
+				Log::info("FlightController::read_messages", "[status]\t%s", statustext.text);
+				break;
+			}
 			default:
 			{
 				Log::info("FlightController::read_messages", "Not handling this message: %" PRIu8, message.msgid);
