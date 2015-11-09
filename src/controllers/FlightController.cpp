@@ -299,8 +299,13 @@ void FlightController::setTargetCF(uint16_t type_mask, Pose poseCF, Heading head
 
 	/* Tranform given position, velocity and yaw from CF frame to NED */
 	Point pointNED = CFtoNED(poseCF.position, _data->poseNED.orientation.y, _data->poseNED.position);
-	Velocity headingNED = CFtoNED(headingCF.velocity, _data->poseNED.orientation.y);
+	Velocity velocityNED = CFtoNED(headingCF.velocity, _data->poseNED.orientation.y);
 	double yawNED = poseCF.orientation.y + _data->poseNED.orientation.y;
+
+	//FIXME: an unexplained +90 degrees rotation in the z-axis has been observed, very ugly fix below
+	RotationMatrix rx(M_PI/2.0, 'x');
+	pointNED = rx.rotatePoint(pointNED);
+	velocityNED = rx.rotateVelocity(velocityNED);
 
 	mavlink_set_position_target_local_ned_t sp;
 
@@ -310,9 +315,9 @@ void FlightController::setTargetCF(uint16_t type_mask, Pose poseCF, Heading head
 	sp.y = pointNED.y;
 	sp.z = pointNED.z;
 
-	sp.vx = headingNED.vx;
-	sp.vy = headingNED.vy;
-	sp.vz = headingNED.vz;
+	sp.vx = velocityNED.vx;
+	sp.vy = velocityNED.vy;
+	sp.vz = velocityNED.vz;
 
 	sp.yaw = yawNED;
 	sp.yaw_rate = headingCF.angular_velocity.vy; //yaw velocity is independent of frame
