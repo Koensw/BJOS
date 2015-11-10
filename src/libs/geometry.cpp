@@ -89,6 +89,7 @@ RotationMatrix RotationMatrix::transpose() {
 			out.elem[i][j] = elem[j][i];
 		}
 	}
+	return out;
 }
 
 RotationMatrix operator*(const RotationMatrix &rm1, const RotationMatrix &rm2) {
@@ -112,6 +113,8 @@ RotationMatrix operator-(const RotationMatrix &rm) {
 			out.elem[i][j] = -rm.elem[i][j];
 		}
 	}
+	
+	return out;
 }
 
 //TODO: temporary
@@ -175,6 +178,8 @@ Vector operator*(const RotationMatrix &rm, Vector &v) {
 			out[i] += rm.elem[i][j] * v[j];
 		}
 	}
+	
+	return out;
 }
 
 // very nasty non-mathimatical 3x1 = 4x4 * 3x1 matrix multiplication

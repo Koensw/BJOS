@@ -108,7 +108,7 @@ void FlightController::read_messages() {
 		switch (message.msgid) {
 			case MAVLINK_MSG_ID_LOCAL_POSITION_NED:
 			{
-				Log::info("FlightController::read_messages", "MAVLINK_MSG_LOCAL_POSITION_NED");
+				//Log::info("FlightController::read_messages", "MAVLINK_MSG_LOCAL_POSITION_NED");
 				
 				//decode
 				mavlink_local_position_ned_t local_position_ned;
@@ -131,7 +131,7 @@ void FlightController::read_messages() {
 			}
 			case MAVLINK_MSG_ID_ATTITUDE:
 			{
-				Log::info("FlightController::read_messages", "MAVLINK_MSG_ATTITUDE");
+				//Log::info("FlightController::read_messages", "MAVLINK_MSG_ATTITUDE");
 
 				//decode
 				mavlink_attitude_t attitude;
@@ -157,7 +157,7 @@ void FlightController::read_messages() {
 			}
 			default:
 			{
-				Log::info("FlightController::read_messages", "Not handling this message: %" PRIu8, message.msgid);
+				//Log::info("FlightController::read_messages", "Not handling this message: %" PRIu8, message.msgid);
 			}
 		}
 	}
@@ -211,7 +211,7 @@ void FlightController::write_setpoint() {
 	// pull from position target
         std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
         mavlink_set_position_target_local_ned_t sp = _data->current_setpoint;
-        Log::info("FlightController::write_setpoint","current_setpoint: %.4f %.4f %.4f", sp.vx, sp.vy, sp.vz);
+        //Log::info("FlightController::write_setpoint","current_setpoint: %.4f %.4f %.4f", sp.vx, sp.vy, sp.vz);
 
 	// double check some system parameters
 	if (not sp.time_boot_ms)
@@ -301,7 +301,7 @@ Heading FlightController::getHeadingCF() {
 
 //ALERT: can NOT be used to set roll, pitch, rollspeed or pitchspeed
 void FlightController::setTargetCF(uint16_t type_mask, Pose poseCF, Heading headingCF) {
-	Log::info("FlightController::setTarget","new setpoint CF: %.4f %.4f %.4f", headingCF.velocity.vx, headingCF.velocity.vy, headingCF.velocity.vz);
+	//Log::info("FlightController::setTarget","new setpoint CF: %.4f %.4f %.4f", headingCF.velocity.vx, headingCF.velocity.vy, headingCF.velocity.vz);
 	
 	std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
 

@@ -227,7 +227,7 @@ RotationMatrix operator-(const RotationMatrix &rm);
 RotationMatrix operator*(const RotationMatrix &rm1, const RotationMatrix &rm2);
 
 /* matrix-vector multiplications */
-Vector operator*(const RotationMatrix &rm, const Vector &v);
+Vector operator*(const RotationMatrix &rm, Vector &v);
 Vector operator*(const TransformationMatrix &rm, Vector &v);
 
 #endif
