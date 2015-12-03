@@ -50,11 +50,11 @@ add_executable(default_loader
 target_link_libraries(default_loader ${Boost_THREAD_LIBRARY} ${Boost_SYSTEM_LIBRARY} bjos)
 
 #### TEST ####
-# build the test executable
-add_executable(test_test
-    test/test.cpp
+# build the test offboard executable
+add_executable(test_offboard
+    test/test_offboard.cpp
 )
-target_link_libraries(test_test bjos)
+target_link_libraries(test_offboard bjos)
 
 # example controller
 add_executable(bjos_example
