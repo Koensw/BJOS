@@ -29,6 +29,8 @@
 
 #include <iostream>
 
+#include <utility>
+
 #include "../libs/geometry.h"
 #include "../libs/log.h"
 
@@ -101,6 +103,8 @@ namespace bjos {
 		/* Returns a Heading struct that contains Velocity and AngularVelocity structs */
 		Heading getHeadingNED();
 		Heading getHeadingCF();
+
+		std::pair<Pose, Heading> getCurrentSetpoint();
 
 		/**
 		 * setTargetCF updates private variable current_setpoint

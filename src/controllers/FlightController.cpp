@@ -298,6 +298,16 @@ Heading FlightController::getHeadingCF() {
 	return _data->headingCF;
 }
 
+std::pair<Pose, Heading> FlightController::getCurrentSetpoint() {
+	std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+	Pose pose;
+	Heading heading;
+	pose.position = Point(_data->current_setpoint.x, _data->current_setpoint.y, _data->current_setpoint.z);
+	heading.velocity = Velocity(_data->current_setpoint.vx, _data->current_setpoint.vy, _data->current_setpoint.vz);
+
+	return std::pair<Pose, Heading>(pose, heading);
+}
+
 
 //ALERT: can NOT be used to set roll, pitch, rollspeed or pitchspeed
 void FlightController::setTargetCF(uint16_t type_mask, Pose poseCF, Heading headingCF) {
