@@ -321,9 +321,9 @@ void FlightController::setTargetCF(uint16_t type_mask, Pose poseCF, Heading head
 	double yawNED = poseCF.orientation.y + _data->poseNED.orientation.y;
 
 	//FIXME: an unexplained +90 degrees rotation in the z-axis has been observed, very ugly fix below
-	RotationMatrix rx(M_PI/2.0, 'x');
+	/*RotationMatrix rx(M_PI/2.0, 'x');
 	pointNED = rx.rotatePoint(pointNED);
-	velocityNED = rx.rotateVelocity(velocityNED);
+	velocityNED = rx.rotateVelocity(velocityNED);*/
 
 	mavlink_set_position_target_local_ned_t sp;
 
