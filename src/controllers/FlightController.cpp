@@ -1,13 +1,13 @@
 
 /**
-* @file flightController.cpp
-*
-* @brief Drone interface functions
-*
-* Functions for sending and receiving commands to a drone via MAVLink
-*
-* @author Joep Linssen,	<joep.linssen@bluejayeindhoven.nl>
-*/
+ * @file flightController.cpp
+ *
+ * @brief Drone interface functions
+ *
+ * Functions for sending and receiving commands to a drone via MAVLink
+ *
+ * @author Joep Linssen,	<joep.linssen@bluejayeindhoven.nl>
+ */
 
 #include "controllers/FlightController.h"
 
@@ -18,363 +18,395 @@ using namespace bjos;
 uint64_t
 get_time_usec()
 {
-	static struct timeval _time_stamp;
-	gettimeofday(&_time_stamp, NULL);
-	return _time_stamp.tv_sec * 1000000 + _time_stamp.tv_usec;
+    static struct timeval _time_stamp;
+    gettimeofday(&_time_stamp, NULL);
+    return _time_stamp.tv_sec * 1000000 + _time_stamp.tv_usec;
 }
 
 
 //WARNING: blocks while no initial messages are received from the drone
 void FlightController::init(BJOS *bjos) {
-	bool ret = Controller::init(bjos, "flight", _data);
-	if (!ret)
-		throw ControllerInitializationError(this, "Controller::init failed");
-
-	//open a uart connection to the pixhawk
-	//NOTE: uses default uart="/dev/ttyAMA0", baudrate = "57600"
-	serial_port = new Serial_Port();
-	serial_port->start();
-	//give the serial port some time
-	usleep(100000);
-	//check the status of the port
-	if (serial_port->status != 1) //SERIAL_PORT_OPEN
-		throw ControllerInitializationError(this, "Serial port not open");
-
-	//start read thread
-	_read_thrd_running = true;
-	_read_thrd = boost::thread(&FlightController::read_thread, this);
-
-	// read_thread initialises 'initial_position' and signals this by setting _init_set
-	std::cout << "Receiving initial position ...";
-	while (_init_set == false) {
-		//TODO: timeout
-		usleep(100000); //10 Hz
-		std::cout << " ...";
-	}
-	std::cout << " Received!" << std::endl;
-	Log::info("FlightController::init", "Initial position: xyz=[%.4f %.4f %.4f] vxvyvz=[%.4f %.4f %.4f]", initial_position.x, initial_position.y, initial_position.z, initial_position.vx, initial_position.y, initial_position.z);
-
-	// write_thread initialises 'current_setpoint': all velocities 0
-	_write_thrd = boost::thread(&FlightController::write_thread, this);
-
-	//wait until write_thread starts
-	while (_write_thrd_running == false)
-		usleep(100000); //10 Hz
-
-	//in order for the drone to react to the streamed setpoints, offboard mode has to be enabled
-	int result = toggle_offboard_control(true);
-	if (result == -1)
-		throw ControllerInitializationError(this, "Could not set offboard mode: unable to write message on serial port");
-	else if (result == 0)
-		Log::warn("FlightController::init", "double (de-)activation of offboard mode [ignored]");
-
-	// Done!
+    bool ret = Controller::init(bjos, "flight", _data);
+    if (!ret)
+        throw ControllerInitializationError(this, "Controller::init failed");
+    
+    //open a uart connection to the pixhawk
+    //NOTE: uses default uart="/dev/ttyAMA0", baudrate = "57600"
+    serial_port = new Serial_Port();
+    serial_port->start();
+    //give the serial port some time
+    usleep(100000);
+    //check the status of the port
+    if (serial_port->status != 1) //SERIAL_PORT_OPEN
+        throw ControllerInitializationError(this, "Serial port not open");
+    
+    //start read thread
+    _read_thrd_running = true;
+    _read_thrd = boost::thread(&FlightController::read_thread, this);
+    
+    // read_thread initialises 'initial_position' and signals this by setting _init_set
+    std::cout << "Receiving initial position ...";
+    while (_init_set == false) {
+        //TODO: timeout
+        usleep(100000); //10 Hz
+        std::cout << " ...";
+    }
+    std::cout << " Received!" << std::endl;
+    Log::info("FlightController::init", "Initial position: xyz=[%.4f %.4f %.4f] vxvyvz=[%.4f %.4f %.4f]", initial_position.x, initial_position.y, initial_position.z, initial_position.vx, initial_position.y, initial_position.z);
+    
+    // write_thread initialises 'current_setpoint': all velocities 0
+    _write_thrd = boost::thread(&FlightController::write_thread, this);
+    
+    //wait until write_thread starts
+    while (_write_thrd_running == false)
+        usleep(100000); //10 Hz
+        
+        //in order for the drone to react to the streamed setpoints, offboard mode has to be enabled
+        int result = toggle_offboard_control(true);
+    if (result == -1)
+        throw ControllerInitializationError(this, "Could not set offboard mode: unable to write message on serial port");
+    else if (result == 0)
+        Log::warn("FlightController::init", "double (de-)activation of offboard mode [ignored]");
+    
+    // Done!
 }
 
 void FlightController::load(bjos::BJOS *bjos) {
-	Controller::load(bjos, "flight", _data);
+    Controller::load(bjos, "flight", _data);
 }
 
 void FlightController::read_thread() {
-	while (_read_thrd_running)
-	{
-		try {
-		        read_messages();
-		
-			boost::this_thread::sleep_for(boost::chrono::microseconds(500)); //2000 Hz
-		}
-		catch (boost::thread_interrupted) {
-			//if interrupt, stop and let the controller finish resources
-			///Q: wha??
-			return;
-		}
-	}
-
-	return;
+    while (_read_thrd_running)
+    {
+        try {
+            read_messages();
+            
+            boost::this_thread::sleep_for(boost::chrono::microseconds(500)); //2000 Hz
+        }
+        catch (boost::thread_interrupted) {
+            //if interrupt, stop and let the controller finish resources
+            ///Q: wha??
+            return;
+        }
+    }
+    
+    return;
 }
 
 void FlightController::read_messages() {
-	mavlink_message_t message;
-
-	bool success = serial_port->read_message(message);
-	
-	if (success) {
-		if (!_init_set) {
-			system_id = message.sysid;
-			autopilot_id = message.compid;
-		}
-
-		//Handle message per id
-		switch (message.msgid) {
-			case MAVLINK_MSG_ID_LOCAL_POSITION_NED:
-			{
-				//Log::info("FlightController::read_messages", "MAVLINK_MSG_LOCAL_POSITION_NED");
-				
-				//decode
-				mavlink_local_position_ned_t local_position_ned;
-				mavlink_msg_local_position_ned_decode(&message, &local_position_ned);
-
-				//put position and velocity data into _data
-				std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
-				_data->poseNED.position.x = local_position_ned.x;
-				_data->poseNED.position.y = local_position_ned.y;
-				_data->poseNED.position.z = local_position_ned.z;
-				_data->headingNED.velocity.vx = local_position_ned.vx;
-				_data->headingNED.velocity.vy = local_position_ned.vy;
-				_data->headingNED.velocity.vz = local_position_ned.vz;
-			
-				if (!_init_set) {
-					mavlink_msg_local_position_ned_decode(&message, &initial_position);
-					_init_set = true;
-				}
-				break;
-			}
-			case MAVLINK_MSG_ID_ATTITUDE:
-			{
-				//Log::info("FlightController::read_messages", "MAVLINK_MSG_ATTITUDE");
-
-				//decode
-				mavlink_attitude_t attitude;
-				mavlink_msg_attitude_decode(&message, &attitude);
-
-				//put attitude data into _data
-				std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
-				_data->poseNED.orientation.p = attitude.pitch;
-				_data->poseNED.orientation.r = attitude.roll;
-				_data->poseNED.orientation.y = attitude.yaw;
-				_data->headingNED.angular_velocity.vp = attitude.pitchspeed;
-				_data->headingNED.angular_velocity.vr = attitude.rollspeed;
-				_data->headingNED.angular_velocity.vy = attitude.yawspeed;
-				break;
-			}
-			case MAVLINK_MSG_ID_STATUSTEXT:
-			{
-				mavlink_statustext_t statustext;
-				mavlink_msg_statustext_decode(&message, &statustext);
-
-				Log::info("FlightController::read_messages", "[status]\t%s", statustext.text);
-				break;
-			}
-			default:
-			{
-				//Log::info("FlightController::read_messages", "Not handling this message: %" PRIu8, message.msgid);
-			}
-		}
-	}
-	else {
-//                Log::warn("",".");
-	}
-
-	return;
+    mavlink_message_t message;
+    
+    bool success = serial_port->read_message(message);
+    
+    if (success) {
+        if (!_init_set) {
+            system_id = message.sysid;
+            autopilot_id = message.compid;
+        }
+        
+        //Handle message per id
+        switch (message.msgid) {
+            case MAVLINK_MSG_ID_LOCAL_POSITION_NED:
+            {
+                //Log::info("FlightController::read_messages", "MAVLINK_MSG_LOCAL_POSITION_NED");
+                
+                //decode
+                mavlink_local_position_ned_t local_position_ned;
+                mavlink_msg_local_position_ned_decode(&message, &local_position_ned);
+                
+                //put position and velocity data into _data
+                std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+                _data->poseNED.position.x = local_position_ned.x;
+                _data->poseNED.position.y = local_position_ned.y;
+                _data->poseNED.position.z = local_position_ned.z;
+                _data->headingNED.velocity.vx = local_position_ned.vx;
+                _data->headingNED.velocity.vy = local_position_ned.vy;
+                _data->headingNED.velocity.vz = local_position_ned.vz;
+                
+                if (!_init_set) {
+                    mavlink_msg_local_position_ned_decode(&message, &initial_position);
+                    _init_set = true;
+                }
+                break;
+            }
+            case MAVLINK_MSG_ID_ATTITUDE:
+            {
+                //Log::info("FlightController::read_messages", "MAVLINK_MSG_ATTITUDE");
+                
+                //decode
+                mavlink_attitude_t attitude;
+                mavlink_msg_attitude_decode(&message, &attitude);
+                
+                //put attitude data into _data
+                std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+                _data->poseNED.orientation.p = attitude.pitch;
+                _data->poseNED.orientation.r = attitude.roll;
+                _data->poseNED.orientation.y = attitude.yaw;
+                _data->headingNED.angular_velocity.vp = attitude.pitchspeed;
+                _data->headingNED.angular_velocity.vr = attitude.rollspeed;
+                _data->headingNED.angular_velocity.vy = attitude.yawspeed;
+                break;
+            }
+            case MAVLINK_MSG_ID_STATUSTEXT:
+            {
+                mavlink_statustext_t statustext;
+                mavlink_msg_statustext_decode(&message, &statustext);
+                
+                Log::info("FlightController::read_messages", "[status]\t%s", statustext.text);
+                break;
+            }
+            case MAVLINK_MSG_ID_HIGHRES_IMU:
+            {
+                std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+                mavlink_highres_imu_t highres_imu;
+                mavlink_msg_highres_imu_decode(&message, &highres_imu);
+                
+                _data->imuNED.time = highres_imu.time_usec;
+                _data->imuNED.ax = highres_imu.xacc;
+                _data->imuNED.ay = highres_imu.yacc;
+                _data->imuNED.az = highres_imu.zacc;
+                _data->imuNED.gx = highres_imu.xacc;
+                _data->imuNED.gy = highres_imu.yacc;
+                _data->imuNED.gz = highres_imu.zacc;
+            }
+            default:
+            {
+                //Log::info("FlightController::read_messages", "Not handling this message: %" PRIu8, message.msgid);
+            }
+        }
+    }
+    else {
+        //                Log::warn("",".");
+    }
+    
+    return;
 }
 
 void FlightController::write_thread() {
-	//prepare an initial setpoint: all velocities 0
-	mavlink_set_position_target_local_ned_t sp;
-	sp.type_mask = SET_TARGET_VELOCITY &
-				   SET_TARGET_YAW_RATE;
-	sp.coordinate_frame = MAV_FRAME_BODY_OFFSET_NED;
-	sp.vx = 0;
-	sp.vy = 0;
-	sp.vz = 0;
-	sp.yaw_rate = 0;
-
-	// set target
-	_data->current_setpoint = sp;
-
-	// write a message and signal writing
-	write_setpoint();
-	_write_thrd_running = true;
-
-	// Pixhawk needs to see off-board commands at minimum 2Hz, otherwise it'll go into failsafe
-	while (_write_thrd_running) {
-		try {
-			boost::this_thread::sleep_for(boost::chrono::milliseconds(100)); //Stream at 10 Hz
-			
-			write_setpoint();
-		}
-		catch (boost::thread_interrupted) {
-			//if interrupt, stop and let the controller finish resources
-			///Q: wha??
-			return;
-		}
+    //prepare an initial setpoint: all velocities 0
+    mavlink_set_position_target_local_ned_t sp;
+    sp.type_mask = SET_TARGET_VELOCITY &
+    SET_TARGET_YAW_RATE;
+    sp.coordinate_frame = MAV_FRAME_BODY_OFFSET_NED;
+    sp.vx = 0;
+    sp.vy = 0;
+    sp.vz = 0;
+    sp.yaw_rate = 0;
+    
+    // set target
+    _data->current_setpoint = sp;
+    
+    // write a message and signal writing
+    write_setpoint();
+    _write_thrd_running = true;
+    
+    // Pixhawk needs to see off-board commands at minimum 2Hz, otherwise it'll go into failsafe
+    while (_write_thrd_running) {
+        try {
+            boost::this_thread::sleep_for(boost::chrono::milliseconds(100)); //Stream at 10 Hz
+            
+            write_setpoint();
         }
-
-	return;
+        catch (boost::thread_interrupted) {
+            //if interrupt, stop and let the controller finish resources
+            ///Q: wha??
+            return;
+        }
+    }
+    
+    return;
 }
 
 void FlightController::write_setpoint() {
-	// --------------------------------------------------------------------------
-	//   PACK PAYLOAD
-	// --------------------------------------------------------------------------
-
-	// pull from position target
-        std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
-        mavlink_set_position_target_local_ned_t sp = _data->current_setpoint;
-        //Log::info("FlightController::write_setpoint","current_setpoint: %.4f %.4f %.4f", sp.vx, sp.vy, sp.vz);
-
-	// double check some system parameters
-	if (not sp.time_boot_ms)
-		sp.time_boot_ms = (uint32_t)(get_time_usec() / 1000);
-	sp.target_system = system_id;
-	sp.target_component = autopilot_id;
-
-
-	// --------------------------------------------------------------------------
-	//   ENCODE
-	// --------------------------------------------------------------------------
-
-	mavlink_message_t message;
-	mavlink_msg_set_position_target_local_ned_encode(system_id, autopilot_id, &message, &sp);
-
-
-	// --------------------------------------------------------------------------
-	//   WRITE
-	// --------------------------------------------------------------------------
-
-	// do the write
-	int len = serial_port->write_message(message);
-
-	// check the write
-	if (len <= 0)
-                std::cout << ".";
-	else {
-		//TODO: log writing of setpoint per type_mask
-		//Log::info("FlightController::write_setpoint", "Wrote setpoint");
-	}
-
-	return;
+    // --------------------------------------------------------------------------
+    //   PACK PAYLOAD
+    // --------------------------------------------------------------------------
+    
+    // pull from position target
+    std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+    mavlink_set_position_target_local_ned_t sp = _data->current_setpoint;
+    //Log::info("FlightController::write_setpoint","current_setpoint: %.4f %.4f %.4f", sp.vx, sp.vy, sp.vz);
+    
+    // double check some system parameters
+    if (not sp.time_boot_ms)
+        sp.time_boot_ms = (uint32_t)(get_time_usec() / 1000);
+    sp.target_system = system_id;
+    sp.target_component = autopilot_id;
+    
+    
+    // --------------------------------------------------------------------------
+    //   ENCODE
+    // --------------------------------------------------------------------------
+    
+    mavlink_message_t message;
+    mavlink_msg_set_position_target_local_ned_encode(system_id, autopilot_id, &message, &sp);
+    
+    
+    // --------------------------------------------------------------------------
+    //   WRITE
+    // --------------------------------------------------------------------------
+    
+    // do the write
+    int len = serial_port->write_message(message);
+    
+    // check the write
+    if (len <= 0)
+        std::cout << ".";
+    else {
+        //TODO: log writing of setpoint per type_mask
+        //Log::info("FlightController::write_setpoint", "Wrote setpoint");
+    }
+    
+    return;
 }
 
 //TODO: check mode in order to handle outside mode switching (by a telemetry command for instance)
 int FlightController::toggle_offboard_control(bool flag) {
-	static bool offboard = false;
-        Log::info("FlightController::toggle_offboard_control", "entered toggle_offboard_control %i", flag);
-	if (offboard == flag) return 0;
-	else {
-		// Prepare command for off-board mode
-		mavlink_command_long_t com;
-		com.target_system		= system_id;
-		com.target_component	= autopilot_id;
-		com.command				= MAV_CMD_NAV_GUIDED_ENABLE;
-		com.confirmation		= true;
-		com.param1				= (float)flag; // flag >0.5 => start, <0.5 => stop
-
-		// Encode
-		mavlink_message_t message;
-		mavlink_msg_command_long_encode(system_id, autopilot_id, &message, &com);
-
-		// Send
-		int success = serial_port->write_message(message);
-		if (success) {
-		        Log::info("FlightController::toggle_offboard_control", "successful write on port");
-			offboard = flag;
-			return 1;
-		}
-		else {
-			//write error
-			return -1;
-		}
-	}
+    static bool offboard = false;
+    Log::info("FlightController::toggle_offboard_control", "entered toggle_offboard_control %i", flag);
+    if (offboard == flag) return 0;
+    else {
+        // Prepare command for off-board mode
+        mavlink_command_long_t com;
+        com.target_system		= system_id;
+        com.target_component	= autopilot_id;
+        com.command				= MAV_CMD_NAV_GUIDED_ENABLE;
+        com.confirmation		= true;
+        com.param1				= (float)flag; // flag >0.5 => start, <0.5 => stop
+        
+        // Encode
+        mavlink_message_t message;
+        mavlink_msg_command_long_encode(system_id, autopilot_id, &message, &com);
+        
+        // Send
+        int success = serial_port->write_message(message);
+        if (success) {
+            Log::info("FlightController::toggle_offboard_control", "successful write on port");
+            offboard = flag;
+            return 1;
+        }
+        else {
+            //write error
+            return -1;
+        }
+    }
 }
 
 Pose FlightController::getPoseNED() {
-        std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
-        return _data->poseNED;
+    std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+    return _data->poseNED;
 }
 
 Orientation FlightController::getOrientationCF() {
-	std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
-	return _data->orientationCF;
+    std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+    return _data->orientationCF;
 }
 
 Heading FlightController::getHeadingNED() {
-	std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
-        return _data->headingNED;
+    std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+    return _data->headingNED;
 }
 
 Heading FlightController::getHeadingCF() {
-	std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
-	return _data->headingCF;
+    std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+    return _data->headingCF;
 }
 
 
 //ALERT: can NOT be used to set roll, pitch, rollspeed or pitchspeed
 void FlightController::setTargetCF(uint16_t type_mask, Pose poseCF, Heading headingCF) {
-	//Log::info("FlightController::setTarget","new setpoint CF: %.4f %.4f %.4f", headingCF.velocity.vx, headingCF.velocity.vy, headingCF.velocity.vz);
-	
-	std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
-
-	/* Tranform given position, velocity and yaw from CF frame to NED */
-	Point pointNED = CFtoNED(poseCF.position, _data->poseNED.orientation.y, _data->poseNED.position);
-	Velocity velocityNED = CFtoNED(headingCF.velocity, _data->poseNED.orientation.y);
-	double yawNED = poseCF.orientation.y + _data->poseNED.orientation.y;
-
-	//FIXME: an unexplained +90 degrees rotation in the z-axis has been observed, very ugly fix below
-	RotationMatrix rx(M_PI/2.0, 'x');
-	pointNED = rx.rotatePoint(pointNED);
-	velocityNED = rx.rotateVelocity(velocityNED);
-
-	mavlink_set_position_target_local_ned_t sp;
-
-	sp.type_mask = type_mask;
-
-	sp.x = pointNED.x;
-	sp.y = pointNED.y;
-	sp.z = pointNED.z;
-
-	sp.vx = velocityNED.vx;
-	sp.vy = velocityNED.vy;
-	sp.vz = velocityNED.vz;
-
-	sp.yaw = yawNED;
-	sp.yaw_rate = headingCF.angular_velocity.vy; //yaw velocity is independent of frame
-
-	sp.coordinate_frame = MAV_FRAME_LOCAL_NED;
-
-	//Mutex already locked above
-	_data->current_setpoint = sp;
+    //Log::info("FlightController::setTarget","new setpoint CF: %.4f %.4f %.4f", headingCF.velocity.vx, headingCF.velocity.vy, headingCF.velocity.vz);
+    
+    std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+    
+    /* Tranform given position, velocity and yaw from CF frame to NED */
+    Point pointNED = CFtoNED(poseCF.position, _data->poseNED.orientation.y, _data->poseNED.position);
+    Velocity velocityNED = CFtoNED(headingCF.velocity, _data->poseNED.orientation.y);
+    double yawNED = poseCF.orientation.y + _data->poseNED.orientation.y;
+    
+    //FIXME: an unexplained +90 degrees rotation in the z-axis has been observed, very ugly fix below
+    RotationMatrix rx(M_PI/2.0, 'x');
+    pointNED = rx.rotatePoint(pointNED);
+    velocityNED = rx.rotateVelocity(velocityNED);
+    
+    mavlink_set_position_target_local_ned_t sp;
+    
+    sp.type_mask = type_mask;
+    
+    sp.x = pointNED.x;
+    sp.y = pointNED.y;
+    sp.z = pointNED.z;
+    
+    sp.vx = velocityNED.vx;
+    sp.vy = velocityNED.vy;
+    sp.vz = velocityNED.vz;
+    
+    sp.yaw = yawNED;
+    sp.yaw_rate = headingCF.angular_velocity.vy; //yaw velocity is independent of frame
+    
+    sp.coordinate_frame = MAV_FRAME_LOCAL_NED;
+    
+    //Mutex already locked above
+    _data->current_setpoint = sp;
 }
 
 Point FlightController::CFtoNED(Point pointCF, double yaw_P, Point pointP) {
-	RotationMatrix Rz(-yaw_P, 'z');
-	RotationMatrix Rx(M_PI, 'x');
-	RotationMatrix R = Rz*Rx;
-
-	Vector v(pointP);
-
-	TransformationMatrix tm(R, v);
-	return tm.transformPoint(pointCF);
+    RotationMatrix Rz(-yaw_P, 'z');
+    RotationMatrix Rx(M_PI, 'x');
+    RotationMatrix R = Rz*Rx;
+    
+    Vector v(pointP);
+    
+    TransformationMatrix tm(R, v);
+    return tm.transformPoint(pointCF);
 }
 
 Velocity FlightController::CFtoNED(Velocity headingCF, double yaw_P) {
-	RotationMatrix Rz(-yaw_P, 'z');
-	RotationMatrix Rx(M_PI, 'x');
-	RotationMatrix R = Rz*Rx;
-
-	return R.rotateVelocity(headingCF);
+    RotationMatrix Rz(-yaw_P, 'z');
+    RotationMatrix Rx(M_PI, 'x');
+    RotationMatrix R = Rz*Rx;
+    
+    return R.rotateVelocity(headingCF);
 }
 
 Point FlightController::NEDtoCF(Point pointNED, double yaw_P, Point pointP) {
-	RotationMatrix Rz(-yaw_P, 'z');
-	RotationMatrix Rx(M_PI, 'x');
-	RotationMatrix R = Rz*Rx;
-
-	Vector v(pointP);
-
-	TransformationMatrix tm_foo(R, v);
-
-	TransformationMatrix tm = tm_foo.inverse();
-
-	return tm.transformPoint(pointNED);
+    RotationMatrix Rz(-yaw_P, 'z');
+    RotationMatrix Rx(M_PI, 'x');
+    RotationMatrix R = Rz*Rx;
+    
+    Vector v(pointP);
+    
+    TransformationMatrix tm_foo(R, v);
+    
+    TransformationMatrix tm = tm_foo.inverse();
+    
+    return tm.transformPoint(pointNED);
 }
 
 Velocity FlightController::NEDtoCF(Velocity headingNED, double yaw_P) {
-	RotationMatrix Rz(-yaw_P, 'z');
-	RotationMatrix Rx(M_PI, 'x');
-	RotationMatrix R_foo = Rz*Rx;
+    RotationMatrix Rz(-yaw_P, 'z');
+    RotationMatrix Rx(M_PI, 'x');
+    RotationMatrix R_foo = Rz*Rx;
+    
+    RotationMatrix R = R_foo.transpose();
+    
+    return R.rotateVelocity(headingNED);
+}
 
-	RotationMatrix R = R_foo.transpose();
-
-	return R.rotateVelocity(headingNED);
+//get raw imu data
+IMUSensorData FlightController::getIMUDataCF(){
+    //copy the data
+    shared_data_mutex->lock();
+    IMUSensorData imuCF = _data->imuNED;
+    double yaw = _data->poseNED.orientation.y;
+    shared_data_mutex->unlock();
+    
+    //convert the acceleration to control frame
+    Point acc(imuCF.ax, imuCF.ay, imuCF.az);
+    acc = NEDtoCF(acc, yaw, Point());
+    imuCF.ax = acc.x;
+    imuCF.ay = acc.y;
+    imuCF.az = acc.z;
+    
+    return imuCF;
 }
