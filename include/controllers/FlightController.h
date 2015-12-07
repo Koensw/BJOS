@@ -29,6 +29,8 @@
 
 #include <iostream>
 
+#include <utility>
+
 #include "../libs/geometry.h"
 #include "../libs/log.h"
 
@@ -127,6 +129,8 @@ namespace bjos {
          * uint16_t type_mask = SET_TARGET_VELOCITY & SET_TARGET_YAW_RATE;
          */
         void setTargetCF(uint16_t type_mask, Pose poseCF, Heading headingCF);
+        //FIXME: reference frame is missing (and name is not fully compliant)
+        std::pair<Pose, Heading> getCurrentSetpoint();
         
         /* setCurrent* functions are to be used by a computer vision algorithm supplying the drone with external absolute measurements of its states */
         void setCurrentPositionWF(float xyz[3]);	

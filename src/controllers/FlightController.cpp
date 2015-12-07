@@ -312,11 +312,19 @@ Heading FlightController::getHeadingCF() {
     return _data->headingCF;
 }
 
+std::pair<Pose, Heading> FlightController::getCurrentSetpoint() {
+    std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+    Pose pose;
+    Heading heading;
+    pose.position = Point(_data->current_setpoint.x, _data->current_setpoint.y, _data->current_setpoint.z);
+    heading.velocity = Velocity(_data->current_setpoint.vx, _data->current_setpoint.vy, _data->current_setpoint.vz);
+    
+    return std::pair<Pose, Heading>(pose, heading);
+}
+
 
 //ALERT: can NOT be used to set roll, pitch, rollspeed or pitchspeed
-void FlightController::setTargetCF(uint16_t type_mask, Pose poseCF, Heading headingCF) {
-    //Log::info("FlightController::setTarget","new setpoint CF: %.4f %.4f %.4f", headingCF.velocity.vx, headingCF.velocity.vy, headingCF.velocity.vz);
-    
+void FlightController::setTargetCF(uint16_t type_mask, Pose poseCF, Heading headingCF) {	
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
     
     /* Tranform given position, velocity and yaw from CF frame to NED */
@@ -325,9 +333,9 @@ void FlightController::setTargetCF(uint16_t type_mask, Pose poseCF, Heading head
     double yawNED = poseCF.orientation.y + _data->poseNED.orientation.y;
     
     //FIXME: an unexplained +90 degrees rotation in the z-axis has been observed, very ugly fix below
-    RotationMatrix rx(M_PI/2.0, 'x');
-    pointNED = rx.rotatePoint(pointNED);
-    velocityNED = rx.rotateVelocity(velocityNED);
+    /*RotationMatrix rx(M_PI/2.0, 'x');
+     * pointNED = rx.rotatePoint(pointNED);
+     * velocityNED = rx.rotateVelocity(velocityNED);*/
     
     mavlink_set_position_target_local_ned_t sp;
     
