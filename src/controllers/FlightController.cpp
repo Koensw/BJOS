@@ -19,7 +19,7 @@ uint64_t get_time_usec()
 {
     static struct timeval _time_stamp;
     gettimeofday(&_time_stamp, NULL);
-    return _time_stamp.tv_sec * 1000000 + _time_stamp.tv_usec;
+    return _time_stamp.tv_sec * 1000000ULL + _time_stamp.tv_usec;
 }
 
 
@@ -174,7 +174,7 @@ void FlightController::read_messages() {
                 mavlink_highres_imu_t highres_imu;
                 mavlink_msg_highres_imu_decode(&message, &highres_imu);
                 
-                _data->imuNED.time = highres_imu.time_usec;
+                _data->imuNED.time = highres_imu.time_usec/1000ULL;
                 _data->imuNED.ax = highres_imu.xacc;
                 _data->imuNED.ay = highres_imu.yacc;
                 _data->imuNED.az = highres_imu.zacc;
@@ -306,6 +306,7 @@ int FlightController::toggle_offboard_control(bool flag) {
     }
 }
 
+#define PX4_EPOCH_SECS 1234567890ULL
 bool FlightController::synchronize_time() {
     Log::info("FlightController::synchronize_time", "entered synchronize_time");
     
@@ -313,7 +314,7 @@ bool FlightController::synchronize_time() {
     mavlink_system_time_t sys_time;
     sys_time.time_unix_usec = get_time_usec();
     sys_time.time_boot_ms = 0; //this is ignored
-    
+
     //encode and send
     mavlink_message_t message;
     mavlink_msg_system_time_encode(system_id, autopilot_id, &message, &sys_time);
@@ -330,11 +331,12 @@ bool FlightController::synchronize_time() {
     shared_data_mutex->lock();
     _data->sys_time.time_unix_usec = 0;
     _data->sys_time.time_unix_usec = 0;
+    sys_time = _data->sys_time;
     shared_data_mutex->unlock();
     
     //wait until we receive the system time from the Pixhawk
     int cnt = 0;
-    while (_data->sys_time.time_unix_usec == 0 && cnt < 50){
+    while (sys_time.time_unix_usec < PX4_EPOCH_SECS*1000000ULL && cnt < 50){
         shared_data_mutex->lock();
         sys_time = _data->sys_time;
         shared_data_mutex->unlock();
@@ -344,7 +346,7 @@ bool FlightController::synchronize_time() {
         ++cnt;
     }
     
-    if(_data->sys_time.time_unix_usec == 0){
+    if(sys_time.time_unix_usec < PX4_EPOCH_SECS){
         Log::info("FlightController::synchronize_time", "failed to received system time within 5 seconds");
         return false;
     }
@@ -474,7 +476,12 @@ IMUSensorData FlightController::getIMUDataCF(){
     shared_data_mutex->lock();
     IMUSensorData imuCF = _data->imuNED;
     double yaw = _data->poseNED.orientation.y;
+    uint64_t unixTime = _data->syncUnixTime;
+    uint64_t bootTime = _data->syncBootTime;
     shared_data_mutex->unlock();
+
+    //scale the time to microseconds in unix timestamp
+    imuCF.time = imuCF.time - bootTime + unixTime;
     
     //convert the acceleration to control frame
     Point acc(imuCF.ax, imuCF.ay, imuCF.az);
