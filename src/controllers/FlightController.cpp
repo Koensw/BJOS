@@ -307,7 +307,6 @@ int FlightController::toggle_offboard_control(bool flag) {
 }
 
 bool FlightController::synchronize_time() {
-    static bool offboard = false;
     Log::info("FlightController::synchronize_time", "entered synchronize_time");
     
     // prepare command for time synchronize
@@ -356,7 +355,7 @@ bool FlightController::synchronize_time() {
     _data->syncBootTime = _data->sys_time.time_boot_ms;
     shared_data_mutex->unlock();
     
-    Log::info("FlightController::synchronize_time", "successfully synchronized, Unix time is %" PRIu64 " and boot time is %" PRIu64);
+    Log::info("FlightController::synchronize_time", "successfully synchronized, Unix time is %" PRIu64 " and boot time is %" PRIu64, _data->syncUnixTime, _data->syncBootTime);
     return true;
 }
 
