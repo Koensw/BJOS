@@ -15,8 +15,7 @@
 
 using namespace bjos;
 
-uint64_t
-get_time_usec()
+uint64_t get_time_usec()
 {
     static struct timeval _time_stamp;
     gettimeofday(&_time_stamp, NULL);
@@ -61,8 +60,13 @@ void FlightController::init(BJOS *bjos) {
     while (_write_thrd_running == false)
         usleep(100000); //10 Hz
         
-        //in order for the drone to react to the streamed setpoints, offboard mode has to be enabled
-        int result = toggle_offboard_control(true);
+    //synchronize the time with pixhawk
+    int result = synchronize_time();
+    if(result == -1)
+        throw ControllerInitializationError(this, "Could not synchronize time with the Pixhawk: error with connection");
+        
+    //in order for the drone to react to the streamed setpoints, offboard mode has to be enabled
+    result = toggle_offboard_control(true);
     if (result == -1)
         throw ControllerInitializationError(this, "Could not set offboard mode: unable to write message on serial port");
     else if (result == 0)
@@ -155,6 +159,15 @@ void FlightController::read_messages() {
                 Log::info("FlightController::read_messages", "[status]\t%s", statustext.text);
                 break;
             }
+            case MAVLINK_MSG_ID_SYSTEM_TIME:
+            {
+                std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+                mavlink_system_time_t sys_time;
+                mavlink_msg_system_time_decode(&message, &sys_time);
+                _data->sys_time = sys_time;
+                
+                break;
+            }
             case MAVLINK_MSG_ID_HIGHRES_IMU:
             {
                 std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
@@ -168,6 +181,7 @@ void FlightController::read_messages() {
                 _data->imuNED.gx = highres_imu.xacc;
                 _data->imuNED.gy = highres_imu.yacc;
                 _data->imuNED.gz = highres_imu.zacc;
+                break;
             }
             default:
             {
@@ -290,6 +304,60 @@ int FlightController::toggle_offboard_control(bool flag) {
             return -1;
         }
     }
+}
+
+bool FlightController::synchronize_time() {
+    static bool offboard = false;
+    Log::info("FlightController::synchronize_time", "entered synchronize_time");
+    
+    // prepare command for time synchronize
+    mavlink_system_time_t sys_time;
+    sys_time.time_unix_usec = get_time_usec();
+    sys_time.time_boot_ms = 0; //this is ignored
+    
+    //encode and send
+    mavlink_message_t message;
+    mavlink_msg_system_time_encode(system_id, autopilot_id, &message, &sys_time);
+    
+    int success = serial_port->write_message(message);
+    if (success) {
+        Log::info("FlightController::synchronize_time", "successfull write on port");
+    }else{
+        Log::info("FlightController::synchronize_time", "failed to write on port");
+        return false;
+    }
+    
+     //reset the synchronized time to wait for new set
+    shared_data_mutex->lock();
+    _data->sys_time.time_unix_usec = 0;
+    _data->sys_time.time_unix_usec = 0;
+    shared_data_mutex->unlock();
+    
+    //wait until we receive the system time from the Pixhawk
+    int cnt = 0;
+    while (_data->sys_time.time_unix_usec == 0 && cnt < 50){
+        shared_data_mutex->lock();
+        sys_time = _data->sys_time;
+        shared_data_mutex->unlock();
+        
+        //wait some time to give the read thread time
+        usleep(100000); //10 Hz
+        ++cnt;
+    }
+    
+    if(_data->sys_time.time_unix_usec == 0){
+        Log::info("FlightController::synchronize_time", "failed to received system time within 5 seconds");
+        return false;
+    }
+    
+    //set the synchronized time
+    shared_data_mutex->lock();
+    _data->syncUnixTime = _data->sys_time.time_unix_usec/1000;
+    _data->syncBootTime = _data->sys_time.time_boot_ms;
+    shared_data_mutex->unlock();
+    
+    Log::info("FlightController::synchronize_time", "successfully synchronized, Unix time is %" PRIu64 " and boot time is %" PRIu64);
+    return true;
 }
 
 Pose FlightController::getPoseNED() {

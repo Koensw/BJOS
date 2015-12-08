@@ -94,9 +94,16 @@ namespace bjos {
         Pose poseWF;
         Heading headingWF;
         
+        /* The synchronized time of the Pixhawk */
+        uint64_t syncBootTime; //ms
+        uint64_t syncUnixTime; //ms
+        
         //Used to constantly send setpoints to the drone
         //TODO: make an array-form message, in order to meet the need for sending a path of ~20 setpoints
         mavlink_set_position_target_local_ned_t current_setpoint;
+        
+        //used to retrieve last system time from Pixhawk (normally should not be directly used, instead the synchronized time should be used)
+        mavlink_system_time_t sys_time;
         
         //raw sensors data
         IMUSensorData imuNED;
@@ -174,6 +181,10 @@ namespace bjos {
         /* Set offboard mode - has to be done in order to send setpoints */
         //NOTE: returns -1 on write error, returns 0 on double (de-)activation, returns 1 on success;
         int toggle_offboard_control(bool flag);
+        
+        /* Synchronizes the time with the Pixhawk (WARNING: this should only be done on primary load, to ensure that monotic time is always consistent!) */
+        //NOTE: returns false on error, returns true on success;
+        bool synchronize_time();
         
         //Used by messaging part
         int system_id;
