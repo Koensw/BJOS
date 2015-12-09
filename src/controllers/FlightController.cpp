@@ -397,8 +397,11 @@ void FlightController::setTargetCF(uint16_t type_mask, Pose poseCF, Heading head
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
     
     /* Tranform given position, velocity and yaw from CF frame to NED */
+	/* disabled conversion for now, because it is implemented on the pixhawk side*//*
     Point pointNED = CFtoNED(poseCF.position, _data->poseNED.orientation.y, _data->poseNED.position);
-    Velocity velocityNED = CFtoNED(headingCF.velocity, _data->poseNED.orientation.y);
+    Velocity velocityNED = CFtoNED(headingCF.velocity, _data->poseNED.orientation.y);*/
+	Point pointNED = poseCF.position;
+	Velocity velocityNED = headingCF.velocity;
     double yawNED = poseCF.orientation.y + _data->poseNED.orientation.y;
     
     //FIXME: an unexplained +90 degrees rotation in the z-axis has been observed, very ugly fix below
