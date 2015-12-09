@@ -49,7 +49,24 @@ int main(){
     pose = flight.getPoseNED();
     std::cout << "Current position is: " << " " << pose.position.x << " " << pose.position.y << " " << pose.position.z << std::endl;
     
-    std::cout << "Press enter to go forward with 0.5 m/s..." << std::endl;
+    std::cout << "Press enter to go upwards..." << std::endl;
+    std::cin.get();
+    setp = Heading();
+    setp.velocity.vx = setp.velocity.vy = 0;
+    setp.velocity.vz = 10;
+    flight.setTargetCF(SET_TARGET_VELOCITY, Pose(), setp);
+    std::cout << "Should start moving now..." << std::endl;
+    pose = flight.getPoseNED();
+    std::cout << "Current position is: " << " " << pose.position.x << " " << pose.position.y << " " << pose.position.z << std::endl;
+
+    std::cout << "Press enter to hold again..." << std::endl;
+    std::cin.get();
+    setp = Heading();
+    setp.velocity.vx = setp.velocity.vy = setp.velocity.vz = 0;
+    flight.setTargetCF(SET_TARGET_VELOCITY, Pose(), setp);
+    std::cout << "Should hold now..." << std::endl;
+
+    std::cout << "Press enter to go forward..." << std::endl;
     std::cin.get();
     setp = Heading();
     setp.velocity.vy = setp.velocity.vz = 0;
@@ -66,7 +83,7 @@ int main(){
     flight.setTargetCF(SET_TARGET_VELOCITY, Pose(), setp);
     std::cout << "Should hold now..." << std::endl;
 
-    std::cout << "Press enter to go left with  0.5 m/s..." << std::endl;
+    std::cout << "Press enter to go to the left..." << std::endl;
     std::cin.get();
     setp = Heading();
     setp.velocity.vz = setp.velocity.vx = 0;
@@ -83,16 +100,50 @@ int main(){
     flight.setTargetCF(SET_TARGET_VELOCITY, Pose(), setp);
     std::cout << "Should hold now..." << std::endl;
 
-    std::cout << "Press enter to go upwards..." << std::endl;
+    std::cout << "Press enter to go backward..." << std::endl;
     std::cin.get();
     setp = Heading();
-    setp.velocity.vx = setp.velocity.vy = 0;
-    setp.velocity.vz = 1.5;
+    setp.velocity.vy = setp.velocity.vz = 0;
+    setp.velocity.vx = -1.5;
+    flight.setTargetCF(SET_TARGET_VELOCITY, Pose(), setp);
+    std::cout << "Should start moving now..." << std::endl;
+    pose = flight.getPoseNED();
+    std::cout << "Current position is: " << " " << pose.position.x << " " << pose.position.y << " " << pose.position.z << std::endl;
+
+    std::cout << "Press enter to hold again..." << std::endl;
+    std::cin.get();
+    setp = Heading();
+    setp.velocity.vx = setp.velocity.vy = setp.velocity.vz = 0;
+    flight.setTargetCF(SET_TARGET_VELOCITY, Pose(), setp);
+    std::cout << "Should hold now..." << std::endl;
+
+    std::cout << "Press enter to go to the right..." << std::endl;
+    std::cin.get();
+    setp = Heading();
+    setp.velocity.vz = setp.velocity.vx = 0;
+    setp.velocity.vy = -1.5;
     flight.setTargetCF(SET_TARGET_VELOCITY, Pose(), setp);
     std::cout << "Should start moving now..." << std::endl;
     pose = flight.getPoseNED();
     std::cout << "Current position is: " << " " << pose.position.x << " " << pose.position.y << " " << pose.position.z << std::endl;
     
+    std::cout << "Press enter to hold again..." << std::endl;
+    std::cin.get();
+    setp = Heading();
+    setp.velocity.vx = setp.velocity.vy = setp.velocity.vz = 0;
+    flight.setTargetCF(SET_TARGET_VELOCITY, Pose(), setp);
+    std::cout << "Should hold now..." << std::endl;
+
+    std::cout << "Press enter to go downwards..." << std::endl;
+    std::cin.get();
+    setp = Heading();
+    setp.velocity.vx = setp.velocity.vy = 0;
+    setp.velocity.vz = -1.5;
+    flight.setTargetCF(SET_TARGET_VELOCITY, Pose(), setp);
+    std::cout << "Should start moving now..." << std::endl;
+    pose = flight.getPoseNED();
+    std::cout << "Current position is: " << " " << pose.position.x << " " << pose.position.y << " " << pose.position.z << std::endl;
+
     std::cout << "Press enter to hold again..." << std::endl;
     std::cin.get();
     setp = Heading();
