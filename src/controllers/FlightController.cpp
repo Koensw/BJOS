@@ -421,7 +421,7 @@ void FlightController::setTargetCF(uint16_t type_mask, Pose poseCF, Heading head
     sp.yaw = yawNED;
     sp.yaw_rate = headingCF.angular_velocity.vy; //yaw velocity is independent of frame
     
-    sp.coordinate_frame = MAV_FRAME_LOCAL_NED;
+    sp.coordinate_frame = MAV_FRAME_BODY_NED;
     
     //Mutex already locked above
     _data->current_setpoint = sp;
