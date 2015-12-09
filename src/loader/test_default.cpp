@@ -46,7 +46,7 @@ void OSInit(){
             SonarInterface *interface = new DevantechSonarInterface(address[i]);
             Pose pose;
             pose.orientation.y = yaw[i];
-            sonar->registerInterface(interface, pose, (i == 0));
+            //sonar->registerInterface(interface, pose, (i == 0));
         }
         
         bjos->initController(sonar);
