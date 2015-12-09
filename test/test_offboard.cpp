@@ -72,9 +72,9 @@ int main(){
 		setp.velocity.vx = setp.velocity.vy = setp.velocity.vz = speed;
 		flight.setTargetCF(SET_TARGET_VELOCITY, Pose(), setp);
 		current_t = clock();
-		double ms = (double)(current_t - start_t) / CLOCKS_PER_SEC;
-		speed = 3.0 - ms*0.003; //in 1000ms is gaat hij naar 0;
-		//usleep(100000); // kan gebruikt worden om 100ms te slapen.
+		double s = (double)(current_t - start_t) / CLOCKS_PER_SEC;
+		speed = 3.0 - s*3.0; //in 1000ms is gaat hij naar 0;
+		usleep(50000); // kan gebruikt worden om 50ms te slapen.
 	}
     setp = Heading();
 	setp.velocity.vx = setp.velocity.vy = setp.velocity.vz = 0;
