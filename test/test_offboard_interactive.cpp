@@ -76,7 +76,7 @@ Heading handle_input(char c)
 	}
 
 	return setp;
-};
+}
 
 int main(){
     Process::installSignalHandler();
