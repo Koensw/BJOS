@@ -22,6 +22,9 @@
 using namespace bjos;
 
 float VEL = 1.5;
+float TAKEOFF = 2.0;
+float ZVEL = 0.5;
+
 
 Heading handle_input(char c)
 {
@@ -42,25 +45,31 @@ Heading handle_input(char c)
 
 	case 'a':
 		std::cout << "Going left" << std::endl;
-		setp.velocity.vy = -VEL;
+		setp.velocity.vy = VEL;
 		setp.velocity.vx = setp.velocity.vz = 0;
 		break;
 
 	case 'd':
 		std::cout << "Going right" << std::endl;
-		setp.velocity.vy = VEL;
+		setp.velocity.vy = -VEL;
 		setp.velocity.vx = setp.velocity.vz = 0;
 		break;
 
 	case 'o':
 		std::cout << "Going upward" << std::endl;
-		setp.velocity.vz = VEL;
+		setp.velocity.vz = ZVEL;
 		setp.velocity.vx = setp.velocity.vy = 0;
 		break;
 
 	case 'l':
 		std::cout << "Going downward" << std::endl;
-		setp.velocity.vz = -VEL;
+		setp.velocity.vz = -ZVEL;
+		setp.velocity.vx = setp.velocity.vy = 0;
+		break;
+
+    case 't':
+		std::cout << "Takeoff!" << std::endl;
+		setp.velocity.vz = TAKEOFF;
 		setp.velocity.vx = setp.velocity.vy = 0;
 		break;
 
