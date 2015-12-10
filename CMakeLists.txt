@@ -56,6 +56,12 @@ add_executable(test_offboard
 )
 target_link_libraries(test_offboard bjos)
 
+# build the test offboard interactive executable
+add_executable(test_offboard_interactive
+    test/test_offboard_interactive.cpp
+)
+target_link_libraries(test_offboard_interactive bjos)
+
 # example controller
 add_executable(bjos_example
     docs/ExampleController.cpp
