@@ -9,9 +9,11 @@
 
 #include <chrono>
 #include <thread>
+#include <ctime>
 
 #include "bjos/bjos.h"
 #include "bjos/helpers/process.h"
+#include <unistd.h>
 
 #include "controllers/FlightController.h"
 
@@ -53,7 +55,7 @@ int main(){
     std::cin.get();
     setp = Heading();
     setp.velocity.vx = setp.velocity.vy = 0;
-    setp.velocity.vz = 10;
+    setp.velocity.vz = 3;
     flight.setTargetCF(SET_TARGET_VELOCITY, Pose(), setp);
     std::cout << "Should start moving now..." << std::endl;
     pose = flight.getPoseNED();
@@ -61,8 +63,21 @@ int main(){
 
     std::cout << "Press enter to hold again..." << std::endl;
     std::cin.get();
+	double speed = 3.0;
+	clock_t start_t, current_t;
+	start_t = clock();
+	while(speed>0)
+	{
+		setp = Heading();
+		setp.velocity.vx = setp.velocity.vy = setp.velocity.vz = speed;
+		flight.setTargetCF(SET_TARGET_VELOCITY, Pose(), setp);
+		current_t = clock();
+		double s = (double)(current_t - start_t) / CLOCKS_PER_SEC;
+		speed = 3.0 - s*3.0; //in 1000ms is gaat hij naar 0;
+		usleep(50000); // kan gebruikt worden om 50ms te slapen.
+	}
     setp = Heading();
-    setp.velocity.vx = setp.velocity.vy = setp.velocity.vz = 0;
+	setp.velocity.vx = setp.velocity.vy = setp.velocity.vz = 0;
     flight.setTargetCF(SET_TARGET_VELOCITY, Pose(), setp);
     std::cout << "Should hold now..." << std::endl;
 
@@ -138,7 +153,7 @@ int main(){
     std::cin.get();
     setp = Heading();
     setp.velocity.vx = setp.velocity.vy = 0;
-    setp.velocity.vz = -1.5;
+    setp.velocity.vz = -0.5;
     flight.setTargetCF(SET_TARGET_VELOCITY, Pose(), setp);
     std::cout << "Should start moving now..." << std::endl;
     pose = flight.getPoseNED();
