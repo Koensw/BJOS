@@ -25,6 +25,7 @@ float VEL = 1.5;
 
 Heading handle_input(char c)
 {
+	static Heading setp_old;
 	Heading setp = Heading();
 	switch (c) {
 	case 'w':
@@ -68,6 +69,10 @@ Heading handle_input(char c)
 		setp.velocity.vx = setp.velocity.vy = setp.velocity.vz = 0;
 		break;
 
+	case '\n':
+		setp = setp_old;
+		break;
+
 	case 'h':
 	default:
 		std::cout << "Holding..." << std::endl;
@@ -75,6 +80,7 @@ Heading handle_input(char c)
 		break;
 	}
 
+	setp_old = setp;
 	return setp;
 }
 
