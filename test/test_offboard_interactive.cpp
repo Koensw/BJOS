@@ -98,6 +98,7 @@ int main(){
 	std::cout << "Interactive Offboard Tester!\n----------------------------" << std::endl;
 	do {
 		ret = std::cin.get();
+		if (!Process::isActive()) ret = 'q';
 		flight.setTargetCF(SET_TARGET_VELOCITY, Pose(), handle_input(ret));
 	} while (ret != 'q');
 
