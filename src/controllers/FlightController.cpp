@@ -15,13 +15,12 @@
 
 using namespace bjos;
 
-uint64_t get_time_usec()
+uint64_t get_time_usec(clockid_t clk_id)
 {
-    static struct timeval _time_stamp;
-    gettimeofday(&_time_stamp, NULL);
-    return _time_stamp.tv_sec * 1000000ULL + _time_stamp.tv_usec;
+    struct timespec _time_stamp;
+    clock_gettime(clk_id, &_time_stamp);
+    return _time_stamp.tv_sec * 1000000ULL + _time_stamp.tv_nsec / 1000ULL;
 }
-
 
 //WARNING: blocks while no initial messages are received from the drone
 void FlightController::init(BJOS *bjos) {
@@ -243,7 +242,7 @@ void FlightController::write_setpoint() {
     
     // double check some system parameters
     if (not sp.time_boot_ms)
-        sp.time_boot_ms = (uint32_t)(get_time_usec() / 1000);
+        sp.time_boot_ms = (uint32_t)(get_time_usec(CLOCK_MONOTONIC) / 1000);
     sp.target_system = system_id;
     sp.target_component = autopilot_id;
     
@@ -306,13 +305,13 @@ int FlightController::toggle_offboard_control(bool flag) {
     }
 }
 
-#define PX4_EPOCH_SECS 1234567890ULL
 bool FlightController::synchronize_time() {
     Log::info("FlightController::synchronize_time", "entered synchronize_time");
     
     // prepare command for time synchronize
     mavlink_system_time_t sys_time;
-    sys_time.time_unix_usec = get_time_usec();
+    uint64_t cur_time;
+    cur_time = sys_time.time_unix_usec = get_time_usec(CLOCK_REALTIME);
     sys_time.time_boot_ms = 0; //this is ignored
 
     //encode and send
@@ -336,7 +335,7 @@ bool FlightController::synchronize_time() {
     
     //wait until we receive the system time from the Pixhawk
     int cnt = 0;
-    while (sys_time.time_unix_usec < PX4_EPOCH_SECS*1000000ULL && cnt < 50){
+    while (sys_time.time_unix_usec < cur_time && cnt < 50){
         shared_data_mutex->lock();
         sys_time = _data->sys_time;
         shared_data_mutex->unlock();
@@ -346,7 +345,7 @@ bool FlightController::synchronize_time() {
         ++cnt;
     }
     
-    if(sys_time.time_unix_usec < PX4_EPOCH_SECS){
+    if(sys_time.time_unix_usec <= cur_time){
         Log::info("FlightController::synchronize_time", "failed to received system time within 5 seconds");
         return false;
     }
