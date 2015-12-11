@@ -75,7 +75,8 @@ Heading handle_input(char c)
 
 	case 'q':
 		std::cout << "Quitting... :(" << std::endl;
-		setp.velocity.vx = setp.velocity.vy = setp.velocity.vz = 0;
+        setp.velocity.vz = -ZVEL;
+		setp.velocity.vx = setp.velocity.vy = 0;
 		break;
 
 	case '\n':
