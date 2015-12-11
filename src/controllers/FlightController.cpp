@@ -178,9 +178,9 @@ void FlightController::read_messages() {
                 _data->imuNED.ax = highres_imu.xacc;
                 _data->imuNED.ay = highres_imu.yacc;
                 _data->imuNED.az = highres_imu.zacc;
-                _data->imuNED.gx = highres_imu.xacc;
-                _data->imuNED.gy = highres_imu.yacc;
-                _data->imuNED.gz = highres_imu.zacc;
+                _data->imuNED.gx = highres_imu.xgyro;
+                _data->imuNED.gy = highres_imu.ygyro;
+                _data->imuNED.gz = highres_imu.zgyro;
                 break;
             }
             default:
@@ -486,11 +486,11 @@ IMUSensorData FlightController::getIMUDataCF(){
     imuCF.time = imuCF.time - bootTime + unixTime;
     
     //convert the acceleration to control frame
-    Point acc(imuCF.ax, imuCF.ay, imuCF.az);
+    /*Point acc(imuCF.ax, imuCF.ay, imuCF.az);
     acc = NEDtoCF(acc, yaw, Point());
     imuCF.ax = acc.x;
     imuCF.ay = acc.y;
-    imuCF.az = acc.z;
+    imuCF.az = acc.z;*/
     
     return imuCF;
 }
