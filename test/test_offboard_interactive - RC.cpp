@@ -42,38 +42,6 @@ const int ch8 = 4; // RC input
 #define LOW 0
 
 
-Heading handle_input(char c)
-{
-	static Heading setp_old;
-	Heading setp = Heading();
-	switch (c) {
-    case 't':
-		std::cout << "Takeoff!" << std::endl;
-		setp.velocity.vz = TAKEOFF;
-		setp.velocity.vx = setp.velocity.vy = 0;
-		break;
-
-	case 'q':
-		std::cout << "Quitting... :(" << std::endl;
-        setp.velocity.vz = -ZVEL;
-		setp.velocity.vx = setp.velocity.vy = 0;
-		break;
-
-	case '\n':
-		setp = setp_old;
-		break;
-
-	case 'h':
-	default:
-		std::cout << "Holding..." << std::endl;
-		setp.velocity.vx = setp.velocity.vy = setp.velocity.vz = 0;
-		break;
-	}
-
-	setp_old = setp;
-	return setp;
-}
-
 int pulseIn(int pin, int level)
 {
 	int timeout = 10000;
