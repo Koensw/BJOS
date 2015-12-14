@@ -62,11 +62,11 @@
 //   Defines
 // ------------------------------------------------------------------------------
 
-//						bit number:	  210987654321
-#define SET_TARGET_POSITION		0b0000110111111000 //3576
-#define SET_TARGET_VELOCITY		0b0000110111000111 //3527
-#define SET_TARGET_YAW_ANGLE	0b0000100111111111 //2559
-#define SET_TARGET_YAW_RATE		0b0000010111111111 //1535
+//						bit number:			 210987654321
+#define SET_TARGET_POSITION		3576 //0b0000110111111000
+#define SET_TARGET_VELOCITY		3527 //0b0000110111000111
+#define SET_TARGET_YAW_ANGLE	2559 //0b0000100111111111
+#define SET_TARGET_YAW_RATE		1535 //0b0000010111111111
 
 /* helper function */
 uint64_t get_time_usec();
