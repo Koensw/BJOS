@@ -44,11 +44,14 @@ void FlightController::init(BJOS *bjos) {
     
     // read_thread initialises 'initial_position' and signals this by setting _init_set
     std::cout << "Receiving initial position ...";
-    while (_init_set == false) {
-        //TODO: timeout
+	unsigned int n = 0;
+    while (_init_set == false && n < 10) {
+		n++;
         usleep(100000); //10 Hz
-        std::cout << " ...";
     }
+	if (n == 10)
+		throw ControllerInitializationError(this, "Did not receive any MAVLink messages");
+
     std::cout << " Received!" << std::endl;
     Log::info("FlightController::init", "Initial position: xyz=[%.4f %.4f %.4f] vxvyvz=[%.4f %.4f %.4f]", initial_position.x, initial_position.y, initial_position.z, initial_position.vx, initial_position.y, initial_position.z);
     
