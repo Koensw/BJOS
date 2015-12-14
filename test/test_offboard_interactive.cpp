@@ -24,7 +24,7 @@ using namespace bjos;
 float VEL = 1.5;
 float TAKEOFF = 2.0;
 float ZVEL = 0.5;
-
+float YAWR = 0.2;
 
 Heading handle_input(char c)
 {
@@ -53,6 +53,16 @@ Heading handle_input(char c)
 		std::cout << "Going right" << std::endl;
 		setp.velocity.vy = -VEL;
 		setp.velocity.vx = setp.velocity.vz = 0;
+		break;
+
+	case 'e':
+		std::cout << "Turning left" << std::endl;
+		setp.angular_velocity.vy = -YAWR;
+		break;
+
+	case 'r':
+		std::cout << "Turning right" << std::endl;
+		setp.angular_velocity.vy = YAWR;
 		break;
 
 	case 'o':
@@ -111,11 +121,16 @@ int main(){
     }
 
 	char ret;
+	Heading action;
 	std::cout << "Interactive Offboard Tester!\n----------------------------" << std::endl;
 	do {
 		ret = std::cin.get();
 		if (!Process::isActive()) ret = 'q';
-		flight.setTargetCF(SET_TARGET_VELOCITY, Pose(), handle_input(ret));
+		action = handle_input(ret);
+		if (action.angular_velocity.vy < FLT_EPSILON)
+			flight.setTargetCF(SET_TARGET_VELOCITY, Pose(), action);
+		else
+			flight.setTargetCF(SET_TARGET_YAW_RATE, Pose(), action);
 	} while (ret != 'q');
 
 	std::cout << "Byebye!";

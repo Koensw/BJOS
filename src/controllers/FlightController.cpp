@@ -399,8 +399,6 @@ void FlightController::setTargetCF(uint16_t type_mask, Pose poseCF, Heading head
 	/* disabled yaw correction for now, because it is implemented on the pixhawk side*/
     Point pointNED = CFtoNED(poseCF.position, 0, _data->poseNED.position);
     Velocity velocityNED = CFtoNED(headingCF.velocity, 0);
-	
-    double yawNED = poseCF.orientation.y + _data->poseNED.orientation.y;
     
     //FIXME: an unexplained +90 degrees rotation in the z-axis has been observed, very ugly fix below
     /*RotationMatrix rx(M_PI/2.0, 'x');
@@ -419,7 +417,7 @@ void FlightController::setTargetCF(uint16_t type_mask, Pose poseCF, Heading head
     sp.vy = velocityNED.vy;
     sp.vz = velocityNED.vz;
     
-    sp.yaw = yawNED;
+    sp.yaw = poseCF.orientation.y;
     sp.yaw_rate = headingCF.angular_velocity.vy; //yaw velocity is independent of frame
     
     sp.coordinate_frame = MAV_FRAME_BODY_NED;
