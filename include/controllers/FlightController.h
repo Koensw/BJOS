@@ -155,7 +155,7 @@ namespace bjos {
                 //disable offboard control mode if not already
                 int result = toggle_offboard_control(false);
                 if (result == -1)
-                    throw ControllerInitializationError(this, "Could not set offboard mode: unable to write message on serial port");
+                    Log::error("FlightController::init", "Could not set offboard mode: unable to write message on serial port");
                 else if (result == 0)
                     Log::warn("FlightController::init", "double (de-)activation of offboard mode [ignored]");
                 
@@ -166,6 +166,12 @@ namespace bjos {
                 _write_thrd.interrupt();
                 _read_thrd.join();
                 _write_thrd.join();
+
+				//if the read_trhd is still waiting to receive an initial MAVLink message: close it and throw an ControllerInitializationError
+				if (_init_set == false) {
+					_init_set = true;
+					Log::error("FlightController::init", "Did not receive any MAVLink messages, check physical connections and make sure it is running on the right port!");
+				}
                 
                 //stop the serial_port and clean up the pointer
                 serial_port->stop();
