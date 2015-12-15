@@ -454,6 +454,7 @@ void mainProcess(){
     while(Process::isActive()){
 		printf("Lower arm(mm): ");
 		pwm = example->getInt();
+		printf("Lowering with %i mm.",pwm);
 		//scanf("%d", &pwm);
 		example->lower_arm_mm(pwm);
 		printf("Gripper position (0-4000): ");
