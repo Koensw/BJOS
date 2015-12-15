@@ -453,12 +453,12 @@ void mainProcess(){
     //do things until we got a request to stop the program
     while(Process::isActive()){
 		printf("Lower arm(mm): ");
-		pwm = std:cin.get();
+		pwm = std::cin.get();
 		//scanf("%d", &pwm);
 		example->lower_arm_mm(pwm);
 		printf("Gripper position (0-4000): ");
 		//scanf("%d", &pwm);
-		pwm = std:cin.get();
+		pwm = std::cin.get();
 		example->gripper_close_pwm(pwm);
         //std::cout << example->getInt() << std::endl;
         sleep(1);
