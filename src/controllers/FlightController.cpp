@@ -44,11 +44,15 @@ void FlightController::init(BJOS *bjos) {
     
     // read_thread initialises 'initial_position' and signals this by setting _init_set
     std::cout << "Receiving initial position ...";
-    while (_init_set == false) {
-        //TODO: timeout
+	unsigned int n = 0;
+    unsigned int timeout = 20; //deciseconds
+    while (_init_set == false && n < timeout) {
+		n++;
         usleep(100000); //10 Hz
-        std::cout << " ...";
     }
+	if (n == timeout)
+		throw ControllerInitializationError(this, "Did not receive any MAVLink messages");
+
     std::cout << " Received!" << std::endl;
     Log::info("FlightController::init", "Initial position: xyz=[%.4f %.4f %.4f] vxvyvz=[%.4f %.4f %.4f]", initial_position.x, initial_position.y, initial_position.z, initial_position.vx, initial_position.y, initial_position.z);
     
@@ -399,8 +403,6 @@ void FlightController::setTargetCF(uint16_t type_mask, Pose poseCF, Heading head
 	/* disabled yaw correction for now, because it is implemented on the pixhawk side*/
     Point pointNED = CFtoNED(poseCF.position, 0, _data->poseNED.position);
     Velocity velocityNED = CFtoNED(headingCF.velocity, 0);
-	
-    double yawNED = poseCF.orientation.y + _data->poseNED.orientation.y;
     
     //FIXME: an unexplained +90 degrees rotation in the z-axis has been observed, very ugly fix below
     /*RotationMatrix rx(M_PI/2.0, 'x');
@@ -419,7 +421,7 @@ void FlightController::setTargetCF(uint16_t type_mask, Pose poseCF, Heading head
     sp.vy = velocityNED.vy;
     sp.vz = velocityNED.vz;
     
-    sp.yaw = yawNED;
+    sp.yaw = poseCF.orientation.y;
     sp.yaw_rate = headingCF.angular_velocity.vy; //yaw velocity is independent of frame
     
     sp.coordinate_frame = MAV_FRAME_BODY_NED;
