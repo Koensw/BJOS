@@ -18,7 +18,6 @@ add_library(bjos SHARED
     src/controllers/SonarController.cpp
     src/controllers/FlightController.cpp
     src/controllers/flight/serial_port.cpp
-    src/controllers/test_gripper.cpp
     src/libs/i2c.cpp
     src/libs/geometry.cpp
 )
