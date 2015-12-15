@@ -91,6 +91,107 @@ public:
      */
 	
 
+
+
+	 /* Functions for the I2C connection with the pwm board
+	 ################################################################################################################
+	 */
+	void reset() {
+		std::lock_guard<BJOS::Mutex> lock(*shared_data_mutex);
+		wiringPiI2CWriteReg8(fd, MODE1, 0x00); //Normal mode
+		wiringPiI2CWriteReg8(fd, MODE2, 0x04); //totem pole
+	}
+
+	void setPWMFreq(int freq) {
+		std::lock_guard<BJOS::Mutex> lock(*shared_data_mutex);
+		uint8_t prescale_val = (CLOCK_FREQ / 4096 / freq) - 1;
+		wiringPiI2CWriteReg8(fd, MODE1, 0x10); //sleep
+		wiringPiI2CWriteReg8(fd, PRE_SCALE, prescale_val); // multiplyer for PWM frequency
+		wiringPiI2CWriteReg8(fd, MODE1, 0x80); //restart
+		wiringPiI2CWriteReg8(fd, MODE2, 0x04); //totem pole (default)
+	}
+
+	void setPWM2(uint8_t led, int on_value, int off_value) {
+		std::lock_guard<BJOS::Mutex> lock(*shared_data_mutex);
+		wiringPiI2CWriteReg8(fd, LED0_ON_L + LED_MULTIPLYER * (led), on_value & 0xFF);
+		wiringPiI2CWriteReg8(fd, LED0_ON_H + LED_MULTIPLYER * (led), on_value >> 8);
+		wiringPiI2CWriteReg8(fd, LED0_OFF_L + LED_MULTIPLYER * (led), off_value & 0xFF);
+		wiringPiI2CWriteReg8(fd, LED0_OFF_H + LED_MULTIPLYER * (led), off_value >> 8);
+	}
+
+	void setPWM(uint8_t led, int value) {
+		std::lock_guard<BJOS::Mutex> lock(*shared_data_mutex);
+		setPWM2(led, 0, value);
+	}
+
+
+
+	int getPWM(uint8_t led) {
+		std::lock_guard<BJOS::Mutex> lock(*shared_data_mutex);
+		int ledval = 0;
+		ledval = wiringPiI2CReadReg8(fd, LED0_OFF_H + LED_MULTIPLYER * (led));
+		ledval = ledval & 0xf;
+		ledval <<= 8;
+		ledval += wiringPiI2CReadReg8(fd, LED0_OFF_L + LED_MULTIPLYER * (led));
+		return ledval;
+	}
+
+	/* End of functions for the I2C connection with the pwm board
+	################################################################################################################
+	*/
+
+	/* Arduino functions
+	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+	*/
+	long map(long x, long in_min, long in_max, long out_min, long out_max)
+	{
+		std::lock_guard<BJOS::Mutex> lock(*shared_data_mutex);
+		return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+	}
+
+	int pulseIn(int pin, int level)
+	{
+		std::lock_guard<BJOS::Mutex> lock(*shared_data_mutex);
+		int timeout = 10000;
+		struct timeval tn, t0, t1;
+		long micros;
+
+		gettimeofday(&t0, NULL);
+
+		micros = 0;
+
+		while (digitalRead(pin) != level)
+		{
+			gettimeofday(&tn, NULL);
+
+			if (tn.tv_sec > t0.tv_sec) micros = 1000000L; else micros = 0;
+			micros += (tn.tv_usec - t0.tv_usec);
+
+			if (micros > timeout) return 0;
+		}
+
+		gettimeofday(&t1, NULL);
+
+		while (digitalRead(pin) == level)
+		{
+			gettimeofday(&tn, NULL);
+
+			if (tn.tv_sec > t0.tv_sec) micros = 1000000L; else micros = 0;
+			micros = micros + (tn.tv_usec - t0.tv_usec);
+
+			if (micros > timeout) return 0;
+		}
+
+		if (tn.tv_sec > t1.tv_sec) micros = 1000000L; else micros = 0;
+		micros = micros + (tn.tv_usec - t1.tv_usec);
+
+		return micros;
+	}
+
+	/* End of arduino functions
+	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+	*/
+
 	/* fucntions for control of the arm
 	&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 	*/
@@ -305,105 +406,6 @@ public:
 //NOTE: these members are private because they should not be called directly
 private:
 
-
-	/* Functions for the I2C connection with the pwm board
-	################################################################################################################
-	*/
-	void reset() {
-		std::lock_guard<BJOS::Mutex> lock(*shared_data_mutex);
-		wiringPiI2CWriteReg8(fd, MODE1, 0x00); //Normal mode
-		wiringPiI2CWriteReg8(fd, MODE2, 0x04); //totem pole
-	}
-
-	void setPWMFreq(int freq) {
-		std::lock_guard<BJOS::Mutex> lock(*shared_data_mutex);
-		uint8_t prescale_val = (CLOCK_FREQ / 4096 / freq) - 1;
-		wiringPiI2CWriteReg8(fd, MODE1, 0x10); //sleep
-		wiringPiI2CWriteReg8(fd, PRE_SCALE, prescale_val); // multiplyer for PWM frequency
-		wiringPiI2CWriteReg8(fd, MODE1, 0x80); //restart
-		wiringPiI2CWriteReg8(fd, MODE2, 0x04); //totem pole (default)
-	}
-
-	void setPWM2(uint8_t led, int on_value, int off_value) {
-		std::lock_guard<BJOS::Mutex> lock(*shared_data_mutex);
-		wiringPiI2CWriteReg8(fd, LED0_ON_L + LED_MULTIPLYER * (led), on_value & 0xFF);
-		wiringPiI2CWriteReg8(fd, LED0_ON_H + LED_MULTIPLYER * (led), on_value >> 8);
-		wiringPiI2CWriteReg8(fd, LED0_OFF_L + LED_MULTIPLYER * (led), off_value & 0xFF);
-		wiringPiI2CWriteReg8(fd, LED0_OFF_H + LED_MULTIPLYER * (led), off_value >> 8);
-	}
-
-	void setPWM(uint8_t led, int value) {
-		std::lock_guard<BJOS::Mutex> lock(*shared_data_mutex);
-		setPWM2(led, 0, value);
-	}
-
-
-
-	int getPWM(uint8_t led) {
-		std::lock_guard<BJOS::Mutex> lock(*shared_data_mutex);
-		int ledval = 0;
-		ledval = wiringPiI2CReadReg8(fd, LED0_OFF_H + LED_MULTIPLYER * (led));
-		ledval = ledval & 0xf;
-		ledval <<= 8;
-		ledval += wiringPiI2CReadReg8(fd, LED0_OFF_L + LED_MULTIPLYER * (led));
-		return ledval;
-	}
-
-	/* End of functions for the I2C connection with the pwm board
-	################################################################################################################
-	*/
-
-	/* Arduino functions
-	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-	*/
-	long map(long x, long in_min, long in_max, long out_min, long out_max)
-	{
-		std::lock_guard<BJOS::Mutex> lock(*shared_data_mutex);
-		return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
-	}
-
-	int pulseIn(int pin, int level)
-	{
-		std::lock_guard<BJOS::Mutex> lock(*shared_data_mutex);
-		int timeout = 10000;
-		struct timeval tn, t0, t1;
-		long micros;
-
-		gettimeofday(&t0, NULL);
-
-		micros = 0;
-
-		while (digitalRead(pin) != level)
-		{
-			gettimeofday(&tn, NULL);
-
-			if (tn.tv_sec > t0.tv_sec) micros = 1000000L; else micros = 0;
-			micros += (tn.tv_usec - t0.tv_usec);
-
-			if (micros > timeout) return 0;
-		}
-
-		gettimeofday(&t1, NULL);
-
-		while (digitalRead(pin) == level)
-		{
-			gettimeofday(&tn, NULL);
-
-			if (tn.tv_sec > t0.tv_sec) micros = 1000000L; else micros = 0;
-			micros = micros + (tn.tv_usec - t0.tv_usec);
-
-			if (micros > timeout) return 0;
-		}
-
-		if (tn.tv_sec > t1.tv_sec) micros = 1000000L; else micros = 0;
-		micros = micros + (tn.tv_usec - t1.tv_usec);
-
-		return micros;
-	}
-
-	/* End of arduino functions
-	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-	*/
 
     /* Initialize the main instance */ 
     void init(BJOS *bjos){
