@@ -361,7 +361,7 @@ public:
         std::lock_guard<BJOS::Mutex> lock(*shared_data_mutex);
         
         //do something with the data
-        return _data->armheight;
+        return std::cin.get();;
         
         //NOTE: the mutex is automatically unlocked when this function is left
     }
@@ -453,12 +453,12 @@ void mainProcess(){
     //do things until we got a request to stop the program
     while(Process::isActive()){
 		printf("Lower arm(mm): ");
-		pwm = std::cin.get();
+		pwm = getInt();
 		//scanf("%d", &pwm);
 		example->lower_arm_mm(pwm);
 		printf("Gripper position (0-4000): ");
 		//scanf("%d", &pwm);
-		pwm = std::cin.get();
+		pwm = getInt();
 		example->gripper_close_pwm(pwm);
         //std::cout << example->getInt() << std::endl;
         sleep(1);
