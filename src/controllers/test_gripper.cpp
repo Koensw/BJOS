@@ -496,7 +496,7 @@ void otherProcess(){
     
     //do things ...
     std::cout << "setting the example controller to 5" << std::endl;
-    example.setInt(5);
+    //example.setInt(5);
     
     //NOTE: the controller is automatically unloaded because its destructor is called when going out of scope (and you can always directly finalize as normal instance)
 }
