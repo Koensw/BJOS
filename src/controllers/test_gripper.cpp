@@ -453,11 +453,11 @@ void mainProcess(){
     //do things until we got a request to stop the program
     while(Process::isActive()){
 		printf("Lower arm(mm): ");
-		pwm = std:cin.get();
+		std::cin >> pwm;
 		printf("Lowering with %i mm.", pwm);
 		example->lower_arm_mm(pwm);
 		printf("Gripper position (0-4000): ");
-		scanf("%i", &pwm);
+		std::cin >> pwm;
 		example->gripper_close_pwm(pwm);
         //std::cout << example->getInt() << std::endl;
         sleep(1);
@@ -496,8 +496,8 @@ void otherProcess(){
     }
     
     //do things ...
-    std::cout << "setting the example controller to 5" << std::endl;
-    example.setInt(5);
+    std::cout << "setting the example controller to 0" << std::endl;
+    example.setInt(0);
     
     //NOTE: the controller is automatically unloaded because its destructor is called when going out of scope (and you can always directly finalize as normal instance)
 }
@@ -509,9 +509,9 @@ int main(){
     //wait two seconds to allow the main process to start...
     sleep(2);
     
-    //std::thread otherThd(otherProcess);
+    std::thread otherThd(otherProcess);
     
     //wait to both are finished
     mainThd.join();
-   // otherThd.join();
+    otherThd.join();
 }
