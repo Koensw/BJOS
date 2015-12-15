@@ -354,14 +354,14 @@ public:
 		}
 
 	}
-	/*
+	
     int getInt(){
         //WARNING: for anything that modifies or reads shared data the mutex needs to be locked first
         //NOTE: you can also do mutex->lock() and mutex->unlock manually if needed, but normally you want to use a lock_guard (this also works with exceptions and guarentees unlocking)
         std::lock_guard<BJOS::Mutex> lock(*shared_data_mutex);
         
         //do something with the data
-        return _data->int_data;
+        return _data->armheight;
         
         //NOTE: the mutex is automatically unlocked when this function is left
     }
@@ -371,7 +371,7 @@ public:
         _data->armheight = int_data;
         shared_data_mutex->unlock();
     }
-    */
+    
     /* If necessary you can overload the isAvailable method of the superclass */
     bool isAvailable(){
         //ALERT: first call the super class method to make sure the general interface is available because this function should be safe to call also if not initialized
@@ -496,7 +496,7 @@ void otherProcess(){
     
     //do things ...
     std::cout << "setting the example controller to 5" << std::endl;
-    //example.setInt(5);
+    example.setInt(5);
     
     //NOTE: the controller is automatically unloaded because its destructor is called when going out of scope (and you can always directly finalize as normal instance)
 }
