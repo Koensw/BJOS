@@ -453,10 +453,10 @@ void mainProcess(){
     //do things until we got a request to stop the program
     while(Process::isActive()){
 		printf("Lower arm(mm): ");
-		scanf("%i", &pwm);
+		scanf("%d", &pwm);
 		example->lower_arm_mm(pwm);
 		printf("Gripper position (0-4000): ");
-		scanf("%i", &pwm);
+		scanf("%d", &pwm);
 		example->gripper_close_pwm(pwm);
         //std::cout << example->getInt() << std::endl;
         sleep(1);
@@ -508,9 +508,9 @@ int main(){
     //wait two seconds to allow the main process to start...
     sleep(2);
     
-    //std::thread otherThd(otherProcess);
+    std::thread otherThd(otherProcess);
     
     //wait to both are finished
     mainThd.join();
-    //otherThd.join();
+    otherThd.join();
 }
