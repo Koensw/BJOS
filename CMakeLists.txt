@@ -22,7 +22,7 @@ add_library(bjos SHARED
     src/libs/i2c.cpp
     src/libs/geometry.cpp
 )
-target_link_libraries(bjos ${Boost_THREAD_LIBRARY} ${Boost_SYSTEM_LIBRARY} pthread rt)
+target_link_libraries(bjos ${Boost_THREAD_LIBRARY} ${Boost_SYSTEM_LIBRARY} pthread rt wiringPi)
 
 #### LOADERS ####
 # build the test loader
@@ -73,7 +73,7 @@ target_link_libraries(bjos_example bjos)
 add_executable(test_gripper
     src/controllers/test_gripper.cpp
 )
-target_link_libraries(test_gripper bjos -lwiringPi)
+target_link_libraries(test_gripper bjos)
 
 
 
