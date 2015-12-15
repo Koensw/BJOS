@@ -508,9 +508,9 @@ int main(){
     //wait two seconds to allow the main process to start...
     sleep(2);
     
-    //std::thread otherThd(otherProcess);
+    std::thread otherThd(otherProcess);
     
     //wait to both are finished
     mainThd.join();
-    //otherThd.join();
+    otherThd.join();
 }
