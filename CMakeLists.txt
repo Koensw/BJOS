@@ -69,8 +69,9 @@ add_executable(bjos_example
 )
 target_link_libraries(bjos_example bjos)
 
-# example controller
-add_executable(src/controllers/test_gripper.cpp
+# test_gripper
+add_executable(test_gripper
+    src/controllers/test_gripper.cpp
 )
 target_link_libraries(test_gripper bjos -lwiringPi)
 
