@@ -4,7 +4,7 @@ find_package(Boost COMPONENTS system thread REQUIRED)
 
 # set compiler and flags
 set(CMAKE_CXX_COMPILER "/usr/bin/g++")
-set(CMAKE_CXX_FLAGS "-g -Wall-Wextra -pedantic --std=c++11 ${CMAKE_CXX_FLAGS}")
+set(CMAKE_CXX_FLAGS "-g -Wall -Wextra -pedantic --std=c++11 ${CMAKE_CXX_FLAGS}")
 
 # include the headers
 include_directories(include/)
