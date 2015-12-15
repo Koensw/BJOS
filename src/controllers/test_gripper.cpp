@@ -253,7 +253,7 @@ public:
 		}
 
 	}
-
+	/*
     int getInt(){
         //WARNING: for anything that modifies or reads shared data the mutex needs to be locked first
         //NOTE: you can also do mutex->lock() and mutex->unlock manually if needed, but normally you want to use a lock_guard (this also works with exceptions and guarentees unlocking)
@@ -270,7 +270,7 @@ public:
         _data->armheight = int_data;
         shared_data_mutex->unlock();
     }
-    
+    */
     /* If necessary you can overload the isAvailable method of the superclass */
     bool isAvailable(){
         //ALERT: first call the super class method to make sure the general interface is available because this function should be safe to call also if not initialized
