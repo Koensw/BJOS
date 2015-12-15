@@ -453,7 +453,7 @@ void mainProcess(){
     //do things until we got a request to stop the program
     while(Process::isActive()){
 		printf("Lower arm(mm): ");
-		scanf("%i", &pwm);
+		pwm = std:cin.get();
 		printf("Lowering with %i mm.", pwm);
 		example->lower_arm_mm(pwm);
 		printf("Gripper position (0-4000): ");
