@@ -385,7 +385,7 @@ public:
     }
     
     /* Finalize this controller */
-    ~ExampleController(){
+    ~Test_Gripper(){
         if(isMainInstance()){
             //WARNING: in most cases you want to check that you really need to delete things, because we cannot be certain that this controller is registered!
             if(!Controller::isAvailable()) return;
