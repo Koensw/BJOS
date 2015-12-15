@@ -400,7 +400,7 @@ public:
         
         //ALERT: always call the finalize method in the super class at the end of the destructor (unless the controller is not available)
         //ALERT: pass the datatype of the shared example data
-        Controller::finalize<SharedExampleData>();
+        Controller::finalize<gripperData>();
     }
 
 //NOTE: these members are private because they should not be called directly
@@ -445,7 +445,7 @@ void mainProcess(){
     BJOS *bjos = BJOS::getOS();
     
     //make an unitialized controller
-    ExampleController *example = new ExampleController;
+	Test_Gripper *example = new Test_Gripper;
     
     //initialize the controller
     bjos->initController(example);
@@ -483,7 +483,7 @@ void otherProcess(){
     BJOS *bjos = BJOS::getOS();
 
     //make an unitialized controller
-    ExampleController example;
+	Test_Gripper example;
     
     //try to retrieve an instance of a controller
     //ALERT: you should make sure that the controller you try to load is indeed the specified type
