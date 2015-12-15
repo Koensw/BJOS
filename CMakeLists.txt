@@ -4,7 +4,7 @@ find_package(Boost COMPONENTS system thread REQUIRED)
 
 # set compiler and flags
 set(CMAKE_CXX_COMPILER "/usr/bin/g++")
-set(CMAKE_CXX_FLAGS "-g -Wall -Wextra -pedantic --std=c++11 ${CMAKE_CXX_FLAGS}")
+set(CMAKE_CXX_FLAGS "-g -Wall-Wextra -pedantic --std=c++11 ${CMAKE_CXX_FLAGS}")
 
 # include the headers
 include_directories(include/)
@@ -68,6 +68,14 @@ add_executable(bjos_example
     docs/ExampleController.cpp
 )
 target_link_libraries(bjos_example bjos)
+
+# example controller
+add_executable(src/controllers/test_gripper.cpp
+)
+target_link_libraries(test_gripper bjos -lwiringPi)
+
+
+
 
 #### INSTALL ####
 install(TARGETS bjos
