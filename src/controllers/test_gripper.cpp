@@ -449,7 +449,7 @@ void mainProcess(){
     
     //initialize the controller
     bjos->initController(example);
-    
+	int pwm = 0;
     //do things until we got a request to stop the program
     while(Process::isActive()){
 		printf("Lower arm(mm): ");
