@@ -454,10 +454,10 @@ void mainProcess(){
     while(Process::isActive()){
 		printf("Lower arm(mm): ");
 		scanf("%d", &pwm);
-		lower_arm_mm(pwm);
+		example->lower_arm_mm(pwm);
 		printf("Gripper position(0-4000): ");
 		scanf("%d", &pwm);
-		gripper_close_pwm(pwm);
+		example->gripper_close_pwm(pwm);
         //std::cout << example->getInt() << std::endl;
         sleep(1);
     }
