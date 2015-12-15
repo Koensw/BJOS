@@ -455,7 +455,7 @@ void mainProcess(){
 		printf("Lower arm(mm): ");
 		scanf("%d", &pwm);
 		example->lower_arm_mm(pwm);
-		printf("Gripper position(0-4000): ");
+		printf("Gripper position (0-4000): ");
 		scanf("%d", &pwm);
 		example->gripper_close_pwm(pwm);
         //std::cout << example->getInt() << std::endl;
