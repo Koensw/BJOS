@@ -130,7 +130,7 @@ int main(){
 		if (fabsf(action.angular_velocity.vy) < M_EPS)
 			flight.setTargetCF(SET_TARGET_VELOCITY, Pose(), action);
 		else
-			flight.setTargetCF(SET_TARGET_YAW_RATE, Pose(), action);
+			flight.setTargetCF(SET_TARGET_VELOCITY & SET_TARGET_YAW_RATE, Pose(), action);
 	} while (ret != 'q');
 
 	std::cout << "Byebye!";
