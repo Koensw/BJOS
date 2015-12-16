@@ -97,13 +97,11 @@ public:
 	 ################################################################################################################
 	 */
 	void reset() {
-		std::lock_guard<BJOS::Mutex> lock(*shared_data_mutex);
 		wiringPiI2CWriteReg8(fd, MODE1, 0x00); //Normal mode
 		wiringPiI2CWriteReg8(fd, MODE2, 0x04); //totem pole
 	}
 
 	void setPWMFreq(int freq) {
-		std::lock_guard<BJOS::Mutex> lock(*shared_data_mutex);
 		uint8_t prescale_val = (CLOCK_FREQ / 4096 / freq) - 1;
 		wiringPiI2CWriteReg8(fd, MODE1, 0x10); //sleep
 		wiringPiI2CWriteReg8(fd, PRE_SCALE, prescale_val); // multiplyer for PWM frequency
@@ -112,7 +110,6 @@ public:
 	}
 
 	void setPWM2(uint8_t led, int on_value, int off_value) {
-		std::lock_guard<BJOS::Mutex> lock(*shared_data_mutex);
 		wiringPiI2CWriteReg8(fd, LED0_ON_L + LED_MULTIPLYER * (led), on_value & 0xFF);
 		wiringPiI2CWriteReg8(fd, LED0_ON_H + LED_MULTIPLYER * (led), on_value >> 8);
 		wiringPiI2CWriteReg8(fd, LED0_OFF_L + LED_MULTIPLYER * (led), off_value & 0xFF);
@@ -120,14 +117,12 @@ public:
 	}
 
 	void setPWM(uint8_t led, int value) {
-		std::lock_guard<BJOS::Mutex> lock(*shared_data_mutex);
 		setPWM2(led, 0, value);
 	}
 
 
 
 	int getPWM(uint8_t led) {
-		std::lock_guard<BJOS::Mutex> lock(*shared_data_mutex);
 		int ledval = 0;
 		ledval = wiringPiI2CReadReg8(fd, LED0_OFF_H + LED_MULTIPLYER * (led));
 		ledval = ledval & 0xf;
@@ -145,13 +140,11 @@ public:
 	*/
 	long map(long x, long in_min, long in_max, long out_min, long out_max)
 	{
-		std::lock_guard<BJOS::Mutex> lock(*shared_data_mutex);
 		return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 	}
 
 	int pulseIn(int pin, int level)
 	{
-		std::lock_guard<BJOS::Mutex> lock(*shared_data_mutex);
 		int timeout = 10000;
 		struct timeval tn, t0, t1;
 		long micros;
@@ -229,14 +222,12 @@ public:
 
 	int get_blob_size()
 	{
-		std::lock_guard<BJOS::Mutex> lock(*shared_data_mutex);
 		//communicatie met BJOS voor blobsize
 		return 0;
 	}
 
 	bool lower_to_object(int px_obj)
 	{
-		std::lock_guard<BJOS::Mutex> lock(*shared_data_mutex);
 		//obtain the blob pixel count from pieter
 		int px_blob = get_blob_size();
 		if (px_blob<px_obj*1.05 && px_blob>px_obj*0.95)
@@ -275,7 +266,6 @@ public:
 	*/
 	void gripper_close_pwm(int pwm)
 	{
-		std::lock_guard<BJOS::Mutex> lock(*shared_data_mutex);
 		if (pwm>4000)
 			pwm = 4000;
 		else if (pwm<0)
@@ -288,7 +278,6 @@ public:
 
 	void gripper_close_force(int limit)
 	{
-		std::lock_guard<BJOS::Mutex> lock(*shared_data_mutex);
 		int pwm = 800;
 		int force = 100;
 		//int force=(analogRead(forcePin))-614;
@@ -309,7 +298,6 @@ public:
 
 	void gripper_close_object(char* object)
 	{
-		std::lock_guard<BJOS::Mutex> lock(*shared_data_mutex);
 		if (strcmp("Apple", object))
 			gripper_close_force(35);
 		else if (strcmp("Can", object))
@@ -321,7 +309,6 @@ public:
 
 	void pickup(int px_obj, int force)
 	{
-		std::lock_guard<BJOS::Mutex> lock(*shared_data_mutex);
 		if (lower_to_object(px_obj))
 			gripper_close_force(force);
 		else
@@ -334,7 +321,6 @@ public:
 
 	bool check_RC()//RC override
 	{
-		std::lock_guard<BJOS::Mutex> lock(*shared_data_mutex);
 		delay(100);
 		int RC1 = pulseIn(ch7, HIGH);
 		delay(100);
@@ -358,7 +344,6 @@ public:
     int getInt(){
         //WARNING: for anything that modifies or reads shared data the mutex needs to be locked first
         //NOTE: you can also do mutex->lock() and mutex->unlock manually if needed, but normally you want to use a lock_guard (this also works with exceptions and guarentees unlocking)
-        std::lock_guard<BJOS::Mutex> lock(*shared_data_mutex);
         
         //do something with the data
         return 0;
@@ -367,9 +352,6 @@ public:
     }
     void setInt(int int_data){
         //NOTE: example of manual lock and unlock (that you normally dont want to to do)
-        shared_data_mutex->lock();
-        _data->armheight = int_data;
-        shared_data_mutex->unlock();
     }
     
     /* If necessary you can overload the isAvailable method of the superclass */
