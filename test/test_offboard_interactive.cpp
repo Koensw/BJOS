@@ -127,7 +127,7 @@ int main(){
 		ret = std::cin.get();
 		if (!Process::isActive()) ret = 'q';
 		action = handle_input(ret);
-		if (action.angular_velocity.vy < M_EPS)
+		if (fabsf(action.angular_velocity.vy) < M_EPS)
 			flight.setTargetCF(SET_TARGET_VELOCITY, Pose(), action);
 		else
 			flight.setTargetCF(SET_TARGET_YAW_RATE, Pose(), action);
