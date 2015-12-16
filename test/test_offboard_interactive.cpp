@@ -21,7 +21,7 @@
 
 using namespace bjos;
 
-float VEL = 1.5;
+float VEL = 0.5;
 float TAKEOFF = 2.0;
 float ZVEL = 0.5;
 float YAWR = 0.2;
