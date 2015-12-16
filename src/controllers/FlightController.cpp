@@ -399,15 +399,9 @@ std::pair<Pose, Heading> FlightController::getCurrentSetpoint() {
 void FlightController::setTargetCF(uint16_t type_mask, Pose poseCF, Heading headingCF) {	
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
     
-    /* Tranform given position, velocity and yaw from CF frame to NED */
-	/* disabled yaw correction for now, because it is implemented on the pixhawk side*/
+    /* Tranform given position, velocity and yaw from CF frame to NED Body frame */
     Point pointNED = CFtoNED(poseCF.position, 0, _data->poseNED.position);
     Velocity velocityNED = CFtoNED(headingCF.velocity, 0);
-    
-    //FIXME: an unexplained +90 degrees rotation in the z-axis has been observed, very ugly fix below
-    /*RotationMatrix rx(M_PI/2.0, 'x');
-     * pointNED = rx.rotatePoint(pointNED);
-     * velocityNED = rx.rotateVelocity(velocityNED);*/
     
     mavlink_set_position_target_local_ned_t sp;
     
