@@ -467,6 +467,16 @@ Velocity FlightController::NEDtoCF(Velocity headingNED, double yaw_P) {
     return R.rotateVelocity(headingNED);
 }
 
+Point FlightController::NEDtoWF(Point pointNED) {
+	RotationMatrix R(-M_PI, 'x');
+	return R.rotatePoint(pointNED);
+}
+
+Velocity FlightController::NEDtoWF(Velocity velocityNED) {
+	RotationMatrix R(-M_PI, 'x');
+	return R.rotateVelocity(velocityNED);
+}
+
 //get raw imu data
 IMUSensorData FlightController::getIMUDataCF(){
     //copy the data

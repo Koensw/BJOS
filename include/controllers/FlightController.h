@@ -132,7 +132,7 @@ namespace bjos {
          * With this header comes a set of bitmasks which should be used with this function: SET_TARGET_*		 
          * These can be combined with bitwise &
          *
-         * Example for velocity and yaw rate:
+         * Example for velocity and yaw rate setpoint:
          * uint16_t type_mask = SET_TARGET_VELOCITY & SET_TARGET_YAW_RATE;
          */
         void setTargetCF(uint16_t type_mask, Pose poseCF, Heading headingCF);
@@ -216,7 +216,14 @@ namespace bjos {
         Velocity CFtoNED(Velocity headingCF, double yaw_P);
         Point NEDtoCF(Point pointNED, double yaw_P, Point pointP);
         Velocity NEDtoCF(Velocity headingNED, double yaw_P);
-        /* World Frame conversions ommitted for now (since no module uses WF yet) */
+        
+		/* Conversion to WF are note entirely as is specified in the Frame Specification file
+		 * This is due to the fact that no home position is determined yet
+		 *
+		 * These functions for now just rotate frame configurations (North, East, Down to Forward, Left, Up)
+		 */
+		Point NEDtoWF(Point pointNED);
+		Velocity NEDtoWF(Velocity velocityNED);
         
         //NOTE: only used by main instance
         boost::thread _read_thrd;
