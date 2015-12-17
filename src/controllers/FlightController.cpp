@@ -402,6 +402,11 @@ Heading FlightController::getHeadingCF() {
     return _data->headingCF;
 }
 
+Heading FlightController::getHeadingWF() {
+	std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+	return _data->headingWF;
+}
+
 std::pair<Pose, Heading> FlightController::getCurrentSetpoint() {
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
     Pose pose;
