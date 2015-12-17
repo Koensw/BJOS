@@ -368,7 +368,7 @@ public:
     }
     
     /* If necessary you can overload the isAvailable method of the superclass */
-    bool isAvailable(){l
+    bool isAvailable(){
         //ALERT: first call the super class method to make sure the general interface is available because this function should be safe to call also if not initialized
         bool chk = Controller::isAvailable();
         if(!chk) return false;
