@@ -119,6 +119,8 @@ namespace bjos {
         
         /* Returns a Pose struct that contains Point and Orientation structs */
         Pose getPoseNED();
+        Pose getPoseWF();
+
         // Control Frame always has position 0, to remind users of these get functions of that, only a Orientation struct is returned
         Orientation getOrientationCF();
         /* Returns a Heading struct that contains Velocity and AngularVelocity structs */

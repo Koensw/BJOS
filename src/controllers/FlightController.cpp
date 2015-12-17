@@ -382,6 +382,11 @@ Pose FlightController::getPoseNED() {
     return _data->poseNED;
 }
 
+Pose FlightController::getPoseWF() {
+    std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+    return _data->poseWF;
+}
+
 Orientation FlightController::getOrientationCF() {
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
     return _data->orientationCF;
