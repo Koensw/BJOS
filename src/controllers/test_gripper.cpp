@@ -140,11 +140,13 @@ public:
 	*/
 	long map(long x, long in_min, long in_max, long out_min, long out_max)
 	{
+		printf("map\n");
 		return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 	}
 
 	int pulseIn(int pin, int level)
 	{
+		printf("pulseIn\n");
 		int timeout = 10000;
 		struct timeval tn, t0, t1;
 		long micros;
@@ -190,7 +192,8 @@ public:
 	*/
 	bool lower_arm_mm(int mm)
 	{
-		std::lock_guard<BJOS::Mutex> lock(*shared_data_mutex);
+		printf("lower_arm_mm\n");
+		//std::lock_guard<BJOS::Mutex> lock(*shared_data_mutex);
 		_data->armheight = _data->armheight + mm;
 		if (_data->armheight + gripperOffset>maxarmlength || _data->armheight + gripperOffset<0)
 		{
@@ -206,7 +209,8 @@ public:
 
 	bool lower_arm_to_mm(int mm)
 	{
-		std::lock_guard<BJOS::Mutex> lock(*shared_data_mutex);
+		printf("lower_arm_to_mm\n");
+		//std::lock_guard<BJOS::Mutex> lock(*shared_data_mutex);
 		_data->armheight = mm;
 		if (_data->armheight + gripperOffset>maxarmlength || _data->armheight + gripperOffset<0)
 		{
@@ -222,12 +226,14 @@ public:
 
 	int get_blob_size()
 	{
+		printf("get_blob_size\n");
 		//communicatie met BJOS voor blobsize
 		return 0;
 	}
 
 	bool lower_to_object(int px_obj)
 	{
+		printf("lower_to_object\n");
 		//obtain the blob pixel count from pieter
 		int px_blob = get_blob_size();
 		if (px_blob<px_obj*1.05 && px_blob>px_obj*0.95)
@@ -266,6 +272,7 @@ public:
 	*/
 	void gripper_close_pwm(int pwm)
 	{
+		printf("gripper_close_pwm\n");
 		if (pwm>4000)
 			pwm = 4000;
 		else if (pwm<0)
@@ -278,6 +285,7 @@ public:
 
 	void gripper_close_force(int limit)
 	{
+		printf("gripper_close_force\n");
 		int pwm = 800;
 		int force = 100;
 		//int force=(analogRead(forcePin))-614;
@@ -298,6 +306,7 @@ public:
 
 	void gripper_close_object(char* object)
 	{
+		printf("gripper_close_object\n");
 		if (strcmp("Apple", object))
 			gripper_close_force(35);
 		else if (strcmp("Can", object))
@@ -309,6 +318,7 @@ public:
 
 	void pickup(int px_obj, int force)
 	{
+		printf("pickup\n");
 		if (lower_to_object(px_obj))
 			gripper_close_force(force);
 		else
@@ -321,6 +331,7 @@ public:
 
 	bool check_RC()//RC override
 	{
+		printf("check_RC\n");
 		delay(100);
 		int RC1 = pulseIn(ch7, HIGH);
 		delay(100);
@@ -342,6 +353,7 @@ public:
 	}
 	
     int getInt(){
+		printf("getInt\n");
         //WARNING: for anything that modifies or reads shared data the mutex needs to be locked first
         //NOTE: you can also do mutex->lock() and mutex->unlock manually if needed, but normally you want to use a lock_guard (this also works with exceptions and guarentees unlocking)
         
@@ -351,11 +363,12 @@ public:
         //NOTE: the mutex is automatically unlocked when this function is left
     }
     void setInt(int int_data){
+		printf("setInt\n");
         //NOTE: example of manual lock and unlock (that you normally dont want to to do)
     }
     
     /* If necessary you can overload the isAvailable method of the superclass */
-    bool isAvailable(){
+    bool isAvailable(){l
         //ALERT: first call the super class method to make sure the general interface is available because this function should be safe to call also if not initialized
         bool chk = Controller::isAvailable();
         if(!chk) return false;
