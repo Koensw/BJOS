@@ -446,7 +446,17 @@ void mainProcess(){
     
     //make an unitialized controller
 	Test_Gripper *example = new Test_Gripper;
-    
+	wiringPiSetup(); // Initialize wiringPi -- using Broadcom pin numbers
+	fd = wiringPiI2CSetup(0x40);
+	pinMode(gripPin, PWM_OUTPUT); // Set PWM as PWM output
+	pinMode(armPin, PWM_OUTPUT); // Set PWM as PWM output
+	pinMode(ch7, INPUT);     // Set regular as INPUT
+	pinMode(ch8, INPUT);      // Set regular as INPUT
+	pullUpDnControl(ch7, PUD_UP); // Enable pull-up resistor --> weet niet zeker of dit nodig is !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
+	pullUpDnControl(ch8, PUD_UP); // Enable pull-up resistor on 
+	printf("CODE is running! Press CTRL+\ to quit.\n");
+	reset();
+	setPWMFreq(1000);
     //initialize the controller
     bjos->initController(example);
 	int pwm = 0;
