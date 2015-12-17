@@ -97,11 +97,13 @@ public:
 	 ################################################################################################################
 	 */
 	void reset() {
+		printf("reset\n");
 		wiringPiI2CWriteReg8(fd, MODE1, 0x00); //Normal mode
 		wiringPiI2CWriteReg8(fd, MODE2, 0x04); //totem pole
 	}
 
 	void setPWMFreq(int freq) {
+		printf("setPWMFreqn");
 		uint8_t prescale_val = (CLOCK_FREQ / 4096 / freq) - 1;
 		wiringPiI2CWriteReg8(fd, MODE1, 0x10); //sleep
 		wiringPiI2CWriteReg8(fd, PRE_SCALE, prescale_val); // multiplyer for PWM frequency
@@ -110,6 +112,7 @@ public:
 	}
 
 	void setPWM2(uint8_t led, int on_value, int off_value) {
+		printf("setPWM2\n");
 		wiringPiI2CWriteReg8(fd, LED0_ON_L + LED_MULTIPLYER * (led), on_value & 0xFF);
 		wiringPiI2CWriteReg8(fd, LED0_ON_H + LED_MULTIPLYER * (led), on_value >> 8);
 		wiringPiI2CWriteReg8(fd, LED0_OFF_L + LED_MULTIPLYER * (led), off_value & 0xFF);
@@ -117,12 +120,14 @@ public:
 	}
 
 	void setPWM(uint8_t led, int value) {
+		printf("setPWM\n");
 		setPWM2(led, 0, value);
 	}
 
 
 
 	int getPWM(uint8_t led) {
+		printf("getPWM\n");
 		int ledval = 0;
 		ledval = wiringPiI2CReadReg8(fd, LED0_OFF_H + LED_MULTIPLYER * (led));
 		ledval = ledval & 0xf;
