@@ -68,14 +68,25 @@ void SonarController::load(bjos::BJOS *bjos){
     Controller::load(bjos, "sonar", _data);
 }
 
+//TODO: this need to be extended
+std::string SonarController::getState(){
+    std::ostringstream state;
+    state << "distance ";
+    std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+    std::vector<SonarData> res;
+    for(size_t i=0; i<_data->sonar_size; ++i){
+        state << _data->sonars[i].distance;
+    }
+    state << std::endl;
+    return state.str();
+}
+
 void SonarController::update_sonars(){
     bool frst = true;
     
     //FIXME: interrupted over whole block
     while(_thrd_running){
         //TODO: handle sonars that are not active
-        
-        
         try{
             if(!frst){
                 std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);

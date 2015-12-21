@@ -11,8 +11,11 @@
 #include "bjos/helpers/process.h"
 #include "bjos/controller/controller.h"
 
+#include <bjcomm/message.h>
+
 //especially this line should not be in a header...
 using namespace bjos;
+using namespace bjcomm;
 
 //WARNING: do not store pointers or STL objects here if not absolutely necessary
 //NOTE: if you need to store a pointer use boost::offset_ptr (note that arrays can also be pointers...)
@@ -48,6 +51,10 @@ public:
         shared_data_mutex->lock();
         _data->int_data = int_data;
         shared_data_mutex->unlock();
+    }
+    
+    std::string getState(){
+        return "example state";
     }
     
     /* If necessary you can overload the isAvailable method of the superclass */

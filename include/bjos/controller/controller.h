@@ -3,12 +3,16 @@
 
 #include "../bjos.h"
 
+#include <atomic>
+#include <boost/thread/thread.hpp>
+#include <bjcomm/message.h>
+
 namespace bjos{
     class Controller{
         friend class BJOS;
         friend class ControllerInitializationError;
     public:
-        Controller(): _bjos_instance(0), _main_instance(false) {}
+        Controller(): _bjos_instance(0), _main_instance(false), _state_update_rate(1) {}
         
         /* Init module is only called for the main node */
         virtual void init(BJOS *bjos) = 0;
@@ -28,9 +32,19 @@ namespace bjos{
             else return true;
         }
         
+        /* Set the update rate in hertz that the controller should update the state (max 1000 Hz) */
+        void setStateUpdateRate(double rate){
+            _state_update_rate = rate;
+        }
+        /* Return a string describing the state of this controller in a controller specific text format */
+        virtual std::string getState() = 0;
+        
         /* Virtual destructor */
         virtual ~Controller() {}
     protected:
+        /* Update the state of the controller to the communication wrapper */
+        void update_state();
+        
         /* Register the controller */
         template <typename Type> bool init(BJOS *bjos, std::string name, Type *&mem){
             _controller_name = name;
@@ -44,6 +58,10 @@ namespace bjos{
             if(ret){
                 //acquire mutex
                 shared_data_mutex = new BJOS::Mutex(BJOS::mutex_open_only, name.c_str());
+                
+                //start the update_state thread
+                _state_thrd_running = true;
+                _state_thrd = boost::thread(&Controller::update_state, this);
                 
                 return true;
             }else return false;
@@ -68,6 +86,11 @@ namespace bjos{
             //check if Controller is loaded
             if(_bjos_instance == 0) return;
             
+            //wait for the state update thread to finish
+            _state_thrd_running = false;
+            _state_thrd.interrupt();
+            _state_thrd.join();
+            
             //remove the mutex
             delete shared_data_mutex;
             
@@ -88,6 +111,10 @@ namespace bjos{
         std::string _controller_name;
         BJOS *_bjos_instance;
         bool _main_instance;
+        
+        std::atomic_bool _state_thrd_running;
+        boost::thread _state_thrd;
+        double _state_update_rate;
     };
 }
 

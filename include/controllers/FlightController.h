@@ -150,6 +150,9 @@ namespace bjos {
         /* Return raw sensor data */
         IMUSensorData getIMUDataCF();
         
+        /* Return the state of this controller */
+        std::string getState();
+        
         ///Q: correct?
         /* Finalize this controller */
         ~FlightController() {

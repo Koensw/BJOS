@@ -13,6 +13,7 @@ include_directories(include/)
 # build the bjos library
 add_library(bjos SHARED
     src/bjos/bjos.cpp
+    src/bjos/controller/controller.cpp
     src/bjos/helpers/error.cpp
     src/bjos/helpers/process.cpp
     src/controllers/SonarController.cpp
@@ -21,15 +22,9 @@ add_library(bjos SHARED
     src/libs/i2c.cpp
     src/libs/geometry.cpp
 )
-target_link_libraries(bjos ${Boost_THREAD_LIBRARY} ${Boost_SYSTEM_LIBRARY} pthread rt)
+target_link_libraries(bjos ${Boost_THREAD_LIBRARY} ${Boost_SYSTEM_LIBRARY} pthread rt bjcomm)
 
 #### LOADERS ####
-# build the test loader
-add_executable(test_loader
-    src/loader/test.cpp
-)
-target_link_libraries(test_loader bjos)
-
 # flight loader
 add_executable(flight_loader
     src/loader/test_flight.cpp

@@ -16,45 +16,46 @@
 //FIXME: add to BJOS namespace
 
 class Log{
-public:
-    static void fatal(const char *origin, const char* format, ... ) {
+public:    
+    //FIXME: fatal message is not really relevant here (should just be an error that is somewhere handled)
+    static void fatal(const std::string origin, const std::string format, ... ) {
         va_list args;
         fprintf( stderr, "[FATAL] " );
-        fprintf( stderr, "%s: ", origin);
+        fprintf( stderr, "%s: ", origin.c_str());
         va_start( args, format );
-        vfprintf( stderr, format, args );
+        vfprintf( stderr, format.c_str(), args );
         va_end( args );
         fprintf( stderr, "\n" ); 
     }
     
-    static void warn(const char *origin, const char* format, ... ) {
-        va_list args;
-        fprintf( stderr, "[WARN] " );
-        fprintf( stderr, "%s: ", origin);
-        va_start( args, format );
-        vfprintf( stderr, format, args );
-        va_end( args );
-        fprintf( stderr, "\n" ); 
-    }
-    
-    static void error(const char *origin, const char* format, ... ) {
+    static void error(const std::string origin, const std::string format, ... ) {
         va_list args;
         fprintf( stderr, "[ERROR] " );
-        fprintf( stderr, "%s: ", origin);
-        va_start( args, format );
-        vfprintf( stderr, format, args );
+        fprintf( stderr, "%s: ", origin.c_str());
+        va_start( args, format);
+        vfprintf( stderr, format.c_str(), args );
         va_end( args );
         fprintf( stderr, "\n" ); 
     }
     
-    static void info(const char *origin, const char* format, ... ) {
+    static void warn(const std::string origin, const std::string format, ... ) {
         va_list args;
-        fprintf( stdout, "[INFO] " );
-        fprintf( stdout, "%s: ", origin);
-        va_start( args, format );
-        vfprintf( stdout, format, args );
+        fprintf( stderr, "[WARN] " );
+        fprintf( stderr, "%s: ", origin.c_str());
+        va_start( args, format);
+        vfprintf( stderr, format.c_str(), args );
         va_end( args );
-        fprintf( stdout, "\n" );
+        fprintf( stderr, "\n" ); 
+    }
+    
+    static void info(const std::string origin, const std::string format, ... ) {
+        va_list args;
+        fprintf( stderr, "[INFO] " );
+        fprintf( stderr, "%s: ", origin.c_str());
+        va_start( args, format);
+        vfprintf( stderr, format.c_str(), args );
+        va_end( args );
+        fprintf( stderr, "\n" ); 
     }
     
     /*private static void _forward_to_gcs(const char *type, const char *origin, const char *format, ...){

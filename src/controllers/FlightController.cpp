@@ -12,6 +12,7 @@
 #include "controllers/FlightController.h"
 
 #include <chrono>
+#include <sstream>
 
 using namespace bjos;
 
@@ -375,6 +376,14 @@ bool FlightController::synchronize_time() {
     
     Log::info("FlightController::synchronize_time", "successfully synchronized, Unix time is %" PRIu64 " and boot time is %" PRIu64, _data->syncUnixTime, _data->syncBootTime);
     return true;
+}
+
+//TODO: this need to be extended
+std::string FlightController::getState(){
+    std::ostringstream state;
+    Pose world_pose = getPoseWF();
+    state << "position " << world_pose.position.x << " " << world_pose.position.y << " " << world_pose.position.y << std::endl;
+    return state.str();
 }
 
 Pose FlightController::getPoseNED() {
