@@ -26,6 +26,7 @@ public:
         vfprintf( stderr, format.c_str(), args );
         va_end( args );
         fprintf( stderr, "\n" ); 
+        _forward("fatal", origin, format);
     }
     
     static void error(const std::string origin, const std::string format, ... ) {
@@ -36,6 +37,7 @@ public:
         vfprintf( stderr, format.c_str(), args );
         va_end( args );
         fprintf( stderr, "\n" ); 
+        _forward("error", origin, format);
     }
     
     static void warn(const std::string origin, const std::string format, ... ) {
@@ -46,6 +48,7 @@ public:
         vfprintf( stderr, format.c_str(), args );
         va_end( args );
         fprintf( stderr, "\n" ); 
+        _forward("warn", origin, format);
     }
     
     static void info(const std::string origin, const std::string format, ... ) {
@@ -56,28 +59,21 @@ public:
         vfprintf( stderr, format.c_str(), args );
         va_end( args );
         fprintf( stderr, "\n" ); 
+        _forward("info", origin, format);
     }
     
-    /*private static void _forward_to_gcs(const char *type, const char *origin, const char *format, ...){
-        static Publisher pub("tcp://localhost:3334");
+private:
+    static void _forward(const std::string type, const std::string origin, const std::string format, ...){
+        static bjcomm::Publisher pub("debug");
         if(!pub.isRunning()) pub.start();
-        Message msg("logger");
-        
-        //FIXME: do this a little cleaner
-        va_list args;
-        fprintf( stdout, "[INFO] " );
-        fprintf( stdout, "%s: ", origin);
-        va_start( args, format );
-        vfprintf( stdout, format, args );
-        va_end( args );
+        bjcomm::Message msg(type);
         
         std::stringstream sstr;
-        sstr << x << " " << y << " " << z;
+        sstr << origin << " " << format;
         msg.setData(sstr.str());
         
-        logger.setData("hier komt iets");
         pub.send(msg);
-    }*/
+    }
 };
 
 #endif
