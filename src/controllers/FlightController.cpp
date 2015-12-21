@@ -417,7 +417,19 @@ std::pair<Pose, Heading> FlightController::getCurrentSetpoint() {
     return std::pair<Pose, Heading>(pose, heading);
 }
 
+void FlightController::syncVision(Point visionPosEstimate, double visionYawToNorth) {    
+    RotationMatrix R(-M_PI, 'x');
 
+    Point dronePosWF = R.rotatePoint(getPoseNED().position);
+    double droneYawWF = -getPoseNED().orientation.y;
+    
+    Point visionPosOffset = dronePosWF - visionPosEstimate;
+    double visionYawOffset = droneYawWF - visionYawToNorth;
+
+    std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+    _data->visionPosOffset = visionPosOffset;
+    _data->visionYawOffset = visionYawOffset;
+}
 //ALERT: can NOT be used to set roll, pitch, rollspeed or pitchspeed
 void FlightController::setTargetCF(uint16_t type_mask, Pose poseCF, Heading headingCF) {	
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);

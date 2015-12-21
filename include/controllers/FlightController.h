@@ -144,7 +144,7 @@ namespace bjos {
 
 		/* At a given moment, the Kinect module calls this function with its current estimate of the drone position and its own rotation w.r.t. the magnetic north
 		 * The drone then uses this information as a constant base for the set*EstimateWF functions */
-		void syncVision(Pose currentKinectWF, double kinectYawToNorth);
+		void syncVision(Point visionPosOffset, double visionYawOffset);
 
         /* setCurrent* functions are to be used by a computer vision algorithm supplying the drone with external absolute measurements of its states 
 		 * These functions assume 'syncVision' is called beforehand */
