@@ -98,6 +98,9 @@ namespace bjos {
         uint64_t syncBootTime; //ms
         uint64_t syncUnixTime; //ms
         
+		/* Offset between the Vision WF and drone NED */
+		Pose visionOffset;
+
         //Used to constantly send setpoints to the drone
         //TODO: make an array-form message, in order to meet the need for sending a path of ~20 setpoints
         mavlink_set_position_target_local_ned_t current_setpoint;
@@ -141,11 +144,17 @@ namespace bjos {
         void setTargetCF(uint16_t type_mask, Pose poseCF, Heading headingCF);
         //FIXME: reference frame is missing (and name is not fully compliant)
         std::pair<Pose, Heading> getCurrentSetpoint();
-        
-        /* setCurrent* functions are to be used by a computer vision algorithm supplying the drone with external absolute measurements of its states */
-        void setCurrentPositionWF(float xyz[3]);	
-        void setCurrentVelocityWF(float vxvyvz[3]);
-        void setCurrentAttitudeWF(float rpy[3]);
+
+		/**
+		* At a given moment, the Kinect module calls this function with its current estimate of the drone position and its own rotation w.r.t. the magnetic north
+		* The drone then uses this information as a constant base for the set*EstimateWF functions
+		*/
+		void syncVision(Pose currentKinectWF, double kinectYawToNorth);
+
+        /* setCurrent* functions are to be used by a computer vision algorithm supplying the drone with external absolute measurements of its states 
+		 * These functions assume 'syncVision' is called beforehand */
+        void setPositionEstimateWF(Point posEst);	
+        void setAttitudeEstimateWF(Orientation attEst);
         
         /* Return raw sensor data */
         IMUSensorData getIMUDataCF();
