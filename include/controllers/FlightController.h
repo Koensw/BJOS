@@ -99,7 +99,8 @@ namespace bjos {
         uint64_t syncUnixTime; //ms
         
 		/* Offset between the Vision WF and drone NED */
-		Pose visionOffset;
+        Point visionPosOffset;
+        double visionYawOffset;
 
         //Used to constantly send setpoints to the drone
         //TODO: make an array-form message, in order to meet the need for sending a path of ~20 setpoints
@@ -115,11 +116,7 @@ namespace bjos {
     class FlightController : public Controller {
     public:
         FlightController() : system_id(0), autopilot_id(0),_data(nullptr), _read_thrd_running(false), _write_thrd_running(false), _init_set(false) {}
-        
-        float getRoll();
-        float getPitch();
-        float getYaw();
-        
+                
         /* Returns a Pose struct that contains Point and Orientation structs */
         Pose getPoseNED();
         Pose getPoseWF();
@@ -145,10 +142,8 @@ namespace bjos {
         //FIXME: reference frame is missing (and name is not fully compliant)
         std::pair<Pose, Heading> getCurrentSetpoint();
 
-		/**
-		* At a given moment, the Kinect module calls this function with its current estimate of the drone position and its own rotation w.r.t. the magnetic north
-		* The drone then uses this information as a constant base for the set*EstimateWF functions
-		*/
+		/* At a given moment, the Kinect module calls this function with its current estimate of the drone position and its own rotation w.r.t. the magnetic north
+		 * The drone then uses this information as a constant base for the set*EstimateWF functions */
 		void syncVision(Pose currentKinectWF, double kinectYawToNorth);
 
         /* setCurrent* functions are to be used by a computer vision algorithm supplying the drone with external absolute measurements of its states 
