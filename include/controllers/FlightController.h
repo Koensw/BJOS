@@ -98,7 +98,7 @@ namespace bjos {
         uint64_t syncBootTime; //ms
         uint64_t syncUnixTime; //ms
         
-		/* Offset between the Vision WF and drone NED */
+		/* Offset between vision WF and drone WF (frame configuration flipped from drone NED) */
         Point visionPosOffset;
         double visionYawOffset;
 
@@ -213,7 +213,8 @@ namespace bjos {
         
         SharedFlightControllerData *_data;
         
-        /* Frame conversion functions 
+        /* Frame conversion functions
+         * These functions do not access shared data!
          * 
          * The frames used in this program are defined in the Frame Specification.pdf file!
          *
@@ -222,15 +223,9 @@ namespace bjos {
         Point CFtoNED(Point pointCF, double yaw_P, Point pointP);
         Velocity CFtoNED(Velocity headingCF, double yaw_P);
         Point NEDtoCF(Point pointNED, double yaw_P, Point pointP);
-        Velocity NEDtoCF(Velocity headingNED, double yaw_P);
-        
-		/* Conversion to WF are note entirely as is specified in the Frame Specification file
-		 * This is due to the fact that no home position is determined yet
-		 *
-		 * These functions for now just rotate frame configurations (North, East, Down to Forward, Left, Up)
-		 */
-		Point NEDtoWF(Point pointNED);
-		Velocity NEDtoWF(Velocity velocityNED);
+        Velocity NEDtoCF(Velocity headingNED, double yaw_P);        
+		Point NEDtoWF(Point pointNED, Point visionPosOffset);
+		//Velocity NEDtoWF(Velocity velocityNED);
         
         //NOTE: only used by main instance
         boost::thread _read_thrd;

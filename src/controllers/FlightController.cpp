@@ -130,11 +130,11 @@ void FlightController::read_messages() {
                 _data->headingNED.velocity.vy = local_position_ned.vy;
                 _data->headingNED.velocity.vz = local_position_ned.vz;
                 
-				Point pointWF = NEDtoWF(Point(local_position_ned.x, local_position_ned.y, local_position_ned.z));
-				Velocity velocityWF = NEDtoWF(Velocity(local_position_ned.vx, local_position_ned.vy, local_position_ned.vz));
+				Point pointWF = NEDtoWF(Point(local_position_ned.x, local_position_ned.y, local_position_ned.z), _data->visionPosOffset);
+				//Velocity velocityWF = NEDtoWF(Velocity(local_position_ned.vx, local_position_ned.vy, local_position_ned.vz));
 
 				_data->poseWF.position = pointWF;
-				_data->headingWF.velocity = velocityWF;
+				//_data->headingWF.velocity = velocityWF;
 
                 if (!_init_set) {
                     mavlink_msg_local_position_ned_decode(&message, &initial_position);
@@ -430,6 +430,7 @@ void FlightController::syncVision(Point visionPosEstimate, double visionYawToNor
     _data->visionPosOffset = visionPosOffset;
     _data->visionYawOffset = visionYawOffset;
 }
+
 //ALERT: can NOT be used to set roll, pitch, rollspeed or pitchspeed
 void FlightController::setTargetCF(uint16_t type_mask, Pose poseCF, Heading headingCF) {	
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
@@ -502,15 +503,15 @@ Velocity FlightController::NEDtoCF(Velocity headingNED, double yaw_P) {
     return R.rotateVelocity(headingNED);
 }
 
-Point FlightController::NEDtoWF(Point pointNED) {
+Point FlightController::NEDtoWF(Point pointNED, Point visionPosOffset) {
 	RotationMatrix R(-M_PI, 'x');
-	return R.rotatePoint(pointNED);
+	return R.rotatePoint(pointNED) - visionPosOffset;
 }
 
-Velocity FlightController::NEDtoWF(Velocity velocityNED) {
+/*Velocity FlightController::NEDtoWF(Velocity velocityNED) {
 	RotationMatrix R(-M_PI, 'x');
 	return R.rotateVelocity(velocityNED);
-}
+}*/
 
 //get raw imu data
 IMUSensorData FlightController::getIMUDataCF(){
