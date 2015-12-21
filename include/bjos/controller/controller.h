@@ -86,10 +86,12 @@ namespace bjos{
             //check if Controller is loaded
             if(_bjos_instance == 0) return;
             
-            //wait for the state update thread to finish
-            _state_thrd_running = false;
-            _state_thrd.interrupt();
-            _state_thrd.join();
+            //wait for the state update thread to finish if main instance
+            if(_main_instance && _state_thrd_running){
+                _state_thrd_running = false;
+                _state_thrd.interrupt();
+                _state_thrd.join();
+            }
             
             //remove the mutex
             delete shared_data_mutex;
