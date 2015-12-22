@@ -473,15 +473,15 @@ void FlightController::setTargetCF(uint16_t type_mask, Eigen::Vector3d position,
 
 Eigen::Vector3d FlightController::positionCFtoNED(Eigen::Vector3d positionCF) {
     Eigen::Affine3d t;
-    t = Eigen::AngleAxisd(-_data->orientationNED[2], Eigen::Vector3d::UnitZ());
-    t *= Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX());
+    //t = Eigen::AngleAxisd(-_data->orientationNED[2], Eigen::Vector3d::UnitZ());
+    t = Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX());
     return t * positionCF + _data->positionNED;
 }
 
 Eigen::Vector3d FlightController::CFtoNED(Eigen::Vector3d vectorCF) {
     Eigen::Affine3d t;
-    t = Eigen::AngleAxisd(-_data->orientationNED[2], Eigen::Vector3d::UnitZ());
-    t *= Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX());
+    //t = Eigen::AngleAxisd(-_data->orientationNED[2], Eigen::Vector3d::UnitZ());
+    t = Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX());
     return t * vectorCF;
 }
 
