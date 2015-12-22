@@ -462,7 +462,7 @@ void FlightController::setTargetCF(uint16_t type_mask, Eigen::Vector3d position,
     sp.vy = velocityNED.y();
     sp.vz = velocityNED.z();
     
-    sp.yaw = orientationNED.y();
+    sp.yaw = orientationNED.z();
     sp.yaw_rate = angularVelocity.z(); //yaw velocity is independent of frame
     
     sp.coordinate_frame = MAV_FRAME_BODY_NED;
