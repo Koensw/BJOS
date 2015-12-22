@@ -4,18 +4,19 @@
 #include <thread>
 #include <stdexcept>
 
-#include "libs/geometry.h"
-
 #include "controllers/sonar/SonarInterface.h"
 #include "bjos/helpers/error.h"
 
 using namespace bjos;
 
-int SonarController::registerInterface(SonarInterface *interface, Pose pose, bool global){
-    if(_interfaces.size() == SharedSonarControllerData::SONAR_SIZE) throw std::out_of_range("Registering SonarInterface not possible, limit reached! Recompile with larger SONAR_SIZE.");
+int SonarController::registerInterface(SonarInterface *interface, Eigen::Vector3d position, Eigen::Vector3d orientation, bool global){
+    if(_interfaces.size() == SharedSonarControllerData::SONAR_SIZE)
+        throw std::out_of_range(
+        "Registering SonarInterface not possible, limit reached! Recompile with larger SONAR_SIZE.");
     
     _interfaces.push_back(std::make_pair(interface, global));
-    _poses.push_back(pose);
+    _positions.push_back(position);
+    _orientations.push_back(orientation);
     return _interfaces.size()-1;
 }
 
@@ -54,9 +55,8 @@ void SonarController::init(BJOS *bjos){
         _data->sonars[i].max_range = _interfaces[i].first->getMaxRange();
         _data->sonars[i].min_range = _interfaces[i].first->getMinRange();
         _data->sonars[i].field_of_view = _interfaces[i].first->getFieldOfView();
-        
-        //TODO: set pose
-        _data->sonars[i].pose = _poses[i];
+        _data->sonars[i].position = _positions[i];
+        _data->sonars[i].orientation = _orientations[i];
     }
     
     //start update thread
@@ -93,7 +93,8 @@ void SonarController::update_sonars(){
                 else if(_interfaces[i].second) _interfaces[i].first->globalReadDistance();
             }
             
-            boost::this_thread::sleep_for(boost::chrono::milliseconds(static_cast<int>(1000*_data->update_time)));
+            boost::this_thread::sleep_for(boost::chrono::milliseconds(
+                        static_cast<int>(1000*_data->update_time)));
         }catch(boost::thread_interrupted){
             //if interrupt, stop and let the controller finish resources
             return;

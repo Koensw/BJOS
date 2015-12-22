@@ -9,19 +9,21 @@
 #include <boost/interprocess/allocators/allocator.hpp>
 #include <boost/interprocess/containers/vector.hpp>
 
-#include "../libs/geometry.h"
-
 #include "../bjos/bjos.h"
 #include "../bjos/controller/controller.h"
 #include "../bjos/helpers/error.h"
 
 #include "sonar/SonarInterface.h"
+#include <Eigen/Core>
+#include <Eigen/Geometry>
+
 
 namespace bjos{
     struct SonarData{
         int id;
-        
-        Pose pose;
+
+        Eigen::Vector3d position;
+        Eigen::Vector3d orientation;
         
         double field_of_view;
         double min_range;
@@ -34,7 +36,8 @@ namespace bjos{
         SharedSonarControllerData(): sonar_size(0), update_time(0.1) {}
         
         //SET MAXIMUM AMOUNT OF SONARS ON COMPILE TIME
-        //TODO: support custom amount of sonars, but this is tricky (either we should find a fix or break our bjos system) 
+        //TODO: support custom amount of sonars, but this is tricky
+        //(either we should find a fix or break our bjos system) 
         static const unsigned int SONAR_SIZE = 12;
         SonarData sonars[SONAR_SIZE];
         unsigned sonar_size;
@@ -45,13 +48,15 @@ namespace bjos{
     class SonarController : public Controller{
     public:
         /* Initialize the sonar controller (global variable only used by main instance) */
-        SonarController(bool global = false): _data(nullptr), _thrd_running(false), _global_read(global) {}
+        SonarController(bool global = false)
+            : _data(nullptr), _thrd_running(false), _global_read(global) {}
         
         /* Register a new sonar
         WARNING: all should be added before init
         WARNING: the controller will delete those interfaces when finalizing
         */
-        int registerInterface(SonarInterface *, Pose pose, bool global = false);
+        int registerInterface(SonarInterface *, Eigen::Vector3d position, Eigen::Vector3d orientation, 
+                bool global = false);
         
         /* Get / set global flag (WARNING: only recognized by main instance) */
         void setGlobalRead(bool global){
@@ -105,7 +110,8 @@ namespace bjos{
         
         //NOTE: only used by main instance
         std::vector<std::pair<SonarInterface*, bool> > _interfaces;
-        std::vector<Pose> _poses;
+        std::vector<Eigen::Vector3d> _positions;
+        std::vector<Eigen::Vector3d> _orientations;
         boost::thread _thrd;
         std::atomic_bool _thrd_running;
         bool _global_read;

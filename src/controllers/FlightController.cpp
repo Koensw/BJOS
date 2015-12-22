@@ -1,4 +1,3 @@
-
 /**
  * @file flightController.cpp
  *
@@ -7,6 +6,7 @@
  * Functions for sending and receiving commands to a drone via MAVLink
  *
  * @author Joep Linssen,	<joep.linssen@bluejayeindhoven.nl>
+ * @author Wouter van der Stoel <wouter@bluejayeindhoven.nl>
  */
 
 #include "controllers/FlightController.h"
@@ -54,7 +54,10 @@ void FlightController::init(BJOS *bjos) {
 		throw ControllerInitializationError(this, "Did not receive any MAVLink messages");
 
     std::cout << " Received!" << std::endl;
-    Log::info("FlightController::init", "Initial position: xyz=[%.4f %.4f %.4f] vxvyvz=[%.4f %.4f %.4f]", initial_position.x, initial_position.y, initial_position.z, initial_position.vx, initial_position.y, initial_position.z);
+    Log::info("FlightController::init",
+            "Initial position: xyz=[%.4f %.4f %.4f] vxvyvz=[%.4f %.4f %.4f]", initial_position.x,
+            initial_position.y, initial_position.z, initial_position.vx, initial_position.y,
+            initial_position.z);
     
     // write_thread initialises 'current_setpoint': all velocities 0
     _write_thrd = boost::thread(&FlightController::write_thread, this);
@@ -66,12 +69,14 @@ void FlightController::init(BJOS *bjos) {
     //synchronize the time with pixhawk
     int result = synchronize_time();
     if(result == -1)
-        throw ControllerInitializationError(this, "Could not synchronize time with the Pixhawk: error with connection");
+        throw ControllerInitializationError(this,
+                "Could not synchronize time with the Pixhawk: error with connection");
         
     //in order for the drone to react to the streamed setpoints, offboard mode has to be enabled
     result = toggle_offboard_control(true);
     if (result == -1)
-        throw ControllerInitializationError(this, "Could not set offboard mode: unable to write message on serial port");
+        throw ControllerInitializationError(this,
+                "Could not set offboard mode: unable to write message on serial port");
     else if (result == 0)
         Log::warn("FlightController::init", "double (de-)activation of offboard mode [ignored]");
     
@@ -123,19 +128,13 @@ void FlightController::read_messages() {
                 
                 //put position and velocity data into _data
                 std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
-                _data->poseNED.position.x = local_position_ned.x;
-                _data->poseNED.position.y = local_position_ned.y;
-                _data->poseNED.position.z = local_position_ned.z;
-                _data->headingNED.velocity.vx = local_position_ned.vx;
-                _data->headingNED.velocity.vy = local_position_ned.vy;
-                _data->headingNED.velocity.vz = local_position_ned.vz;
+                _data->positionNED[0] = local_position_ned.x;
+                _data->positionNED[1] = local_position_ned.y;
+                _data->positionNED[2] = local_position_ned.z;
+                _data->velocityNED[0] = local_position_ned.vx;
+                _data->velocityNED[1] = local_position_ned.vy;
+                _data->velocityNED[2] = local_position_ned.vz;
                 
-				Point pointWF = NEDtoWF(Point(local_position_ned.x, local_position_ned.y, local_position_ned.z));
-				Velocity velocityWF = NEDtoWF(Velocity(local_position_ned.vx, local_position_ned.vy, local_position_ned.vz));
-
-				_data->poseWF.position = pointWF;
-				_data->headingWF.velocity = velocityWF;
-
                 if (!_init_set) {
                     mavlink_msg_local_position_ned_decode(&message, &initial_position);
                     _init_set = true;
@@ -152,19 +151,12 @@ void FlightController::read_messages() {
                 
                 //put attitude data into _data
                 std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
-                _data->poseNED.orientation.p = attitude.pitch;
-                _data->poseNED.orientation.r = attitude.roll;
-                _data->poseNED.orientation.y = attitude.yaw;
-                _data->headingNED.angular_velocity.vp = attitude.pitchspeed;
-                _data->headingNED.angular_velocity.vr = attitude.rollspeed;
-                _data->headingNED.angular_velocity.vy = attitude.yawspeed;
-
-				_data->poseWF.orientation.p = -attitude.pitch;
-				_data->poseWF.orientation.r = attitude.roll;
-				_data->poseWF.orientation.y = -attitude.yaw;
-				_data->headingWF.angular_velocity.vp = -attitude.pitchspeed;
-				_data->headingWF.angular_velocity.vr = attitude.rollspeed;
-				_data->headingWF.angular_velocity.vy = -attitude.yawspeed;
+                _data->orientationNED[0] = attitude.roll;
+                _data->orientationNED[1] = attitude.pitch;
+                _data->orientationNED[2] = attitude.yaw;
+                _data->angularVelocityNED[0] = attitude.rollspeed;
+                _data->angularVelocityNED[1] = attitude.pitchspeed;
+                _data->angularVelocityNED[2] = attitude.yawspeed;
                 break;
             }
             case MAVLINK_MSG_ID_STATUSTEXT:
@@ -377,69 +369,101 @@ bool FlightController::synchronize_time() {
     return true;
 }
 
-Pose FlightController::getPoseNED() {
+Eigen::Vector3d FlightController::getPositionNED() {
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
-    return _data->poseNED;
+    return _data->positionNED;
 }
-
-Pose FlightController::getPoseWF() {
+/*
+Eigen::Vector3d FlightController::getPositionWF() {
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
-    return _data->poseWF;
+    return positionNEDtoWF(_data->positionNED);
 }
+*/
 
-Orientation FlightController::getOrientationCF() {
+Eigen::Vector3d FlightController::getOrientationNED() {
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
-    return _data->orientationCF;
+    return _data->orientationNED;
 }
-
-Heading FlightController::getHeadingNED() {
+/*
+Eigen::Vector3d FlightController::getOrientationWF() {
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
-    return _data->headingNED;
-}
+    return NEDtoWF(_data->orientationNED);
+}*/
 
-Heading FlightController::getHeadingCF() {
+Eigen::Vector3d FlightController::getOrientationCF() {
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
-    return _data->headingCF;
+    return NEDtoCF(_data->orientationNED);
 }
 
-Heading FlightController::getHeadingWF() {
-	std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
-	return _data->headingWF;
-}
 
-std::pair<Pose, Heading> FlightController::getCurrentSetpoint() {
+Eigen::Vector3d FlightController::getVelocityNED() {
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
-    Pose pose;
-    Heading heading;
-    pose.position = Point(_data->current_setpoint.x, _data->current_setpoint.y, _data->current_setpoint.z);
-    heading.velocity = Velocity(_data->current_setpoint.vx, _data->current_setpoint.vy, _data->current_setpoint.vz);
-    
-    return std::pair<Pose, Heading>(pose, heading);
+    return _data->velocityNED;
+}
+/*
+Eigen::Vector3d FlightController::getVelocityWF() {
+    std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+    return NEDtoWF(_data->velocityNED);
+}*/
+
+Eigen::Vector3d FlightController::getVelocityCF() {
+    std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+    return NEDtoCF(_data->velocityNED);
+}    
+
+
+Eigen::Vector3d FlightController::getAngularVelocityNED() {
+    std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+    return _data->angularVelocityNED;
 }
 
+/*
+Eigen::Vector3d FlightController::getAngularVelocityWF() {
+    std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+    return NEDtoWF(_data->angularVelocityNED);
+}*/
+
+Eigen::Vector3d FlightController::getAngularVelocityCF() {
+    std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+    return NEDtoCF(_data->angularVelocityNED);
+}
+
+
+Eigen::Vector3d FlightController::getTargetOrientationCF() {
+    std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+    return Eigen::Vector3d(
+            _data->current_setpoint.x, _data->current_setpoint.y, _data->current_setpoint.z);
+}
+
+Eigen::Vector3d FlightController::getTargetVelocityCF() {
+    std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+    return Eigen::Vector3d(
+            _data->current_setpoint.vx, _data->current_setpoint.vy, _data->current_setpoint.vz);
+}
 
 //ALERT: can NOT be used to set roll, pitch, rollspeed or pitchspeed
-void FlightController::setTargetCF(uint16_t type_mask, Pose poseCF, Heading headingCF) {	
+void FlightController::setTargetCF(uint16_t type_mask, Eigen::Vector3d position,
+        Eigen::Vector3d orientation, Eigen::Vector3d velocity, Eigen::Vector3d angularVelocity) {	
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
-    
     /* Tranform given position, velocity and yaw from CF frame to NED Body frame */
-    Point pointNED = CFtoNED(poseCF.position, 0, _data->poseNED.position);
-    Velocity velocityNED = CFtoNED(headingCF.velocity, 0);
+    Eigen::Vector3d positionNED = positionCFtoNED(position);
+    Eigen::Vector3d orientationNED = CFtoNED(orientation);
+    Eigen::Vector3d velocityNED = CFtoNED(velocity);
     
     mavlink_set_position_target_local_ned_t sp;
     
     sp.type_mask = type_mask;
     
-    sp.x = pointNED.x;
-    sp.y = pointNED.y;
-    sp.z = pointNED.z;
+    sp.x = positionNED.x();
+    sp.y = positionNED.y();
+    sp.z = positionNED.z();
     
-    sp.vx = velocityNED.vx;
-    sp.vy = velocityNED.vy;
-    sp.vz = velocityNED.vz;
+    sp.vx = velocityNED.x();
+    sp.vy = velocityNED.y();
+    sp.vz = velocityNED.z();
     
-    sp.yaw = poseCF.orientation.y;
-    sp.yaw_rate = headingCF.angular_velocity.vy; //yaw velocity is independent of frame
+    sp.yaw = orientationNED.y();
+    sp.yaw_rate = angularVelocity.z(); //yaw velocity is independent of frame
     
     sp.coordinate_frame = MAV_FRAME_BODY_NED;
     
@@ -447,57 +471,33 @@ void FlightController::setTargetCF(uint16_t type_mask, Pose poseCF, Heading head
     _data->current_setpoint = sp;
 }
 
-Point FlightController::CFtoNED(Point pointCF, double yaw_P, Point pointP) {
-    RotationMatrix Rz(-yaw_P, 'z');
-    RotationMatrix Rx(M_PI, 'x');
-    RotationMatrix R = Rz*Rx;
-    
-    Vector v(pointP);
-    
-    TransformationMatrix tm(R, v);
-    return tm.transformPoint(pointCF);
+Eigen::Vector3d FlightController::positionCFtoNED(Eigen::Vector3d positionCF) {
+    Eigen::Affine3d t;
+    t = Eigen::AngleAxisd(-_data->orientationNED[2], Eigen::Vector3d::UnitZ());
+    t *= Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX());
+    return t * positionCF + _data->positionNED;
 }
 
-Velocity FlightController::CFtoNED(Velocity headingCF, double yaw_P) {
-    RotationMatrix Rz(-yaw_P, 'z');
-    RotationMatrix Rx(M_PI, 'x');
-    RotationMatrix R = Rz*Rx;
-    
-    return R.rotateVelocity(headingCF);
+Eigen::Vector3d FlightController::CFtoNED(Eigen::Vector3d vectorCF) {
+    Eigen::Affine3d t;
+    t = Eigen::AngleAxisd(-_data->orientationNED[2], Eigen::Vector3d::UnitZ());
+    t *= Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX());
+    return t * vectorCF;
 }
 
-Point FlightController::NEDtoCF(Point pointNED, double yaw_P, Point pointP) {
-    RotationMatrix Rz(-yaw_P, 'z');
-    RotationMatrix Rx(M_PI, 'x');
-    RotationMatrix R = Rz*Rx;
-    
-    Vector v(pointP);
-    
-    TransformationMatrix tm_foo(R, v);
-    
-    TransformationMatrix tm = tm_foo.inverse();
-    
-    return tm.transformPoint(pointNED);
+Eigen::Vector3d FlightController::positionNEDtoCF(Eigen::Vector3d positionNED) {
+    Eigen::Vector3d res = positionNED - _data->positionNED;
+    Eigen::Affine3d t;
+    t = Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX());
+    t *= Eigen::AngleAxisd(_data->orientationNED[2], Eigen::Vector3d::UnitZ());
+    return t * res;
 }
 
-Velocity FlightController::NEDtoCF(Velocity headingNED, double yaw_P) {
-    RotationMatrix Rz(-yaw_P, 'z');
-    RotationMatrix Rx(M_PI, 'x');
-    RotationMatrix R_foo = Rz*Rx;
-    
-    RotationMatrix R = R_foo.transpose();
-    
-    return R.rotateVelocity(headingNED);
-}
-
-Point FlightController::NEDtoWF(Point pointNED) {
-	RotationMatrix R(-M_PI, 'x');
-	return R.rotatePoint(pointNED);
-}
-
-Velocity FlightController::NEDtoWF(Velocity velocityNED) {
-	RotationMatrix R(-M_PI, 'x');
-	return R.rotateVelocity(velocityNED);
+Eigen::Vector3d FlightController::NEDtoCF(Eigen::Vector3d vectorNED) {
+    Eigen::Affine3d t;
+    t = Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX());
+    t *= Eigen::AngleAxisd(_data->orientationNED[2], Eigen::Vector3d::UnitZ());
+    return t * vectorNED;
 }
 
 //get raw imu data
@@ -505,7 +505,7 @@ IMUSensorData FlightController::getIMUDataCF(){
     //copy the data
     shared_data_mutex->lock();
     IMUSensorData imuCF = _data->imuNED;
-    double yaw = _data->poseNED.orientation.y;
+    double yaw = _data->orientationNED.z();
     uint64_t unixTime = _data->syncUnixTime;
     uint64_t bootTime = _data->syncBootTime;
     shared_data_mutex->unlock();

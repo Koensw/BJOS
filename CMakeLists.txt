@@ -1,13 +1,14 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(bjos)
 find_package(Boost COMPONENTS system thread REQUIRED)
+find_package(Eigen3 REQUIRED)
 
 # set compiler and flags
 set(CMAKE_CXX_COMPILER "/usr/bin/g++")
 set(CMAKE_CXX_FLAGS "-g -Wall -Wextra -pedantic --std=c++11 ${CMAKE_CXX_FLAGS}")
 
 # include the headers
-include_directories(include/)
+include_directories(include/ /usr/include/eigen3/)
 
 #### LIBS ####
 # build the bjos library
@@ -19,7 +20,6 @@ add_library(bjos SHARED
     src/controllers/FlightController.cpp
     src/controllers/flight/serial_port.cpp
     src/libs/i2c.cpp
-    src/libs/geometry.cpp
 )
 target_link_libraries(bjos ${Boost_THREAD_LIBRARY} ${Boost_SYSTEM_LIBRARY} pthread rt)
 
@@ -49,12 +49,7 @@ add_executable(default_loader
 )
 target_link_libraries(default_loader ${Boost_THREAD_LIBRARY} ${Boost_SYSTEM_LIBRARY} bjos)
 
-#### TEST ####
-# build the test offboard executable
-add_executable(test_offboard
-    test/test_offboard.cpp
-)
-target_link_libraries(test_offboard bjos)
+### TEST ###
 
 # build the test offboard interactive executable
 add_executable(test_offboard_interactive

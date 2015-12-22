@@ -10,6 +10,9 @@
 #include <chrono>
 #include <thread>
 
+#include <Eigen/Core>
+#include <Eigen/Geometry>
+
 #include "bjos/bjos.h"
 #include "bjos/helpers/process.h"
 
@@ -26,82 +29,81 @@ float TAKEOFF = 2.0;
 float ZVEL = 0.5;
 float YAWR = 0.2;
 
-Heading handle_input(char c)
+#define M_EPS 1e-7
+
+std::pair<Eigen::Vector3d,Eigen::Vector3d> handle_input(char c)
 {
-	static Heading setp_old;
-	Heading setp = Heading();
+	static Eigen::Vector3d setv_old;
+    static Eigen::Vector3d setav_old;
+    Eigen::Vector3d setv(0,0,0);
+    Eigen::Vector3d setav(0,0,0);
 	switch (c) {
 	case 'w':
 		std::cout << "Going forward" << std::endl;
-		setp.velocity.vx = VEL;
-		setp.velocity.vy = setp.velocity.vz = 0;
+		setv[0] = VEL;
 		break;
 
 	case 's':
 		std::cout << "Going backward" << std::endl;
-		setp.velocity.vx = -VEL;
-		setp.velocity.vy = setp.velocity.vz = 0;
+		setv[0] = -VEL;
 		break;
 
 	case 'a':
 		std::cout << "Going left" << std::endl;
-		setp.velocity.vy = VEL;
-		setp.velocity.vx = setp.velocity.vz = 0;
+		setv[1] = VEL;
 		break;
 
 	case 'd':
 		std::cout << "Going right" << std::endl;
-		setp.velocity.vy = -VEL;
-		setp.velocity.vx = setp.velocity.vz = 0;
+		setv[1] = -VEL;
 		break;
 
 	case 'e':
 		std::cout << "Turning left" << std::endl;
-		setp.angular_velocity.vy = -YAWR;
+        setav[1] = -YAWR;
+		setv = setv_old;
 		break;
 
 	case 'r':
 		std::cout << "Turning right" << std::endl;
-		setp.angular_velocity.vy = YAWR;
+        setav[1] = YAWR;
+		setv = setv_old;
 		break;
 
 	case 'o':
 		std::cout << "Going upward" << std::endl;
-		setp.velocity.vz = ZVEL;
-		setp.velocity.vx = setp.velocity.vy = 0;
+		setv[2] = ZVEL;
 		break;
 
 	case 'l':
 		std::cout << "Going downward" << std::endl;
-		setp.velocity.vz = -ZVEL;
-		setp.velocity.vx = setp.velocity.vy = 0;
+        setv[2] = -ZVEL;
 		break;
 
     case 't':
 		std::cout << "Takeoff!" << std::endl;
-		setp.velocity.vz = TAKEOFF;
-		setp.velocity.vx = setp.velocity.vy = 0;
+		setv[2] = TAKEOFF;
 		break;
 
 	case 'q':
 		std::cout << "Quitting... :(" << std::endl;
-        setp.velocity.vz = -ZVEL;
-		setp.velocity.vx = setp.velocity.vy = 0;
+        setv[2] = -ZVEL;
 		break;
 
 	case '\n':
-		setp = setp_old;
+		setv = setv_old;
+        setav = setav_old;
 		break;
 
 	case 'h':
 	default:
 		std::cout << "Holding..." << std::endl;
-		setp.velocity.vx = setp.velocity.vy = setp.velocity.vz = 0;
 		break;
 	}
 
-	setp_old = setp;
-	return setp;
+	setv_old = setv;
+    setav_old = setav;
+    return std::pair<Eigen::Vector3d, Eigen::Vector3d>(setv,setav);
 }
 
 int main(){
@@ -121,16 +123,17 @@ int main(){
     }
 
 	char ret;
-	Heading action;
 	std::cout << "Interactive Offboard Tester!\n----------------------------" << std::endl;
 	do {
 		ret = std::cin.get();
 		if (!Process::isActive()) ret = 'q';
-		action = handle_input(ret);
-		if (fabsf(action.angular_velocity.vy) < M_EPS)
-			flight.setTargetCF(SET_TARGET_VELOCITY, Pose(), action);
+		auto action = handle_input(ret);
+		if (fabsf(action.second[2]) < M_EPS)
+			flight.setTargetCF(SET_TARGET_VELOCITY,
+                    Eigen::Vector3d(0,0,0), Eigen::Vector3d(0,0,0), action.first, action.second);
 		else
-			flight.setTargetCF(SET_TARGET_VELOCITY & SET_TARGET_YAW_RATE, Pose(), action);
+            flight.setTargetCF(SET_TARGET_VELOCITY & SET_TARGET_YAW_RATE,
+                    Eigen::Vector3d(0,0,0), Eigen::Vector3d(0,0,0), action.first, action.second);
 	} while (ret != 'q');
 
 	std::cout << "Byebye!";

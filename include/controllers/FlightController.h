@@ -31,7 +31,6 @@
 
 #include <utility>
 
-#include "../libs/geometry.h"
 #include "../libs/log.h"
 
 #include "../bjos/bjos.h"
@@ -39,6 +38,9 @@
 #include "../bjos/helpers/error.h"
 
 #include "flight/serial_port.h"
+
+#include <Eigen/Core>
+#include <Eigen/Geometry>
 
 #ifdef _WIN32
 #include "mavlink\include\mavlink\v1.0\common\mavlink.h"
@@ -85,14 +87,10 @@ namespace bjos {
     
     struct SharedFlightControllerData {
         //NOTE: class variables are double's not floats
-        /* Structs storing pose and heading of the drone in different frames; Local NED (Pixhawk), Control Frame and World Frame */
-        Pose poseNED;
-        Heading headingNED;
-        //NOTE: position of drone in CF frame is always 0 (its a drone-fixed frame)
-        Orientation orientationCF;
-        Heading headingCF;
-        Pose poseWF;
-        Heading headingWF;
+        Eigen::Vector3d positionNED;
+        Eigen::Vector3d orientationNED;
+        Eigen::Vector3d velocityNED;
+        Eigen::Vector3d angularVelocityNED;
         
         /* The synchronized time of the Pixhawk */
         uint64_t syncBootTime; //ms
@@ -113,21 +111,28 @@ namespace bjos {
     public:
         FlightController() : system_id(0), autopilot_id(0),_data(nullptr), _read_thrd_running(false), _write_thrd_running(false), _init_set(false) {}
         
-        float getRoll();
-        float getPitch();
-        float getYaw();
-        
-        /* Returns a Pose struct that contains Point and Orientation structs */
-        Pose getPoseNED();
-        Pose getPoseWF();
-        // Control Frame always has position 0, to remind users of these get functions of that, only a Orientation struct is returned
-        Orientation getOrientationCF();
 
-        /* Returns a Heading struct that contains Velocity and AngularVelocity structs */
-        Heading getHeadingNED();
-        Heading getHeadingCF();
-		Heading getHeadingWF();
-        
+        /* Position, orientation, velocity and angular velocity methods */
+
+        /* Positions */
+        Eigen::Vector3d getPositionNED();
+        Eigen::Vector3d getPositionWF();
+
+        /* Orientations, where x = roll, y = pitch, z = yaw */
+        Eigen::Vector3d getOrientationNED();
+        Eigen::Vector3d getOrientationWF();
+        Eigen::Vector3d getOrientationCF();
+
+        /* Velocities */
+        Eigen::Vector3d getVelocityNED();
+        Eigen::Vector3d getVelocityWF();
+        Eigen::Vector3d getVelocityCF();
+
+        /* Angular velocities, where x = roll, y = pitch, z = yaw */
+        Eigen::Vector3d getAngularVelocityNED();
+        Eigen::Vector3d getAngularVelocityWF();
+        Eigen::Vector3d getAngularVelocityCF();
+
         /**
          * setTargetCF updates private variable current_setpoint
          * its first argument is a type_mask that specifies which of its other arguments should be used and which should be ignored
@@ -138,14 +143,16 @@ namespace bjos {
          * Example for velocity and yaw rate setpoint:
          * uint16_t type_mask = SET_TARGET_VELOCITY & SET_TARGET_YAW_RATE;
          */
-        void setTargetCF(uint16_t type_mask, Pose poseCF, Heading headingCF);
-        //FIXME: reference frame is missing (and name is not fully compliant)
-        std::pair<Pose, Heading> getCurrentSetpoint();
+        void setTargetCF(uint16_t type_mask, Eigen::Vector3d position, Eigen::Vector3d orientation, Eigen::Vector3d velocity,
+                Eigen::Vector3d angularVelocity);
+
+        Eigen::Vector3d getTargetOrientationCF();
+        Eigen::Vector3d getTargetVelocityCF();
         
         /* setCurrent* functions are to be used by a computer vision algorithm supplying the drone with external absolute measurements of its states */
-        void setCurrentPositionWF(float xyz[3]);	
-        void setCurrentVelocityWF(float vxvyvz[3]);
-        void setCurrentAttitudeWF(float rpy[3]);
+        void setCurrentPositionWF(Eigen::Vector3d position);	
+        void setCurrentVelocityWF(Eigen::Vector3d velocity);
+        void setCurrentAttitudeWF(Eigen::Vector3d angularVelocity);
         
         /* Return raw sensor data */
         IMUSensorData getIMUDataCF();
@@ -158,9 +165,11 @@ namespace bjos {
                 //disable offboard control mode if not already
                 int result = toggle_offboard_control(false);
                 if (result == -1)
-                    Log::error("FlightController::init", "Could not set offboard mode: unable to write message on serial port");
+                    Log::error("FlightController::init",
+                            "Could not set offboard mode: unable to write message on serial port");
                 else if (result == 0)
-                    Log::warn("FlightController::init", "double (de-)activation of offboard mode [ignored]");
+                    Log::warn("FlightController::init",
+                            "double (de-)activation of offboard mode [ignored]");
                 
                 //stop threads, wait for finish
                 _read_thrd_running = false;
@@ -170,10 +179,12 @@ namespace bjos {
                 _read_thrd.join();
                 _write_thrd.join();
 
-				//if the read_trhd is still waiting to receive an initial MAVLink message: close it and throw an ControllerInitializationError
+				//if the read_trhd is still waiting to receive an initial MAVLink message:
+                //close it and throw an ControllerInitializationError
 				if (_init_set == false) {
 					_init_set = true;
-					Log::error("FlightController::init", "Did not receive any MAVLink messages, check physical connections and make sure it is running on the right port!");
+					Log::error("FlightController::init",
+                            "Did not receive any MAVLink messages, check physical connections and make sure it is running on the right port!");
 				}
                 
                 //stop the serial_port and clean up the pointer
@@ -213,20 +224,17 @@ namespace bjos {
          * 
          * The frames used in this program are defined in the Frame Specification.pdf file!
          *
-         * yaw_P is the yaw as returned by the Pixhawk, this can be retreived from _data->headingNED.orientation.y
+         * Make sure you have a mutex lock on the shared data before calling this!
          */
-        Point CFtoNED(Point pointCF, double yaw_P, Point pointP);
-        Velocity CFtoNED(Velocity headingCF, double yaw_P);
-        Point NEDtoCF(Point pointNED, double yaw_P, Point pointP);
-        Velocity NEDtoCF(Velocity headingNED, double yaw_P);
-        
-		/* Conversion to WF are note entirely as is specified in the Frame Specification file
-		 * This is due to the fact that no home position is determined yet
-		 *
-		 * These functions for now just rotate frame configurations (North, East, Down to Forward, Left, Up)
-		 */
-		Point NEDtoWF(Point pointNED);
-		Velocity NEDtoWF(Velocity velocityNED);
+        Eigen::Vector3d positionCFtoNED(Eigen::Vector3d positionCF);
+        Eigen::Vector3d CFtoNED(Eigen::Vector3d vectorCF);
+        Eigen::Vector3d positionNEDtoCF(Eigen::Vector3d positionNED);
+        Eigen::Vector3d NEDtoCF(Eigen::Vector3d vectorNED);
+        Eigen::Vector3d positionWFtoNED(Eigen::Vector3d positionWF);
+        Eigen::Vector3d WFtoNED(Eigen::Vector3d vectorWF);
+        Eigen::Vector3d positionNEDtoWF(Eigen::Vector3d positionNED);
+        Eigen::Vector3d NEDtoWF(Eigen::Vector3d vectorNED);
+
         
         //NOTE: only used by main instance
         boost::thread _read_thrd;

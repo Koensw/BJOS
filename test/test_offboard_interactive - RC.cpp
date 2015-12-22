@@ -82,8 +82,8 @@ int pulseIn(int pin, int level)
 
 Heading check_RC()
 {
-	static Heading setp_old;
-	Heading setp = Heading();
+	static Eigen::Vector3d setp_old;
+    Eigen::Vector3d setp(0,0,0);
 	delay(100);
 	int RC1 = pulseIn(ch1, HIGH);
 	delay(100);
@@ -95,31 +95,20 @@ Heading check_RC()
 	delay(100);
 	int RC8 = pulseIn(ch8, HIGH);
 	printf("RC1: %i, RC2: %i, RC3: %i, RC7: %i, RC8: %i\n", RC1, RC2, RC3, RC7, RC8);
-	if (RC1 < 1300)
+
+	if (RC1 < 1300 || RC1 > 1600)
 	{
-		setp.velocity.vx = VEL;
-	}
-	else if (RC1>1600)
-	{
-		setp.velocity.vx = VEL;
-	}
-	else {
-		setp.velocity.vx = 0;
-	}
-		
-	if (RC2 < 1300)
-	{
-		setp.velocity.vy = VEL;
-	}
-	else if (RC2>1600)
-	{
-		setp.velocity.vy = VEL;
-	}
-	else {
-		setp.velocity.vy = 0;
+		setp[0] = VEL;
 	}
 
-	if (RC3 < 1300)
+    //TODO FINISH THIS IS BROKEN DONT USE EVER PLS
+		
+	if (RC2 < 1300 || RC2 > 1600)
+	{
+		setp[1] = VEL;
+	}
+		
+	if (RC3 < 1300 || RC3 > 1600)
 	{
 		setp.velocity.vz = ZVEL;
 	}
