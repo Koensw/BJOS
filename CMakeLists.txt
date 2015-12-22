@@ -1,14 +1,18 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(bjos)
 find_package(Boost COMPONENTS system thread REQUIRED)
-find_package(Eigen3 REQUIRED)
+
+# load eigen3
+find_package( PkgConfig )
+pkg_check_modules( EIGEN3 REQUIRED eigen3 )
+include_directories( ${EIGEN3_INCLUDE_DIRS} )
 
 # set compiler and flags
 set(CMAKE_CXX_COMPILER "/usr/bin/g++")
 set(CMAKE_CXX_FLAGS "-g -Wall -Wextra -pedantic --std=c++11 ${CMAKE_CXX_FLAGS}")
 
 # include the headers
-include_directories(include/ /usr/include/eigen3/)
+include_directories(include/)
 
 #### LIBS ####
 # build the bjos library
