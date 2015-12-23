@@ -446,7 +446,7 @@ void FlightController::setTargetCF(uint16_t type_mask, Eigen::Vector3d position,
         Eigen::Vector3d orientation, Eigen::Vector3d velocity, Eigen::Vector3d angularVelocity) {	
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
     /* Tranform given position, velocity and yaw from CF frame to NED Body frame */
-    Eigen::Vector3d positionNED = positionCFtoNED(position);
+    //Eigen::Vector3d positionNED = positionCFtoNED(position);
     Eigen::Vector3d orientationNED = CFtoNED(orientation);
     Eigen::Vector3d velocityNED = CFtoNED(velocity);
     
@@ -454,9 +454,9 @@ void FlightController::setTargetCF(uint16_t type_mask, Eigen::Vector3d position,
     
     sp.type_mask = type_mask;
     
-    sp.x = positionNED.x();
-    sp.y = positionNED.y();
-    sp.z = positionNED.z();
+    sp.x = 0; // positionNED.x();
+    sp.y = 0; // positionNED.y();
+    sp.z = 0; // positionNED.z();
     
     sp.vx = velocityNED.x();
     sp.vy = velocityNED.y();
@@ -471,16 +471,15 @@ void FlightController::setTargetCF(uint16_t type_mask, Eigen::Vector3d position,
     _data->current_setpoint = sp;
 }
 
-Eigen::Vector3d FlightController::positionCFtoNED(Eigen::Vector3d positionCF) {
+//TODO: fix yaw rotation on Raspberry Pi side in order to send position setpoints
+/*Eigen::Vector3d FlightController::positionCFtoBodyNED(Eigen::Vector3d positionCF) {
     Eigen::Affine3d t;
-    //t = Eigen::AngleAxisd(-_data->orientationNED[2], Eigen::Vector3d::UnitZ());
     t = Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX());
-    return t * positionCF + _data->positionNED;
-}
+    return t * positionCF + _data->positionNED;  //_data->positionNED is not in the same frame as t * positionCF an thus can't be used
+}*/
 
-Eigen::Vector3d FlightController::CFtoNED(Eigen::Vector3d vectorCF) {
+Eigen::Vector3d FlightController::CFtoBodyNED(Eigen::Vector3d vectorCF) {
     Eigen::Affine3d t;
-    //t = Eigen::AngleAxisd(-_data->orientationNED[2], Eigen::Vector3d::UnitZ());
     t = Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX());
     return t * vectorCF;
 }

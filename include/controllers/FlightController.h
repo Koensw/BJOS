@@ -226,8 +226,8 @@ namespace bjos {
          *
          * Make sure you have a mutex lock on the shared data before calling this!
          */
-        Eigen::Vector3d positionCFtoNED(Eigen::Vector3d positionCF);
-        Eigen::Vector3d CFtoNED(Eigen::Vector3d vectorCF);
+        //Eigen::Vector3d positionCFtoBodyNED(Eigen::Vector3d positionCF);
+        Eigen::Vector3d CFtoBodyNED(Eigen::Vector3d vectorCF);
         Eigen::Vector3d positionNEDtoCF(Eigen::Vector3d positionNED);
         Eigen::Vector3d NEDtoCF(Eigen::Vector3d vectorNED);
         Eigen::Vector3d positionWFtoNED(Eigen::Vector3d positionWF);
