@@ -1,7 +1,7 @@
 #ifndef _BLUEJAY_CONTROLLER_H
 #define _BLUEJAY_CONTROLLER_H
 
-#include "../bjos.h"
+#include "bjos.h"
 
 #include <atomic>
 #include <boost/thread/thread.hpp>

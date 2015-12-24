@@ -11,7 +11,7 @@
 #include <boost/interprocess/offset_ptr.hpp>
 
 #include "bjos/bjos.h"
-#include "bjos/controller/controller.h"
+#include "bjos/controller.h"
 #include "bjos/helpers/error.h"
 
 using namespace boost::interprocess;

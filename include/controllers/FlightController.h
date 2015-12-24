@@ -35,7 +35,7 @@
 #include "../libs/log.h"
 
 #include "../bjos/bjos.h"
-#include "../bjos/controller/controller.h"
+#include "../bjos/controller.h"
 #include "../bjos/helpers/error.h"
 
 #include "flight/serial_port.h"

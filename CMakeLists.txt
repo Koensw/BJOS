@@ -13,7 +13,7 @@ include_directories(include/)
 # build the bjos library
 add_library(bjos SHARED
     src/bjos/bjos.cpp
-    src/bjos/controller/controller.cpp
+    src/bjos/controller.cpp
     src/bjos/helpers/error.cpp
     src/bjos/helpers/process.cpp
     src/controllers/SonarController.cpp

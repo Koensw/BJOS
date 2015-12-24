@@ -12,7 +12,7 @@
 #include "../libs/geometry.h"
 
 #include "../bjos/bjos.h"
-#include "../bjos/controller/controller.h"
+#include "../bjos/controller.h"
 #include "../bjos/helpers/error.h"
 
 #include "sonar/SonarInterface.h"

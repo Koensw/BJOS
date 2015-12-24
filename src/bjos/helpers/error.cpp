@@ -1,6 +1,6 @@
 #include "bjos/helpers/error.h"
 
-#include "bjos/controller/controller.h"
+#include "bjos/controller.h"
 
 using namespace bjos;
 

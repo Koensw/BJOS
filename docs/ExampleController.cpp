@@ -9,7 +9,7 @@
 
 #include "bjos/bjos.h"
 #include "bjos/helpers/process.h"
-#include "bjos/controller/controller.h"
+#include "bjos/controller.h"
 
 #include <bjcomm/message.h>
 
