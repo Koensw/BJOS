@@ -56,8 +56,8 @@ void FlightController::init(BJOS *bjos) {
     std::cout << " Received!" << std::endl;
     Log::info("FlightController::init",
             "Initial position: xyz=[%.4f %.4f %.4f] vxvyvz=[%.4f %.4f %.4f]", initial_position.x,
-            initial_position.y, initial_position.z, initial_position.vx, initial_position.y,
-            initial_position.z);
+            initial_position.y, initial_position.z, initial_position.vx, initial_position.vy,
+            initial_position.vz);
     
     // write_thread initialises 'current_setpoint': all velocities 0
     _write_thrd = boost::thread(&FlightController::write_thread, this);
