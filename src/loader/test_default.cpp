@@ -35,7 +35,7 @@ void OSInit(){
         BJOS *bjos = BJOS::getOS();
 
         //start i2c
-        I2C::start("/dev/i2c-1");
+        /*I2C::start("/dev/i2c-1");
         
         //load the sonar controller
         sonar = new SonarController(true);
@@ -50,7 +50,7 @@ void OSInit(){
         
         bjos->initController(sonar);
         sonar->setUpdateTime(0.1);
-        
+        */
         //load the flight controller
         flight = new FlightController();
         bjos->initController(flight);        
@@ -67,16 +67,16 @@ void OSFinalize(){
     bjos->shutdown();
     
     //wait for finalizing clients
-    while(!sonar->canFinalize() || !flight->canFinalize()){
+    while(!flight->canFinalize()){ //|| !flight->canFinalize()){
         Log::info("default_loader", "Waiting for %d clients to finish...", bjos->getControllerCount("sonar")+bjos->getControllerCount("flight")-2);
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
     //delete pointers
-    delete sonar;
+//    delete sonar;
     delete flight;
     
     //stop i2c
-    I2C::stop();
+//    I2C::stop();
     
     //stop os
     BJOS::finalize();
