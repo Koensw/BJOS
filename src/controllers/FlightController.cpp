@@ -22,8 +22,7 @@ uint64_t get_time_usec(clockid_t clk_id)
     return _time_stamp.tv_sec * 1000000ULL + _time_stamp.tv_nsec / 1000ULL;
 }
 
-//WARNING: blocks while no initial messages are received from the drone
-void FlightController::init(BJOS *bjos) {
+void FlightController::init(bjos::BJOS *bjos) {
     bool ret = Controller::init(bjos, "flight", _data);
     if (!ret)
         throw ControllerInitializationError(this, "Controller::init failed");
@@ -42,9 +41,8 @@ void FlightController::init(BJOS *bjos) {
     _read_thrd_running = true;
     _read_thrd = boost::thread(&FlightController::read_thread, this);
     
-    // read_thread initialises 'initial_position' and signals this by setting _init_set
-    std::cout << "Receiving initial position ...";
-	unsigned int n = 0;
+    //read_thread initialises 'initial_position' and signals this by setting _init_set
+    unsigned int n = 0;
     unsigned int timeout = 20; //deciseconds
     while (_init_set == false && n < timeout) {
 		n++;
@@ -53,14 +51,11 @@ void FlightController::init(BJOS *bjos) {
 	if (n == timeout)
 		throw ControllerInitializationError(this, "Did not receive any MAVLink messages");
 
-    std::cout << " Received!" << std::endl;
     Log::info("FlightController::init", "Initial position: xyz=[%.4f %.4f %.4f] vxvyvz=[%.4f %.4f %.4f]", initial_position.x, initial_position.y, initial_position.z, initial_position.vx, initial_position.y, initial_position.z);
     
-    // write_thread initialises 'current_setpoint': all velocities 0
+    //write_thread initialises 'current_setpoint': all velocities 0
     _write_thrd = boost::thread(&FlightController::write_thread, this);
-    
-    //wait until write_thread starts
-    while (_write_thrd_running == false)
+     while (_write_thrd_running == false)
         usleep(100000); //10 Hz
         
     //synchronize the time with pixhawk
@@ -92,7 +87,7 @@ void FlightController::read_thread() {
         }
         catch (boost::thread_interrupted) {
             //if interrupt, stop and let the controller finish resources
-            ///Q: wha??
+            //TODO: finish resources?
             return;
         }
     }
