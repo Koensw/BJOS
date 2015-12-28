@@ -447,8 +447,8 @@ void FlightController::setTargetCF(uint16_t type_mask, Eigen::Vector3d position,
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
     /* Tranform given position, velocity and yaw from CF frame to NED Body frame */
     //Eigen::Vector3d positionNED = positionCFtoNED(position);
-    Eigen::Vector3d orientationNED = CFtoNED(orientation);
-    Eigen::Vector3d velocityNED = CFtoNED(velocity);
+    //Eigen::Vector3d orientationNED = CFtoNED(orientation);
+    Eigen::Vector3d velocityNED = CFtoBodyNED(velocity);
     
     mavlink_set_position_target_local_ned_t sp;
     
@@ -462,8 +462,8 @@ void FlightController::setTargetCF(uint16_t type_mask, Eigen::Vector3d position,
     sp.vy = velocityNED.y();
     sp.vz = velocityNED.z();
     
-    sp.yaw = orientationNED.z();
-    sp.yaw_rate = angularVelocity.z(); //yaw velocity is independent of frame
+    sp.yaw = -orientation.z();
+    sp.yaw_rate = -angularVelocity.z();
     
     sp.coordinate_frame = MAV_FRAME_BODY_NED;
     
