@@ -389,12 +389,11 @@ Eigen::Vector3d FlightController::getOrientationWF() {
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
     return NEDtoWF(_data->orientationNED);
 }*/
-
+/*
 Eigen::Vector3d FlightController::getOrientationCF() {
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
     return NEDtoCF(_data->orientationNED);
-}
-
+}*/
 
 Eigen::Vector3d FlightController::getVelocityNED() {
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
@@ -405,28 +404,27 @@ Eigen::Vector3d FlightController::getVelocityWF() {
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
     return NEDtoWF(_data->velocityNED);
 }*/
-
+/*
 Eigen::Vector3d FlightController::getVelocityCF() {
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
     return NEDtoCF(_data->velocityNED);
-}    
+}*/    
 
 
 Eigen::Vector3d FlightController::getAngularVelocityNED() {
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
     return _data->angularVelocityNED;
 }
-
 /*
 Eigen::Vector3d FlightController::getAngularVelocityWF() {
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
     return NEDtoWF(_data->angularVelocityNED);
 }*/
-
+/*
 Eigen::Vector3d FlightController::getAngularVelocityCF() {
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
     return NEDtoCF(_data->angularVelocityNED);
-}
+}*/
 
 
 Eigen::Vector3d FlightController::getTargetOrientationCF() {

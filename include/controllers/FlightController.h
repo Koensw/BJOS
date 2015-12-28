@@ -116,22 +116,22 @@ namespace bjos {
 
         /* Positions */
         Eigen::Vector3d getPositionNED();
-        Eigen::Vector3d getPositionWF();
+        //Eigen::Vector3d getPositionWF();
 
         /* Orientations, where x = roll, y = pitch, z = yaw */
         Eigen::Vector3d getOrientationNED();
-        Eigen::Vector3d getOrientationWF();
-        Eigen::Vector3d getOrientationCF();
+        //Eigen::Vector3d getOrientationWF();
+        //Eigen::Vector3d getOrientationCF();
 
         /* Velocities */
         Eigen::Vector3d getVelocityNED();
-        Eigen::Vector3d getVelocityWF();
-        Eigen::Vector3d getVelocityCF();
+        //Eigen::Vector3d getVelocityWF();
+        //Eigen::Vector3d getVelocityCF();
 
         /* Angular velocities, where x = roll, y = pitch, z = yaw */
         Eigen::Vector3d getAngularVelocityNED();
-        Eigen::Vector3d getAngularVelocityWF();
-        Eigen::Vector3d getAngularVelocityCF();
+        //Eigen::Vector3d getAngularVelocityWF();
+        //Eigen::Vector3d getAngularVelocityCF();
 
         /**
          * setTargetCF updates private variable current_setpoint
