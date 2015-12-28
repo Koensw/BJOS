@@ -429,14 +429,14 @@ Eigen::Vector3d FlightController::getAngularVelocityCF() {
 
 Eigen::Vector3d FlightController::getTargetOrientationCF() {
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
-    return Eigen::Vector3d(
-            _data->current_setpoint.x, _data->current_setpoint.y, _data->current_setpoint.z);
+    return BodyNEDtoCF(Eigen::Vector3d(
+            _data->current_setpoint.x, _data->current_setpoint.y, _data->current_setpoint.z));
 }
 
 Eigen::Vector3d FlightController::getTargetVelocityCF() {
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
-    return Eigen::Vector3d(
-            _data->current_setpoint.vx, _data->current_setpoint.vy, _data->current_setpoint.vz);
+    return BodyNEDtoCF(Eigen::Vector3d(
+            _data->current_setpoint.vx, _data->current_setpoint.vy, _data->current_setpoint.vz));
 }
 
 //ALERT: can NOT be used to set roll, pitch, rollspeed or pitchspeed
@@ -494,6 +494,12 @@ Eigen::Vector3d FlightController::NEDtoCF(Eigen::Vector3d vectorNED) {
     Eigen::Affine3d t;
     t = Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX());
     t *= Eigen::AngleAxisd(_data->orientationNED[2], Eigen::Vector3d::UnitZ());
+    return t * vectorNED;
+}
+
+Eigen::Vector3d FlightController::BodyNEDtoCF(Eigen::Vector3d vectorNED) {
+    Eigen::Affine3d t;
+    t = Eigen::AngleAxisd(-M_PI, Eigen::Vector3d::UnitX());
     return t * vectorNED;
 }
 
