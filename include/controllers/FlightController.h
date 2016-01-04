@@ -152,7 +152,7 @@ namespace bjos {
 		 * The drone then uses this information as a constant base for the set*EstimateWF functions */
 		void syncVision(Point visionPosOffset, double visionYawOffset);
 
-        /* setCurrent* functions are to be used by a computer vision algorithm supplying the drone with external absolute measurements of its states 
+        /* set*EstimateWF functions are to be used by a computer vision algorithm supplying the drone with external absolute measurements of its states 
 		 * These functions assume 'syncVision' is called beforehand */
         void setPositionEstimateWF(Point posEst);	
         void setAttitudeEstimateWF(Orientation attEst);
