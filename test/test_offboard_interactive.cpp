@@ -21,7 +21,7 @@
 
 using namespace bjos;
 
-float VEL = 1.5;
+float VEL = 0.5;
 float TAKEOFF = 2.0;
 float ZVEL = 0.5;
 float YAWR = 0.2;
@@ -57,11 +57,13 @@ Heading handle_input(char c)
 
 	case 'e':
 		std::cout << "Turning left" << std::endl;
+        setp = setp_old;
 		setp.angular_velocity.vy = -YAWR;
 		break;
 
 	case 'r':
 		std::cout << "Turning right" << std::endl;
+        setp = setp_old;
 		setp.angular_velocity.vy = YAWR;
 		break;
 
@@ -127,10 +129,10 @@ int main(){
 		ret = std::cin.get();
 		if (!Process::isActive()) ret = 'q';
 		action = handle_input(ret);
-		if (action.angular_velocity.vy < M_EPS)
+		if (fabsf(action.angular_velocity.vy) < M_EPS)
 			flight.setTargetCF(SET_TARGET_VELOCITY, Pose(), action);
 		else
-			flight.setTargetCF(SET_TARGET_YAW_RATE, Pose(), action);
+			flight.setTargetCF(SET_TARGET_VELOCITY & SET_TARGET_YAW_RATE, Pose(), action);
 	} while (ret != 'q');
 
 	std::cout << "Byebye!";

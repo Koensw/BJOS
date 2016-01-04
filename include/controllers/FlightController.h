@@ -111,19 +111,23 @@ namespace bjos {
     
     class FlightController : public Controller {
     public:
-        FlightController() : system_id(0), autopilot_id(0),_data(nullptr), _read_thrd_running(false), _write_thrd_running(false), _init_set(false) {}
-        
+        FlightController();
+        ~FlightController();
+
         float getRoll();
         float getPitch();
         float getYaw();
         
         /* Returns a Pose struct that contains Point and Orientation structs */
         Pose getPoseNED();
+        Pose getPoseWF();
         // Control Frame always has position 0, to remind users of these get functions of that, only a Orientation struct is returned
         Orientation getOrientationCF();
+
         /* Returns a Heading struct that contains Velocity and AngularVelocity structs */
         Heading getHeadingNED();
         Heading getHeadingCF();
+		Heading getHeadingWF();
         
         /**
          * setTargetCF updates private variable current_setpoint
@@ -132,7 +136,7 @@ namespace bjos {
          * With this header comes a set of bitmasks which should be used with this function: SET_TARGET_*		 
          * These can be combined with bitwise &
          *
-         * Example for velocity and yaw rate:
+         * Example for velocity and yaw rate setpoint:
          * uint16_t type_mask = SET_TARGET_VELOCITY & SET_TARGET_YAW_RATE;
          */
         void setTargetCF(uint16_t type_mask, Pose poseCF, Heading headingCF);
@@ -146,40 +150,6 @@ namespace bjos {
         
         /* Return raw sensor data */
         IMUSensorData getIMUDataCF();
-        
-        ///Q: correct?
-        /* Finalize this controller */
-        ~FlightController() {
-            std::cout << "FlightController destructor" << std::endl;
-            if (isMainInstance()) {
-                //disable offboard control mode if not already
-                int result = toggle_offboard_control(false);
-                if (result == -1)
-                    Log::error("FlightController::init", "Could not set offboard mode: unable to write message on serial port");
-                else if (result == 0)
-                    Log::warn("FlightController::init", "double (de-)activation of offboard mode [ignored]");
-                
-                //stop threads, wait for finish
-                _read_thrd_running = false;
-                _write_thrd_running = false;
-                _read_thrd.interrupt();
-                _write_thrd.interrupt();
-                _read_thrd.join();
-                _write_thrd.join();
-
-				//if the read_trhd is still waiting to receive an initial MAVLink message: close it and throw an ControllerInitializationError
-				if (_init_set == false) {
-					_init_set = true;
-					Log::error("FlightController::init", "Did not receive any MAVLink messages, check physical connections and make sure it is running on the right port!");
-				}
-                
-                //stop the serial_port and clean up the pointer
-                serial_port->stop();
-                delete serial_port;
-            }
-            
-            Controller::finalize<SharedFlightControllerData>();
-        }
         
     private:
         Serial_Port *serial_port;
@@ -216,7 +186,14 @@ namespace bjos {
         Velocity CFtoNED(Velocity headingCF, double yaw_P);
         Point NEDtoCF(Point pointNED, double yaw_P, Point pointP);
         Velocity NEDtoCF(Velocity headingNED, double yaw_P);
-        /* World Frame conversions ommitted for now (since no module uses WF yet) */
+        
+		/* Conversion to WF are note entirely as is specified in the Frame Specification file
+		 * This is due to the fact that no home position is determined yet
+		 *
+		 * These functions for now just rotate frame configurations (North, East, Down to Forward, Left, Up)
+		 */
+		Point NEDtoWF(Point pointNED);
+		Velocity NEDtoWF(Velocity velocityNED);
         
         //NOTE: only used by main instance
         boost::thread _read_thrd;

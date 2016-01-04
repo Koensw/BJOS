@@ -17,8 +17,8 @@ add_library(bjos SHARED
     src/bjos/helpers/process.cpp
     src/controllers/SonarController.cpp
     src/controllers/FlightController.cpp
+    src/controllers/GripperController.cpp
     src/controllers/flight/serial_port.cpp
-    src/controllers/test_gripper.cpp
     src/libs/i2c.cpp
     src/libs/geometry.cpp
 )
@@ -63,17 +63,17 @@ add_executable(test_offboard_interactive
 )
 target_link_libraries(test_offboard_interactive bjos)
 
+# test_gripper
+add_executable(test_gripper
+    test/test_gripper.cpp
+)
+target_link_libraries(test_gripper bjos)
+
 # example controller
 add_executable(bjos_example
     docs/ExampleController.cpp
 )
 target_link_libraries(bjos_example bjos)
-
-# test_gripper
-add_executable(test_gripper
-    src/controllers/test_gripper.cpp
-)
-target_link_libraries(test_gripper bjos)
 
 
 
