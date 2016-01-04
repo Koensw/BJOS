@@ -62,6 +62,9 @@
 //   Defines
 // ------------------------------------------------------------------------------
 
+// These typemasks are 'ignore-masks': 1 means ignore, while 0 means use
+// They, thus, have to be combined with &
+//
 //						bit number:			 210987654321
 #define SET_TARGET_POSITION		3576 //0b0000110111111000
 #define SET_TARGET_VELOCITY		3527 //0b0000110111000111
