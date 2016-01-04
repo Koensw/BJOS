@@ -237,6 +237,7 @@ namespace bjos {
         void write_thread();
         /* utility functions used by threads */
         void write_setpoint();
+        void write_estimate();
         void read_messages();
         /* initialiser check */
         std::atomic_bool _init_set;

@@ -236,6 +236,7 @@ void FlightController::write_thread() {
             boost::this_thread::sleep_for(boost::chrono::milliseconds(100)); //Stream at 10 Hz
             
             write_setpoint();
+            write_estimate();
         }
         catch (boost::thread_interrupted) {
             //if interrupt, stop and let the controller finish resources
@@ -287,6 +288,25 @@ void FlightController::write_setpoint() {
         //Log::info("FlightController::write_setpoint", "Wrote setpoint");
     }
     
+    return;
+}
+
+void FlightController::write_estimate() {
+    // pull from estimate
+    std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+    mavlink_vision_position_estimate_t est = _data->vision_estimate;
+
+    // double check estimate time
+    if (not est.usec)
+        est.usec = get_time_usec(CLOCK_MONOTONIC);
+
+    // encode message
+    mavlink_message_t message;
+    mavlink_msg_vision_position_estimate_encode(system_id, autopilot_id, &message, &est);
+
+    // do the write
+    serial_port->write_message(message); //no error check
+
     return;
 }
 
