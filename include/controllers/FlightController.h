@@ -106,6 +106,9 @@ namespace bjos {
         //TODO: make an array-form message, in order to meet the need for sending a path of ~20 setpoints
         mavlink_set_position_target_local_ned_t current_setpoint;
         
+        //Used to stream position and velocity estimates to the drone
+        mavlink_vision_position_estimate_t vision_position_estimate;
+
         //used to retrieve last system time from Pixhawk (normally should not be directly used, instead the synchronized time should be used)
         mavlink_system_time_t sys_time;
         

@@ -294,7 +294,7 @@ void FlightController::write_setpoint() {
 void FlightController::write_estimate() {
     // pull from estimate
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
-    mavlink_vision_position_estimate_t est = _data->vision_estimate;
+    mavlink_vision_position_estimate_t est = _data->vision_position_estimate;
 
     // double check estimate time
     if (not est.usec)
