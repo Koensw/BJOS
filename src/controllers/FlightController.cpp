@@ -25,7 +25,6 @@ uint64_t get_time_usec(clockid_t clk_id)
 FlightController::FlightController() : system_id(0), autopilot_id(0), _data(nullptr), _read_thrd_running(false), _write_thrd_running(false), _init_set(false) {}
 
 FlightController::~FlightController() {
-    std::cout << "FlightController destructor" << std::endl;
     if (isMainInstance()) {
         //disable offboard control mode if not already
         int result = toggle_offboard_control(false);
@@ -308,13 +307,7 @@ void FlightController::write_setpoint() {
     // do the write
     int len = serial_port->write_message(message);
     
-    // check the write
-    if (len <= 0)
-        std::cout << ".";
-    else {
-        //TODO: log writing of setpoint per type_mask
-        //Log::info("FlightController::write_setpoint", "Wrote setpoint");
-    }
+    //TODO: check if write is succesfull
     
     return;
 }
