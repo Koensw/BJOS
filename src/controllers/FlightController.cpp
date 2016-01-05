@@ -151,6 +151,12 @@ void FlightController::read_messages() {
             autopilot_id = message.compid;
         }
         
+        //get current time
+        shared_data_mutex->lock();
+        uint64_t unixTime = _data->syncUnixTime;
+        uint64_t bootTime = _data->syncBootTime;
+        shared_data_mutex->unlock();
+        
         //Handle message per id
         switch (message.msgid) {
             case MAVLINK_MSG_ID_LOCAL_POSITION_NED:
@@ -191,7 +197,7 @@ void FlightController::read_messages() {
                 //send the attitude
                 flight_raw_estimate raw_estimate;
                 raw_estimate.type = FLIGHT_RAW_ORIENTATION;
-                raw_estimate.time = attitude.time_boot_ms;
+                raw_estimate.time = attitude.time_boot_ms - bootTime + unixTime;
                 raw_estimate.data[0] = attitude.roll; 
                 raw_estimate.data[1] = attitude.pitch; 
                 raw_estimate.data[2] = attitude.yaw; 
@@ -240,7 +246,7 @@ void FlightController::read_messages() {
                 //send the acc
                 flight_raw_estimate raw_estimate;
                 raw_estimate.type = FLIGHT_RAW_ACC;
-                raw_estimate.time = highres_imu.time_usec/1000ULL;
+                raw_estimate.time = highres_imu.time_usec/1000ULL - bootTime + unixTime;
                 raw_estimate.data[0] = highres_imu.xacc; 
                 raw_estimate.data[1] = highres_imu.yacc; 
                 raw_estimate.data[2] = highres_imu.zacc; 
@@ -248,7 +254,7 @@ void FlightController::read_messages() {
                 
                 //send the acc
                 raw_estimate.type = FLIGHT_RAW_GYRO;
-                raw_estimate.time = highres_imu.time_usec/1000ULL;
+                raw_estimate.time = highres_imu.time_usec/1000ULL - bootTime + unixTime;
                 raw_estimate.data[0] = highres_imu.xgyro; 
                 raw_estimate.data[1] = highres_imu.ygyro; 
                 raw_estimate.data[2] = highres_imu.zgyro; 
@@ -590,13 +596,13 @@ bool FlightController::isLanded() {
 
 //get raw imu data
 IMUSensorData FlightController::getIMUDataCF(){
-    //copy the data
+    //get data (FIXME: ensure proper frame)
     shared_data_mutex->lock();
     IMUSensorData imuCF = _data->imuNED;
     uint64_t unixTime = _data->syncUnixTime;
     uint64_t bootTime = _data->syncBootTime;
     shared_data_mutex->unlock();
-
+    
     //scale the time to microseconds in unix timestamp
     imuCF.time = imuCF.time - bootTime + unixTime;
     
