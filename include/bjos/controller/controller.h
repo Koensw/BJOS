@@ -7,9 +7,11 @@
 #include <boost/thread/thread.hpp>
 
 #ifdef _WIN32
-#include <message.h> // bjcomm/include/message.h
+#include <message.h>    // bjcomm/include/message.h
+#include <publisher.h>  // bjcomm/include/publisher.h
 #else
 #include <bjcomm/message.h>
+#include <bjcomm/publisher.h>
 #endif
 
 
