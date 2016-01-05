@@ -44,6 +44,13 @@ add_executable(sonar_loader
 )
 target_link_libraries(sonar_loader ${Boost_THREAD_LIBRARY} ${Boost_SYSTEM_LIBRARY} bjos)
 
+# gripper loader
+add_executable(gripper_loader
+    src/loader/test_gripper.cpp
+)
+target_link_libraries(gripper_loader ${Boost_THREAD_LIBRARY} ${Boost_SYSTEM_LIBRARY} bjos)
+
+# default loader
 add_executable(default_loader
     src/controllers/sonar/DevantechSonarInterface.cpp
     src/loader/test_default.cpp
