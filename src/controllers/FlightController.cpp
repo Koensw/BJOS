@@ -25,7 +25,6 @@ uint64_t get_time_usec(clockid_t clk_id)
 FlightController::FlightController() : system_id(0), autopilot_id(0), _data(nullptr), _read_thrd_running(false), _write_thrd_running(false), _init_set(false) {}
 
 FlightController::~FlightController() {
-    std::cout << "FlightController destructor" << std::endl;
     if (isMainInstance()) {
         //disable offboard control mode if not already
         int result = toggle_offboard_control(false);
@@ -47,6 +46,9 @@ FlightController::~FlightController() {
             _init_set = true;
             Log::error("FlightController::init", "Did not receive any MAVLink messages, check physical connections and make sure it is running on the right port!");
         }
+        
+        //stop the raw stream
+        close(_raw_sock);
 
         //stop the serial_port and clean up the pointer
         serial_port->stop();
@@ -70,6 +72,15 @@ void FlightController::init(bjos::BJOS *bjos) {
     //check the status of the port
     if (serial_port->status != 1) //SERIAL_PORT_OPEN
         throw ControllerInitializationError(this, "Serial port not open");
+    
+    //open a raw unix domain socket (WARNING: this is needed for Philips, this should not be hardcoded here!!!)
+    _raw_sock = socket(AF_UNIX, SOCK_DGRAM, 0);
+    if (_raw_sock < 0) {
+        throw ControllerInitializationError(this, "Cannot open raw socket");
+    }
+    _raw_sock_name.sun_family = AF_UNIX;
+    strcpy(_raw_sock_name.sun_path, "/tmp/bluejay/modules/philips-localization");
+    bind(_raw_sock, (struct sockaddr *) &_raw_sock_name, sizeof(struct sockaddr_un));
     
     //start read thread
     _read_thrd_running = true;
@@ -172,12 +183,19 @@ void FlightController::read_messages() {
                 break;
             }
             case MAVLINK_MSG_ID_ATTITUDE:
-            {
-                //Log::info("FlightController::read_messages", "MAVLINK_MSG_ATTITUDE");
-                
+            {                
                 //decode
                 mavlink_attitude_t attitude;
                 mavlink_msg_attitude_decode(&message, &attitude);
+                
+                //send the attitude
+                flight_raw_estimate raw_estimate;
+                raw_estimate.type = FLIGHT_RAW_ORIENTATION;
+                raw_estimate.time = attitude.time_boot_ms;
+                raw_estimate.data[0] = attitude.roll; 
+                raw_estimate.data[1] = attitude.pitch; 
+                raw_estimate.data[2] = attitude.yaw; 
+                sendto(_raw_sock, &raw_estimate, sizeof(raw_estimate), 0, (const sockaddr *) &_raw_sock_name, sizeof(struct sockaddr));
                 
                 //put attitude data into _data
                 std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
@@ -188,12 +206,12 @@ void FlightController::read_messages() {
                 _data->headingNED.angular_velocity.vr = attitude.rollspeed;
                 _data->headingNED.angular_velocity.vy = attitude.yawspeed;
 
-				_data->poseWF.orientation.p = -attitude.pitch;
-				_data->poseWF.orientation.r = attitude.roll;
-				_data->poseWF.orientation.y = -attitude.yaw;
-				_data->headingWF.angular_velocity.vp = -attitude.pitchspeed;
-				_data->headingWF.angular_velocity.vr = attitude.rollspeed;
-				_data->headingWF.angular_velocity.vy = -attitude.yawspeed;
+                _data->poseWF.orientation.p = -attitude.pitch;
+                _data->poseWF.orientation.r = attitude.roll;
+                _data->poseWF.orientation.y = -attitude.yaw;
+                _data->headingWF.angular_velocity.vp = -attitude.pitchspeed;
+                _data->headingWF.angular_velocity.vr = attitude.rollspeed;
+                _data->headingWF.angular_velocity.vy = -attitude.yawspeed;
                 break;
             }
             case MAVLINK_MSG_ID_STATUSTEXT:
@@ -215,10 +233,28 @@ void FlightController::read_messages() {
             }
             case MAVLINK_MSG_ID_HIGHRES_IMU:
             {
-                std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+                //decode
                 mavlink_highres_imu_t highres_imu;
                 mavlink_msg_highres_imu_decode(&message, &highres_imu);
                 
+                //send the acc
+                flight_raw_estimate raw_estimate;
+                raw_estimate.type = FLIGHT_RAW_ACC;
+                raw_estimate.time = highres_imu.time_usec/1000ULL;
+                raw_estimate.data[0] = highres_imu.xacc; 
+                raw_estimate.data[1] = highres_imu.yacc; 
+                raw_estimate.data[2] = highres_imu.zacc; 
+                sendto(_raw_sock, &raw_estimate, sizeof(raw_estimate), 0, (const sockaddr *) &_raw_sock_name, sizeof(struct sockaddr));
+                
+                //send the acc
+                raw_estimate.type = FLIGHT_RAW_GYRO;
+                raw_estimate.time = highres_imu.time_usec/1000ULL;
+                raw_estimate.data[0] = highres_imu.xgyro; 
+                raw_estimate.data[1] = highres_imu.ygyro; 
+                raw_estimate.data[2] = highres_imu.zgyro; 
+                sendto(_raw_sock, &raw_estimate, sizeof(raw_estimate), 0, (const sockaddr *) &_raw_sock_name, sizeof(struct sockaddr));
+                
+                std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
                 _data->imuNED.time = highres_imu.time_usec/1000ULL;
                 _data->imuNED.ax = highres_imu.xacc;
                 _data->imuNED.ay = highres_imu.yacc;
@@ -331,15 +367,9 @@ void FlightController::write_setpoint() {
     // --------------------------------------------------------------------------
     
     // do the write
-    int len = serial_port->write_message(message);
+    serial_port->write_message(message);
     
-    // check the write
-    if (len <= 0)
-        std::cout << ".";
-    else {
-        //TODO: log writing of setpoint per type_mask
-        //Log::info("FlightController::write_setpoint", "Wrote setpoint");
-    }
+    //TODO: check if write is succesfull
     
     return;
 }
@@ -596,20 +626,12 @@ IMUSensorData FlightController::getIMUDataCF(){
     //copy the data
     shared_data_mutex->lock();
     IMUSensorData imuCF = _data->imuNED;
-    double yaw = _data->poseNED.orientation.y;
     uint64_t unixTime = _data->syncUnixTime;
     uint64_t bootTime = _data->syncBootTime;
     shared_data_mutex->unlock();
 
     //scale the time to microseconds in unix timestamp
     imuCF.time = imuCF.time - bootTime + unixTime;
-    
-    //convert the acceleration to control frame
-    /*Point acc(imuCF.ax, imuCF.ay, imuCF.az);
-    acc = NEDtoCF(acc, yaw, Point());
-    imuCF.ax = acc.x;
-    imuCF.ay = acc.y;
-    imuCF.az = acc.z;*/
     
     return imuCF;
 }
