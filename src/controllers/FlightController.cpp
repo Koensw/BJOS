@@ -159,11 +159,11 @@ void FlightController::read_messages() {
                 _data->headingNED.velocity.vy = local_position_ned.vy;
                 _data->headingNED.velocity.vz = local_position_ned.vz;
                 
-				Point pointWF = NEDtoWF(Point(local_position_ned.x, local_position_ned.y, local_position_ned.z));
-				Velocity velocityWF = NEDtoWF(Velocity(local_position_ned.vx, local_position_ned.vy, local_position_ned.vz));
+                Point pointWF = NEDtoWF(Point(local_position_ned.x, local_position_ned.y, local_position_ned.z));
+                Velocity velocityWF = NEDtoWF(Velocity(local_position_ned.vx, local_position_ned.vy, local_position_ned.vz));
 
-				_data->poseWF.position = pointWF;
-				_data->headingWF.velocity = velocityWF;
+                _data->poseWF.position = pointWF;
+                _data->headingWF.velocity = velocityWF;
 
                 if (!_init_set) {
                     mavlink_msg_local_position_ned_decode(&message, &initial_position);
@@ -188,12 +188,12 @@ void FlightController::read_messages() {
                 _data->headingNED.angular_velocity.vr = attitude.rollspeed;
                 _data->headingNED.angular_velocity.vy = attitude.yawspeed;
 
-				_data->poseWF.orientation.p = -attitude.pitch;
-				_data->poseWF.orientation.r = attitude.roll;
-				_data->poseWF.orientation.y = -attitude.yaw;
-				_data->headingWF.angular_velocity.vp = -attitude.pitchspeed;
-				_data->headingWF.angular_velocity.vr = attitude.rollspeed;
-				_data->headingWF.angular_velocity.vy = -attitude.yawspeed;
+                _data->poseWF.orientation.p = -attitude.pitch;
+                _data->poseWF.orientation.r = attitude.roll;
+                _data->poseWF.orientation.y = -attitude.yaw;
+                _data->headingWF.angular_velocity.vp = -attitude.pitchspeed;
+                _data->headingWF.angular_velocity.vr = attitude.rollspeed;
+                _data->headingWF.angular_velocity.vy = -attitude.yawspeed;
                 break;
             }
             case MAVLINK_MSG_ID_STATUSTEXT:

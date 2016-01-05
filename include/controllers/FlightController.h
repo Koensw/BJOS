@@ -39,6 +39,7 @@
 #include "../bjos/helpers/error.h"
 
 #include "flight/serial_port.h"
+#include "flight/raw_estimate.h"
 
 #ifdef _WIN32
 #include "mavlink\include\mavlink\v1.0\common\mavlink.h"
