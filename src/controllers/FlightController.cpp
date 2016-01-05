@@ -104,7 +104,11 @@ void FlightController::init(bjos::BJOS *bjos) {
         throw ControllerInitializationError(this, "Could not set offboard mode: unable to write message on serial port");
     else if (result == 0)
         Log::warn("FlightController::init", "double (de-)activation of offboard mode [ignored]");
-    
+
+    ret = state_pub.start();
+    if (!ret)
+        throw ControllerInitializationError(this, "Cannot start the state publisher");
+
     // Done!
 }
 

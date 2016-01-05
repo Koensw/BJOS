@@ -162,6 +162,7 @@ namespace bjos {
 
     private:
         Serial_Port *serial_port;
+        bjcomm::Publisher state_pub;
         
         /* Set offboard mode - has to be done in order to send setpoints */
         //NOTE: returns -1 on write error, returns 0 on double (de-)activation, returns 1 on success;
