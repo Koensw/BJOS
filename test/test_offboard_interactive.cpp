@@ -57,11 +57,13 @@ Heading handle_input(char c)
 
 	case 'e':
 		std::cout << "Turning left" << std::endl;
+        setp = setp_old;
 		setp.angular_velocity.vy = -YAWR;
 		break;
 
 	case 'r':
 		std::cout << "Turning right" << std::endl;
+        setp = setp_old;
 		setp.angular_velocity.vy = YAWR;
 		break;
 
