@@ -80,7 +80,6 @@ void FlightController::init(bjos::BJOS *bjos) {
     }
     _raw_sock_name.sun_family = AF_UNIX;
     strcpy(_raw_sock_name.sun_path, "/tmp/bluejay/modules/philips-localization");
-    bind(_raw_sock, (struct sockaddr *) &_raw_sock_name, sizeof(struct sockaddr_un));
     
     //start read thread
     _read_thrd_running = true;
@@ -201,7 +200,7 @@ void FlightController::read_messages() {
                 raw_estimate.data[0] = attitude.roll; 
                 raw_estimate.data[1] = attitude.pitch; 
                 raw_estimate.data[2] = attitude.yaw; 
-                sendto(_raw_sock, &raw_estimate, sizeof(raw_estimate), 0, (const sockaddr *) &_raw_sock_name, sizeof(struct sockaddr));
+                sendto(_raw_sock, &raw_estimate, sizeof(raw_estimate), 0, (const sockaddr *) &_raw_sock_name, SUN_LEN(&_raw_sock_name));
                 
                 //put attitude data into _data
                 std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
@@ -250,7 +249,7 @@ void FlightController::read_messages() {
                 raw_estimate.data[0] = highres_imu.xacc; 
                 raw_estimate.data[1] = highres_imu.yacc; 
                 raw_estimate.data[2] = highres_imu.zacc; 
-                sendto(_raw_sock, &raw_estimate, sizeof(raw_estimate), 0, (const sockaddr *) &_raw_sock_name, sizeof(struct sockaddr));
+                sendto(_raw_sock, &raw_estimate, sizeof(raw_estimate), 0, (const sockaddr *) &_raw_sock_name, SUN_LEN(&_raw_sock_name));
                 
                 //send the acc
                 raw_estimate.type = FLIGHT_RAW_GYRO;
@@ -258,7 +257,7 @@ void FlightController::read_messages() {
                 raw_estimate.data[0] = highres_imu.xgyro; 
                 raw_estimate.data[1] = highres_imu.ygyro; 
                 raw_estimate.data[2] = highres_imu.zgyro; 
-                sendto(_raw_sock, &raw_estimate, sizeof(raw_estimate), 0, (const sockaddr *) &_raw_sock_name, sizeof(struct sockaddr));
+                sendto(_raw_sock, &raw_estimate, sizeof(raw_estimate), 0, (const sockaddr *) &_raw_sock_name, SUN_LEN(&_raw_sock_name));
                 
                 std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
                 _data->imuNED.time = highres_imu.time_usec/1000ULL;
