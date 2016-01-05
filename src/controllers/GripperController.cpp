@@ -70,17 +70,12 @@ void GripperController::setPWMFreq(int freq) {
 	wiringPiI2CWriteReg8(fd, MODE2, 0x04); //totem pole (default)
 }
 
-void GripperController::setPWM2(uint8_t led, int on_value, int off_value) {
-	printf("setPWM2\n");
-	wiringPiI2CWriteReg8(fd, LED0_ON_L + LED_MULTIPLYER * (led), on_value & 0xFF);
-	wiringPiI2CWriteReg8(fd, LED0_ON_H + LED_MULTIPLYER * (led), on_value >> 8);
-	wiringPiI2CWriteReg8(fd, LED0_OFF_L + LED_MULTIPLYER * (led), off_value & 0xFF);
-	wiringPiI2CWriteReg8(fd, LED0_OFF_H + LED_MULTIPLYER * (led), off_value >> 8);
-}
-
-void GripperController::setPWM(uint8_t led, int value) {
-	printf("setPWM\n");
-	setPWM2(led, 0, value);
+void GripperController::setPWM(uint8_t device, int off_value) {
+	int on_value = 0;
+	wiringPiI2CWriteReg8(fd, LED0_ON_L + LED_MULTIPLYER * (device), on_value & 0xFF);
+	wiringPiI2CWriteReg8(fd, LED0_ON_H + LED_MULTIPLYER * (device), on_value >> 8);
+	wiringPiI2CWriteReg8(fd, LED0_OFF_L + LED_MULTIPLYER * (device), off_value & 0xFF);
+	wiringPiI2CWriteReg8(fd, LED0_OFF_H + LED_MULTIPLYER * (device), off_value >> 8);
 }
 
 
@@ -94,10 +89,6 @@ int GripperController::getPWM(uint8_t led) {
 	ledval += wiringPiI2CReadReg8(fd, LED0_OFF_L + LED_MULTIPLYER * (led));
 	return ledval;
 }
-
-/* End of functions for the I2C connection with the pwm board
-################################################################################################################
-*/
 
 /* Arduino functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -147,90 +138,6 @@ int GripperController::pulseIn(int pin, int level)
 	return micros;
 }
 
-/* End of arduino functions
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-*/
-
-/* fucntions for control of the arm
-&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
-*/
-bool GripperController::lower_arm_mm(int mm)
-{
-	printf("lower_arm_mm\n");
-	//std::lock_guard<BJOS::Mutex> lock(*shared_data_mutex);
-	_data->armheight = _data->armheight + mm;
-	if (_data->armheight + gripperOffset>maxarmlength || _data->armheight + gripperOffset<0)
-	{
-		_data->armheight = _data->armheight - mm;
-		return false;
-	}
-	else {
-		int pwm = map((_data->armheight + gripperOffset), 0, maxarmlength, 0, 4095);
-		setPWM(1, pwm);
-		return true;
-	}
-}
-
-bool GripperController::lower_arm_to_mm(int mm)
-{
-	printf("lower_arm_to_mm\n");
-	//std::lock_guard<BJOS::Mutex> lock(*shared_data_mutex);
-	_data->armheight = mm;
-	if (_data->armheight + gripperOffset>maxarmlength || _data->armheight + gripperOffset<0)
-	{
-		_data->armheight = _data->armheight - mm;
-		return false;
-	}
-	else {
-		int pwm = map((_data->armheight + gripperOffset), 0, maxarmlength, 0, 4095);
-		setPWM(1, pwm);
-		return true;
-	}
-}
-
-int GripperController::get_blob_size()
-{
-	printf("get_blob_size\n");
-	//communicatie met BJOS voor blobsize
-	return 0;
-}
-
-bool GripperController::lower_to_object(int px_obj)
-{
-	printf("lower_to_object\n");
-	//obtain the blob pixel count from pieter
-	int px_blob = get_blob_size();
-	if (px_blob<px_obj*1.05 && px_blob>px_obj*0.95)
-		return true;
-	else if (px_blob<px_obj*0.95)
-	{
-		while (px_blob<px_obj*0.95)
-		{
-			if (!lower_arm_mm(2))
-				break;
-			px_blob = get_blob_size();
-			delay(30);
-		}
-		return true;
-	}
-	else if (px_blob>px_obj*1.05)
-	{
-		while (px_blob>px_obj*1.05)
-		{
-			if (!lower_arm_mm(-2))
-				break;
-			px_blob = get_blob_size();
-			delay(30);
-		}
-		return true;
-	}
-	return false;
-}
-
-/* End of fucntions for control of the arm
-&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
-*/
-
 /*Gripper functions
 $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 */
@@ -242,10 +149,17 @@ void GripperController::gripper_close_pwm(int pwm)
 	else if (pwm<0)
 		pwm = 0;
 	setPWM(0, pwm);
-	gripperOffset = map(pwm, 0, 4095, maxactuatorlenght, 0);
-	lower_arm_mm(0);
 }
 
+void GripperController::pickup()
+{
+	gripper_close_pwm(DEMO_CUP_PWM);
+}
+
+void GripperController::release()
+{
+	gripper_close_pwm(4095);
+}
 
 void GripperController::gripper_close_force(int limit)
 {
@@ -280,19 +194,9 @@ void GripperController::gripper_close_object(char* object)
 	//Serial.println("Object not recognized");
 }
 
-void GripperController::pickup(int px_obj, int force)
-{
-	printf("pickup\n");
-	if (lower_to_object(px_obj))
-		gripper_close_force(force);
-	else
-		printf("Something went wrong lowering the arm!\n");
-}
-/*End of gripper functions
-$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+/* RC functions 
+&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 */
-
-
 bool GripperController::check_RC()//RC override
 {
 	printf("check_RC\n");
@@ -303,7 +207,7 @@ bool GripperController::check_RC()//RC override
 	printf("RC1: %i, RC2: %i\n", RC1, RC2);
 	if (RC2>1500)
 	{
-		gripper_close_pwm(800);
+		gripper_close_pwm(4095);
 		return(true);
 	}
 	else if (RC1>1500) {

@@ -60,6 +60,8 @@
 #define PRE_SCALE 0xFE      //prescaler for output frequency
 #define CLOCK_FREQ 25000000.0 //25MHz default osc clock
 
+#define DEMO_CUP_PWM 1000   //PWM for the gripper that ensures the demo cup is gripped
+
 namespace bjos {
     struct SharedGripperData{
         int armheight;
@@ -72,22 +74,16 @@ namespace bjos {
         ~GripperController();
 
         // Pin number declarations. We're using the Broadcom chip pin numbers.
-        const int gripPin = 26; // PWM output
-        const int armPin = 23; // PWM output
         const int ch7 = 3; // RC input
         const int ch8 = 4; // RC input
-        int gripperOffset = 0; // correction for gripper movement
         int fd = 0; // I2C device
-        int maxarmlength = 300; // length of arm when fully extended
-        int maxactuatorlenght = 50; // length of gripper actuator
-
+        
         /* Functions for the I2C connection with the pwm board
          ################################################################################################################
         */
         void reset();
         void setPWMFreq(int freq);
-        void setPWM2(uint8_t led, int on_value, int off_value);
-        void setPWM(uint8_t led, int value);
+        void setPWM(uint8_t device, int off_value);
         int getPWM(uint8_t led);
 
         /* Arduino functions
@@ -96,23 +92,21 @@ namespace bjos {
         long map(long x, long in_min, long in_max, long out_min, long out_max);
         int pulseIn(int pin, int level);
 
-        /* Functions for control of the arm
-        &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
-        */
-        bool lower_arm_mm(int mm);
-        bool lower_arm_to_mm(int mm);
-        int get_blob_size();
-        bool lower_to_object(int px_obj);
-
         /* Gripper functions
         $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
         */
         void gripper_close_pwm(int pwm);
+        void pickup();
+        void release();
+
+        // redundant functions that use force feedback
         void gripper_close_force(int limit);
         void gripper_close_object(char* object);
-        void pickup(int px_obj, int force);
 
-        /* RC functions */
+        /* RC functions 
+        &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+        */
+        // TODO: implement RC override
         bool check_RC();
 
     private:
