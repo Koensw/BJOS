@@ -22,10 +22,14 @@
 
 #include <signal.h>
 #include <time.h>
-#include "sys/time.h"
 #include <errno.h>
 #include <string.h>
 #include <inttypes.h>
+
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <stdio.h>
 
 #include <iostream>
 
@@ -39,6 +43,7 @@
 #include "../bjos/helpers/error.h"
 
 #include "flight/serial_port.h"
+#include "flight/raw_estimate.h"
 
 #ifdef _WIN32
 #include "mavlink\include\mavlink\v1.0\common\mavlink.h"
@@ -214,6 +219,10 @@ namespace bjos {
         void read_messages();
         /* initialiser check */
         std::atomic_bool _init_set;
+    
+        //raw socket used by Philips (WARNING: sends raw struct data, is not portable and not needed because of our own communication layer: need fix later)
+        int _raw_sock;
+        struct sockaddr_un _raw_sock_name;
     };
     
 }
