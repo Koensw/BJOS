@@ -264,6 +264,30 @@ void FlightController::read_messages() {
                 _data->imuNED.gz = highres_imu.zgyro;
                 break;
             }
+            case MAVLINK_MSG_ID_EXTENDED_SYS_STATE:
+            {
+                mavlink_extended_sys_state_t extended_sys_state;
+                mavlink_msg_extended_sys_state_decode(&message, &extended_sys_state);
+
+                std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+                switch (extended_sys_state.landed_state) {
+                    case MAV_LANDED_STATE_ON_GROUND:
+                    {
+                        _data->landed = true;
+                        break;
+                    }
+                    case MAV_LANDED_STATE_IN_AIR:
+                    {
+                        _data->landed = false;
+                        break;
+                    }
+                    case MAV_LANDED_STATE_UNDEFINED:
+                    default:
+                    {
+                        Log::info("FlightController::read_messages", "Unable to handle landed state %" PRIu8, extended_sys_state.landed_state);
+                    }
+                }
+            }
             default:
             {
                 //Log::info("FlightController::read_messages", "Not handling this message: %" PRIu8, message.msgid);
@@ -557,6 +581,11 @@ Point FlightController::NEDtoWF(Point pointNED) {
 Velocity FlightController::NEDtoWF(Velocity velocityNED) {
 	RotationMatrix R(-M_PI, 'x');
 	return R.rotateVelocity(velocityNED);
+}
+
+bool FlightController::isLanded() {
+    std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+    return _data->landed;
 }
 
 //get raw imu data

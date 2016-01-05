@@ -109,7 +109,10 @@ namespace bjos {
         
         //used to retrieve last system time from Pixhawk (normally should not be directly used, instead the synchronized time should be used)
         mavlink_system_time_t sys_time;
-        
+
+        //Tracks if the drone is landed or not
+        bool landed;
+
         //raw sensors data
         IMUSensorData imuNED;
     };
@@ -153,6 +156,9 @@ namespace bjos {
         void setCurrentVelocityWF(float vxvyvz[3]);
         void setCurrentAttitudeWF(float rpy[3]);
         
+        // Return if landed
+        bool isLanded();
+
         /* Return raw sensor data */
         IMUSensorData getIMUDataCF();
         
