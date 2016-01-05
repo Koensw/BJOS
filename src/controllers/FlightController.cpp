@@ -15,6 +15,7 @@
 #include <sstream>
 
 using namespace bjos;
+using namespace bjcomm;
 
 uint64_t get_time_usec(clockid_t clk_id)
 {
@@ -52,6 +53,9 @@ FlightController::~FlightController() {
         //stop the serial_port and clean up the pointer
         serial_port->stop();
         delete serial_port;
+
+        //clean up the state bjcomm publisher
+        delete state_pub;
     }
 
     Controller::finalize<SharedFlightControllerData>();
@@ -105,7 +109,8 @@ void FlightController::init(bjos::BJOS *bjos) {
     else if (result == 0)
         Log::warn("FlightController::init", "double (de-)activation of offboard mode [ignored]");
 
-    ret = state_pub.start();
+    state_pub = new Publisher("status");
+    ret = state_pub->start();
     if (!ret)
         throw ControllerInitializationError(this, "Cannot start the state publisher");
 
