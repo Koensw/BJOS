@@ -5,7 +5,13 @@
 
 #include <atomic>
 #include <boost/thread/thread.hpp>
+
+#ifdef _WIN32
+#include <message.h> // bjcomm/include/message.h
+#else
 #include <bjcomm/message.h>
+#endif
+
 
 namespace bjos{
     class Controller{
