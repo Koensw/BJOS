@@ -39,22 +39,22 @@ int main(){
     }
 
 	wiringPiSetup(); // Initialize wiringPi -- using Broadcom pin numbers
-	gripper->fd = wiringPiI2CSetup(0x40);
-	pinMode(gripper->gripPin, PWM_OUTPUT); // Set PWM as PWM output
-	pinMode(gripper->armPin, PWM_OUTPUT); // Set PWM as PWM output
-	pinMode(gripper->ch7, INPUT);     // Set regular as INPUT
-	pinMode(gripper->ch8, INPUT);      // Set regular as INPUT
-	pullUpDnControl(gripper->ch7, PUD_UP); // Enable pull-up resistor --> weet niet zeker of dit nodig is !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
-	pullUpDnControl(gripper->ch8, PUD_UP); // Enable pull-up resistor on 
+	gripper.fd = wiringPiI2CSetup(0x40);
+	pinMode(gripper.gripPin, PWM_OUTPUT); // Set PWM as PWM output
+	pinMode(gripper.armPin, PWM_OUTPUT); // Set PWM as PWM output
+	pinMode(gripper.ch7, INPUT);     // Set regular as INPUT
+	pinMode(gripper.ch8, INPUT);      // Set regular as INPUT
+	pullUpDnControl(gripper.ch7, PUD_UP); // Enable pull-up resistor -. weet niet zeker of dit nodig is !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
+	pullUpDnControl(gripper.ch8, PUD_UP); // Enable pull-up resistor on 
 	printf("CODE is running! Press CTRL+backslash to quit.\n");
-	gripper->reset();
-	gripper->setPWMFreq(1000);
+	gripper.reset();
+	gripper.setPWMFreq(1000);
 
 	int pwm = 0;
     //do things until we got a request to stop the program
     while(Process::isActive()){
 		std::cout << "Gripper position (0-4000): " << std::endl;
 		std::cin >> pwm;
-		gripper->gripper_close_pwm(pwm);
+		gripper.gripper_close_pwm(pwm);
     }
 }
