@@ -195,6 +195,12 @@ void FlightController::read_messages() {
                     mavlink_msg_local_position_ned_decode(&message, &initial_position);
                     _init_set = true;
                 }
+
+                //bjcomm message handling
+                char buf[1024];
+                sprintf(buf, "%f %f %f %f %f %f", local_position_ned.x, local_position_ned.y, local_position_ned.z, local_position_ned.vx, local_position_ned.vy, local_position_ned.vz);
+                std::string msgdata(buf);
+                state_pub->send(Message("position_velocity_estimate", msgdata));
                 break;
             }
             case MAVLINK_MSG_ID_ATTITUDE:
@@ -227,6 +233,12 @@ void FlightController::read_messages() {
                 _data->headingWF.angular_velocity.vp = -attitude.pitchspeed;
                 _data->headingWF.angular_velocity.vr = attitude.rollspeed;
                 _data->headingWF.angular_velocity.vy = -attitude.yawspeed;
+
+                //bjcomm message handling
+                char buf[1024];
+                sprintf(buf, "%f %f %f %f %f %f", attitude.roll, attitude.pitch, attitude.yaw, attitude.rollspeed, attitude.pitchspeed, attitude.yawspeed);
+                std::string msgdata(buf);
+                state_pub->send(Message("attitude_estimate", msgdata));
                 break;
             }
             case MAVLINK_MSG_ID_STATUSTEXT:
@@ -302,6 +314,17 @@ void FlightController::read_messages() {
                         Log::info("FlightController::read_messages", "Unable to handle landed state %" PRIu8, extended_sys_state.landed_state);
                     }
                 }
+            }
+            case MAVLINK_MSG_ID_ACTUATOR_CONTROL_TARGET:
+            {
+                mavlink_actuator_control_target_t actuator_control_target;
+                mavlink_msg_actuator_control_target_decode(&message, &actuator_control_target);
+
+                char buf[1024];
+                sprintf(buf, "%f %f %f %f", actuator_control_target.controls[1], actuator_control_target.controls[2], actuator_control_target.controls[0], actuator_control_target.controls[3]);
+                std::string msgdata(buf);
+                state_pub->send(Message("engine_power", msgdata));
+                break;
             }
             default:
             {
