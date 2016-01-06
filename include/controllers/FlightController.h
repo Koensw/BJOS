@@ -56,22 +56,25 @@
 // ------------------------------------------------------------------------------
 /*
  * MAVLink messages used per implemented function:
- *	int setTargetCF(...)		--- SET_POSITION_TARGET_LOCAL_NED
- *	int setCurrentPosition(...)	--- ATT_POS_MOCAP with ~.q = {1 0 0 0}
- *	void readMessages(...)		--- Decodes incoming ATTITUDE and LOCAL_POSITION_NED messages
- *
- *	no further communication is possible with the drone (as of now)
+ *	setTargetCF		        --- SET_POSITION_TARGET_LOCAL_NED
+ *	setCurrentPosition	    --- VISION_POSITION_ESTIMATE
+ *  toggle_offboard_control --- COMMAND_LONG (MAV_CMD_NAV_GUIDED_ENABLE)
+ *  synchronize_time        --- SYSTEM_TIME
+ *	readMessages            --- Decodes the following incoming messages:
+ *                                      ATTITUDE, LOCAL_POSITION_NED, STATUSTEXT, SYSTEM_TIME, HIGHRES_IMU, EXTENDED_SYS_STATE
  */
 
 // ------------------------------------------------------------------------------
 //   Defines
 // ------------------------------------------------------------------------------
 
-//						bit number:			 210987654321
-#define SET_TARGET_POSITION		3576 //0b0000110111111000
-#define SET_TARGET_VELOCITY		3527 //0b0000110111000111
-#define SET_TARGET_YAW_ANGLE	2559 //0b0000100111111111
-#define SET_TARGET_YAW_RATE		1535 //0b0000010111111111
+//						bit number:		    43210987654321
+#define SET_TARGET_POSITION		15864 //0b0011110111111000
+#define SET_TARGET_VELOCITY		15815 //0b0011110111000111
+#define SET_TARGET_YAW_ANGLE	14847 //0b0011100111111111
+#define SET_TARGET_YAW_RATE		13823 //0b0011010111111111
+#define SET_TARGET_LAND         11719 //0b0010110111000111
+#define SET_TARGET_TAKEOFF      7623  //0b0001110111000111
 
 /* helper function */
 uint64_t get_time_usec();

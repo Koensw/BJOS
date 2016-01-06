@@ -85,7 +85,6 @@ void FlightController::init(bjos::BJOS *bjos) {
     }
     _raw_sock_name.sun_family = AF_UNIX;
     strcpy(_raw_sock_name.sun_path, "/tmp/bluejay/modules/philips-localization");
-    bind(_raw_sock, (struct sockaddr *) &_raw_sock_name, sizeof(struct sockaddr_un));
     
     //start read thread
     _read_thrd_running = true;
@@ -161,6 +160,12 @@ void FlightController::read_messages() {
             autopilot_id = message.compid;
         }
         
+        //get current time
+        shared_data_mutex->lock();
+        uint64_t unixTime = _data->syncUnixTime;
+        uint64_t bootTime = _data->syncBootTime;
+        shared_data_mutex->unlock();
+        
         //Handle message per id
         switch (message.msgid) {
             case MAVLINK_MSG_ID_LOCAL_POSITION_NED:
@@ -201,11 +206,11 @@ void FlightController::read_messages() {
                 //send the attitude
                 flight_raw_estimate raw_estimate;
                 raw_estimate.type = FLIGHT_RAW_ORIENTATION;
-                raw_estimate.time = attitude.time_boot_ms;
+                raw_estimate.time = attitude.time_boot_ms - bootTime + unixTime;
                 raw_estimate.data[0] = attitude.roll; 
                 raw_estimate.data[1] = attitude.pitch; 
                 raw_estimate.data[2] = attitude.yaw; 
-                sendto(_raw_sock, &raw_estimate, sizeof(raw_estimate), 0, (const sockaddr *) &_raw_sock_name, sizeof(struct sockaddr));
+                sendto(_raw_sock, &raw_estimate, sizeof(raw_estimate), 0, (const sockaddr *) &_raw_sock_name, SUN_LEN(&_raw_sock_name));
                 
                 //put attitude data into _data
                 std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
@@ -250,19 +255,19 @@ void FlightController::read_messages() {
                 //send the acc
                 flight_raw_estimate raw_estimate;
                 raw_estimate.type = FLIGHT_RAW_ACC;
-                raw_estimate.time = highres_imu.time_usec/1000ULL;
+                raw_estimate.time = highres_imu.time_usec/1000ULL - bootTime + unixTime;
                 raw_estimate.data[0] = highres_imu.xacc; 
                 raw_estimate.data[1] = highres_imu.yacc; 
                 raw_estimate.data[2] = highres_imu.zacc; 
-                sendto(_raw_sock, &raw_estimate, sizeof(raw_estimate), 0, (const sockaddr *) &_raw_sock_name, sizeof(struct sockaddr));
+                sendto(_raw_sock, &raw_estimate, sizeof(raw_estimate), 0, (const sockaddr *) &_raw_sock_name, SUN_LEN(&_raw_sock_name));
                 
                 //send the acc
                 raw_estimate.type = FLIGHT_RAW_GYRO;
-                raw_estimate.time = highres_imu.time_usec/1000ULL;
+                raw_estimate.time = highres_imu.time_usec/1000ULL - bootTime + unixTime;
                 raw_estimate.data[0] = highres_imu.xgyro; 
                 raw_estimate.data[1] = highres_imu.ygyro; 
                 raw_estimate.data[2] = highres_imu.zgyro; 
-                sendto(_raw_sock, &raw_estimate, sizeof(raw_estimate), 0, (const sockaddr *) &_raw_sock_name, sizeof(struct sockaddr));
+                sendto(_raw_sock, &raw_estimate, sizeof(raw_estimate), 0, (const sockaddr *) &_raw_sock_name, SUN_LEN(&_raw_sock_name));
                 
                 std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
                 _data->imuNED.time = highres_imu.time_usec/1000ULL;
@@ -608,13 +613,13 @@ bool FlightController::isLanded() {
 
 //get raw imu data
 IMUSensorData FlightController::getIMUDataCF(){
-    //copy the data
+    //get data (FIXME: ensure proper frame)
     shared_data_mutex->lock();
     IMUSensorData imuCF = _data->imuNED;
     uint64_t unixTime = _data->syncUnixTime;
     uint64_t bootTime = _data->syncBootTime;
     shared_data_mutex->unlock();
-
+    
     //scale the time to microseconds in unix timestamp
     imuCF.time = imuCF.time - bootTime + unixTime;
     
