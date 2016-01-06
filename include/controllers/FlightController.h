@@ -56,11 +56,12 @@
 // ------------------------------------------------------------------------------
 /*
  * MAVLink messages used per implemented function:
- *	int setTargetCF(...)		--- SET_POSITION_TARGET_LOCAL_NED
- *	int setCurrentPosition(...)	--- ATT_POS_MOCAP with ~.q = {1 0 0 0}
- *	void readMessages(...)		--- Decodes incoming ATTITUDE and LOCAL_POSITION_NED messages
- *
- *	no further communication is possible with the drone (as of now)
+ *	setTargetCF		        --- SET_POSITION_TARGET_LOCAL_NED
+ *	setCurrentPosition	    --- VISION_POSITION_ESTIMATE
+ *  toggle_offboard_control --- COMMAND_LONG (MAV_CMD_NAV_GUIDED_ENABLE)
+ *  synchronize_time        --- SYSTEM_TIME
+ *	readMessages            --- Decodes the following incoming messages:
+ *                                      ATTITUDE, LOCAL_POSITION_NED, STATUSTEXT, SYSTEM_TIME, HIGHRES_IMU, EXTENDED_SYS_STATE
  */
 
 // ------------------------------------------------------------------------------
