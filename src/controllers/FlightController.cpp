@@ -22,8 +22,43 @@ uint64_t get_time_usec(clockid_t clk_id)
     return _time_stamp.tv_sec * 1000000ULL + _time_stamp.tv_nsec / 1000ULL;
 }
 
-//WARNING: blocks while no initial messages are received from the drone
-void FlightController::init(BJOS *bjos) {
+FlightController::FlightController() : system_id(0), autopilot_id(0), _data(nullptr), _read_thrd_running(false), _write_thrd_running(false), _init_set(false) {}
+
+FlightController::~FlightController() {
+    if (isMainInstance()) {
+        //disable offboard control mode if not already
+        int result = toggle_offboard_control(false);
+        if (result == -1)
+            Log::error("FlightController::init", "Could not set offboard mode: unable to write message on serial port");
+        else if (result == 0)
+            Log::warn("FlightController::init", "double (de-)activation of offboard mode [ignored]");
+
+        //stop threads, wait for finish
+        _read_thrd_running = false;
+        _write_thrd_running = false;
+        _read_thrd.interrupt();
+        _write_thrd.interrupt();
+        _read_thrd.join();
+        _write_thrd.join();
+
+        //if the read_trhd is still waiting to receive an initial MAVLink message: close it and throw an ControllerInitializationError
+        if (_init_set == false) {
+            _init_set = true;
+            Log::error("FlightController::init", "Did not receive any MAVLink messages, check physical connections and make sure it is running on the right port!");
+        }
+        
+        //stop the raw stream
+        close(_raw_sock);
+
+        //stop the serial_port and clean up the pointer
+        serial_port->stop();
+        delete serial_port;
+    }
+
+    Controller::finalize<SharedFlightControllerData>();
+}
+
+void FlightController::init(bjos::BJOS *bjos) {
     bool ret = Controller::init(bjos, "flight", _data);
     if (!ret)
         throw ControllerInitializationError(this, "Controller::init failed");
@@ -38,13 +73,20 @@ void FlightController::init(BJOS *bjos) {
     if (serial_port->status != 1) //SERIAL_PORT_OPEN
         throw ControllerInitializationError(this, "Serial port not open");
     
+    //open a raw unix domain socket (WARNING: this is needed for Philips, this should not be hardcoded here!!!)
+    _raw_sock = socket(AF_UNIX, SOCK_DGRAM, 0);
+    if (_raw_sock < 0) {
+        throw ControllerInitializationError(this, "Cannot open raw socket");
+    }
+    _raw_sock_name.sun_family = AF_UNIX;
+    strcpy(_raw_sock_name.sun_path, "/tmp/bluejay/modules/philips-localization");
+    
     //start read thread
     _read_thrd_running = true;
     _read_thrd = boost::thread(&FlightController::read_thread, this);
     
-    // read_thread initialises 'initial_position' and signals this by setting _init_set
-    std::cout << "Receiving initial position ...";
-	unsigned int n = 0;
+    //read_thread initialises 'initial_position' and signals this by setting _init_set
+    unsigned int n = 0;
     unsigned int timeout = 20; //deciseconds
     while (_init_set == false && n < timeout) {
 		n++;
@@ -53,17 +95,11 @@ void FlightController::init(BJOS *bjos) {
 	if (n == timeout)
 		throw ControllerInitializationError(this, "Did not receive any MAVLink messages");
 
-    std::cout << " Received!" << std::endl;
-    Log::info("FlightController::init",
-            "Initial position: xyz=[%.4f %.4f %.4f] vxvyvz=[%.4f %.4f %.4f]", initial_position.x,
-            initial_position.y, initial_position.z, initial_position.vx, initial_position.vy,
-            initial_position.vz);
+    Log::info("FlightController::init", "Initial position: xyz=[%.4f %.4f %.4f] vxvyvz=[%.4f %.4f %.4f]", initial_position.x, initial_position.y, initial_position.z, initial_position.vx, initial_position.y, initial_position.z);
     
-    // write_thread initialises 'current_setpoint': all velocities 0
+    //write_thread initialises 'current_setpoint': all velocities 0
     _write_thrd = boost::thread(&FlightController::write_thread, this);
-    
-    //wait until write_thread starts
-    while (_write_thrd_running == false)
+     while (_write_thrd_running == false)
         usleep(100000); //10 Hz
         
     //synchronize the time with pixhawk
@@ -97,7 +133,7 @@ void FlightController::read_thread() {
         }
         catch (boost::thread_interrupted) {
             //if interrupt, stop and let the controller finish resources
-            ///Q: wha??
+            //TODO: finish resources?
             return;
         }
     }
@@ -115,6 +151,12 @@ void FlightController::read_messages() {
             system_id = message.sysid;
             autopilot_id = message.compid;
         }
+        
+        //get current time
+        shared_data_mutex->lock();
+        uint64_t unixTime = _data->syncUnixTime;
+        uint64_t bootTime = _data->syncBootTime;
+        shared_data_mutex->unlock();
         
         //Handle message per id
         switch (message.msgid) {
@@ -142,21 +184,30 @@ void FlightController::read_messages() {
                 break;
             }
             case MAVLINK_MSG_ID_ATTITUDE:
-            {
-                //Log::info("FlightController::read_messages", "MAVLINK_MSG_ATTITUDE");
-                
+            {                
                 //decode
                 mavlink_attitude_t attitude;
                 mavlink_msg_attitude_decode(&message, &attitude);
                 
+                //send the attitude
+                flight_raw_estimate raw_estimate;
+                raw_estimate.type = FLIGHT_RAW_ORIENTATION;
+                raw_estimate.time = attitude.time_boot_ms - bootTime + unixTime;
+                raw_estimate.data[0] = attitude.roll; 
+                raw_estimate.data[1] = attitude.pitch; 
+                raw_estimate.data[2] = attitude.yaw; 
+                sendto(_raw_sock, &raw_estimate, sizeof(raw_estimate), 0, (const sockaddr *) &_raw_sock_name, SUN_LEN(&_raw_sock_name));
+                
                 //put attitude data into _data
                 std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+
                 _data->orientationNED[0] = attitude.roll;
                 _data->orientationNED[1] = attitude.pitch;
                 _data->orientationNED[2] = attitude.yaw;
                 _data->angularVelocityNED[0] = attitude.rollspeed;
                 _data->angularVelocityNED[1] = attitude.pitchspeed;
                 _data->angularVelocityNED[2] = attitude.yawspeed;
+
                 break;
             }
             case MAVLINK_MSG_ID_STATUSTEXT:
@@ -178,10 +229,28 @@ void FlightController::read_messages() {
             }
             case MAVLINK_MSG_ID_HIGHRES_IMU:
             {
-                std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+                //decode
                 mavlink_highres_imu_t highres_imu;
                 mavlink_msg_highres_imu_decode(&message, &highres_imu);
                 
+                //send the acc
+                flight_raw_estimate raw_estimate;
+                raw_estimate.type = FLIGHT_RAW_ACC;
+                raw_estimate.time = highres_imu.time_usec/1000ULL - bootTime + unixTime;
+                raw_estimate.data[0] = highres_imu.xacc; 
+                raw_estimate.data[1] = highres_imu.yacc; 
+                raw_estimate.data[2] = highres_imu.zacc; 
+                sendto(_raw_sock, &raw_estimate, sizeof(raw_estimate), 0, (const sockaddr *) &_raw_sock_name, SUN_LEN(&_raw_sock_name));
+                
+                //send the acc
+                raw_estimate.type = FLIGHT_RAW_GYRO;
+                raw_estimate.time = highres_imu.time_usec/1000ULL - bootTime + unixTime;
+                raw_estimate.data[0] = highres_imu.xgyro; 
+                raw_estimate.data[1] = highres_imu.ygyro; 
+                raw_estimate.data[2] = highres_imu.zgyro; 
+                sendto(_raw_sock, &raw_estimate, sizeof(raw_estimate), 0, (const sockaddr *) &_raw_sock_name, SUN_LEN(&_raw_sock_name));
+                
+                std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
                 _data->imuNED.time = highres_imu.time_usec/1000ULL;
                 _data->imuNED.ax = highres_imu.xacc;
                 _data->imuNED.ay = highres_imu.yacc;
@@ -190,6 +259,30 @@ void FlightController::read_messages() {
                 _data->imuNED.gy = highres_imu.ygyro;
                 _data->imuNED.gz = highres_imu.zgyro;
                 break;
+            }
+            case MAVLINK_MSG_ID_EXTENDED_SYS_STATE:
+            {
+                mavlink_extended_sys_state_t extended_sys_state;
+                mavlink_msg_extended_sys_state_decode(&message, &extended_sys_state);
+
+                std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+                switch (extended_sys_state.landed_state) {
+                    case MAV_LANDED_STATE_ON_GROUND:
+                    {
+                        _data->landed = true;
+                        break;
+                    }
+                    case MAV_LANDED_STATE_IN_AIR:
+                    {
+                        _data->landed = false;
+                        break;
+                    }
+                    case MAV_LANDED_STATE_UNDEFINED:
+                    default:
+                    {
+                        Log::info("FlightController::read_messages", "Unable to handle landed state %" PRIu8, extended_sys_state.landed_state);
+                    }
+                }
             }
             default:
             {
@@ -269,15 +362,9 @@ void FlightController::write_setpoint() {
     // --------------------------------------------------------------------------
     
     // do the write
-    int len = serial_port->write_message(message);
+    serial_port->write_message(message);
     
-    // check the write
-    if (len <= 0)
-        std::cout << ".";
-    else {
-        //TODO: log writing of setpoint per type_mask
-        //Log::info("FlightController::write_setpoint", "Wrote setpoint");
-    }
+    //TODO: check if write is succesfull
     
     return;
 }
@@ -503,25 +590,23 @@ Eigen::Vector3d FlightController::BodyNEDtoCF(Eigen::Vector3d vectorNED) {
     return t * vectorNED;
 }
 
+bool FlightController::isLanded() {
+    std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+    return _data->landed;
+}
+
 //get raw imu data
 IMUSensorData FlightController::getIMUDataCF(){
-    //copy the data
+    //get data (FIXME: ensure proper frame)
     shared_data_mutex->lock();
     IMUSensorData imuCF = _data->imuNED;
-    double yaw = _data->orientationNED.z();
+
     uint64_t unixTime = _data->syncUnixTime;
     uint64_t bootTime = _data->syncBootTime;
     shared_data_mutex->unlock();
-
+    
     //scale the time to microseconds in unix timestamp
     imuCF.time = imuCF.time - bootTime + unixTime;
-    
-    //convert the acceleration to control frame
-    /*Point acc(imuCF.ax, imuCF.ay, imuCF.az);
-    acc = NEDtoCF(acc, yaw, Point());
-    imuCF.ax = acc.x;
-    imuCF.ay = acc.y;
-    imuCF.az = acc.z;*/
     
     return imuCF;
 }

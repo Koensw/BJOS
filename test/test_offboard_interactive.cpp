@@ -31,12 +31,15 @@ float YAWR = 0.2;
 
 #define M_EPS 1e-7
 
-std::pair<Eigen::Vector3d,Eigen::Vector3d> handle_input(char c)
+std::tuple<Eigen::Vector3d, Eigen::Vector3d, uint16_t> handle_input(char c)
 {
 	static Eigen::Vector3d setv_old;
     static Eigen::Vector3d setav_old;
+    static uint16_t tm_old;
     Eigen::Vector3d setv(0,0,0);
     Eigen::Vector3d setav(0,0,0);
+    uint16_t tm = SET_TARGET_VELOCITY;
+
 	switch (c) {
 	case 'w':
 		std::cout << "Going forward" << std::endl;
@@ -62,12 +65,14 @@ std::pair<Eigen::Vector3d,Eigen::Vector3d> handle_input(char c)
 		std::cout << "Turning left" << std::endl;
         setav[2] = -YAWR;
 		setv = setv_old;
+        tm &= SET_TARGET_YAW_RATE;
 		break;
 
 	case 'r':
 		std::cout << "Turning right" << std::endl;
         setav[2] = YAWR;
 		setv = setv_old;
+        tm &= SET_TARGET_YAW_RATE;
 		break;
 
 	case 'o':
@@ -76,13 +81,15 @@ std::pair<Eigen::Vector3d,Eigen::Vector3d> handle_input(char c)
 		break;
 
 	case 'l':
-		std::cout << "Going downward" << std::endl;
+		std::cout << "Landing" << std::endl;
         setv[2] = -ZVEL;
+        tm = SET_TARGET_LAND;
 		break;
 
     case 't':
 		std::cout << "Takeoff!" << std::endl;
 		setv[2] = TAKEOFF;
+        tm = SET_TARGET_TAKEOFF;
 		break;
 
 	case 'q':
@@ -93,6 +100,7 @@ std::pair<Eigen::Vector3d,Eigen::Vector3d> handle_input(char c)
 	case '\n':
 		setv = setv_old;
         setav = setav_old;
+        tm = tm_old;
 		break;
 
 	case 'h':
@@ -100,10 +108,10 @@ std::pair<Eigen::Vector3d,Eigen::Vector3d> handle_input(char c)
 		std::cout << "Holding..." << std::endl;
 		break;
 	}
-
-	setv_old = setv;
+    setv_old = setv;
     setav_old = setav;
-    return std::pair<Eigen::Vector3d, Eigen::Vector3d>(setv,setav);
+    tm_old = tm;
+    return std::make_tuple(setv, setav, tm);
 }
 
 int main(){
@@ -127,13 +135,10 @@ int main(){
 	do {
 		ret = std::cin.get();
 		if (!Process::isActive()) ret = 'q';
-		auto action = handle_input(ret);
-		if (fabsf(action.second[2]) < M_EPS)
-			flight.setTargetCF(SET_TARGET_VELOCITY,
-                    Eigen::Vector3d(0,0,0), Eigen::Vector3d(0,0,0), action.first, action.second);
-		else
-            flight.setTargetCF(SET_TARGET_VELOCITY & SET_TARGET_YAW_RATE,
-                    Eigen::Vector3d(0,0,0), Eigen::Vector3d(0,0,0), action.first, action.second);
+
+        auto action = handle_input(ret);
+        flight.setTargetCF(std::get<2>(action), Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(0, 0, 0), std::get<0>(action), std::get<1>(action));
+
 	} while (ret != 'q');
 
 	std::cout << "Byebye!";
