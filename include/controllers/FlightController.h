@@ -64,7 +64,7 @@
 //   Defines
 // ------------------------------------------------------------------------------
 
-//						bit number:		   43210987654321
+//						bit number:		    43210987654321
 #define SET_TARGET_POSITION		15864 //0b0011110111111000
 #define SET_TARGET_VELOCITY		15815 //0b0011110111000111
 #define SET_TARGET_YAW_ANGLE	14847 //0b0011100111111111

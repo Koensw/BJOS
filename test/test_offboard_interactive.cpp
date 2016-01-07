@@ -60,13 +60,13 @@ std::pair<Eigen::Vector3d,Eigen::Vector3d> handle_input(char c)
 
 	case 'e':
 		std::cout << "Turning left" << std::endl;
-        setav[1] = -YAWR;
+        setav[2] = -YAWR;
 		setv = setv_old;
 		break;
 
 	case 'r':
 		std::cout << "Turning right" << std::endl;
-        setav[1] = YAWR;
+        setav[2] = YAWR;
 		setv = setv_old;
 		break;
 
