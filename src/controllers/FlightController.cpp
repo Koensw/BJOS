@@ -86,6 +86,12 @@ void FlightController::init(bjos::BJOS *bjos) {
     _raw_sock_name.sun_family = AF_UNIX;
     strcpy(_raw_sock_name.sun_path, "/tmp/bluejay/modules/philips-localization");
     
+    //Start state publisher, before it is used in read_messages
+    state_pub = new Publisher("status");
+    ret = state_pub->start();
+    if (!ret)
+        throw ControllerInitializationError(this, "Cannot start the state publisher");
+    
     //start read thread
     _read_thrd_running = true;
     _read_thrd = boost::thread(&FlightController::read_thread, this);
@@ -118,11 +124,6 @@ void FlightController::init(bjos::BJOS *bjos) {
         throw ControllerInitializationError(this, "Could not set offboard mode: unable to write message on serial port");
     else if (result == 0)
         Log::warn("FlightController::init", "double (de-)activation of offboard mode [ignored]");
-
-    state_pub = new Publisher("status");
-    ret = state_pub->start();
-    if (!ret)
-        throw ControllerInitializationError(this, "Cannot start the state publisher");
 
     // Done!
 }
