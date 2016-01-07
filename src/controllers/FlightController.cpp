@@ -317,13 +317,13 @@ void FlightController::read_messages() {
                     }
                 }
             }
-            case MAVLINK_MSG_ID_ACTUATOR_CONTROL_TARGET:
+            case MAVLINK_MSG_ID_SERVO_OUTPUT_RAW:
             {
-                mavlink_actuator_control_target_t actuator_control_target;
-                mavlink_msg_actuator_control_target_decode(&message, &actuator_control_target);
+                mavlink_servo_output_raw_t servo_output_raw;
+                mavlink_msg_servo_output_raw_decode(&message, &servo_output_raw);
 
                 char buf[1024];
-                sprintf(buf, "%f %f %f %f", actuator_control_target.controls[1], actuator_control_target.controls[2], actuator_control_target.controls[0], actuator_control_target.controls[3]);
+                sprintf(buf, "%f %f %f %f", servo_output_raw.servo3_raw, servo_output_raw.servo1_raw, servo_output_raw.servo2_raw, servo_output_raw.servo4_raw);
                 std::string msgdata(buf);
                 Message msg("engine_power", msgdata);
                 state_pub->send(msg);
