@@ -200,7 +200,8 @@ void FlightController::read_messages() {
                 char buf[1024];
                 sprintf(buf, "%f %f %f %f %f %f", local_position_ned.x, local_position_ned.y, local_position_ned.z, local_position_ned.vx, local_position_ned.vy, local_position_ned.vz);
                 std::string msgdata(buf);
-                state_pub->send(Message("position_velocity_estimate", msgdata));
+                Message msg("position_velocity_estimate", msgdata);
+                state_pub->send(msg);
                 break;
             }
             case MAVLINK_MSG_ID_ATTITUDE:
@@ -238,7 +239,8 @@ void FlightController::read_messages() {
                 char buf[1024];
                 sprintf(buf, "%f %f %f %f %f %f", attitude.roll, attitude.pitch, attitude.yaw, attitude.rollspeed, attitude.pitchspeed, attitude.yawspeed);
                 std::string msgdata(buf);
-                state_pub->send(Message("attitude_estimate", msgdata));
+                Message msg("attitude_estimate", msgdata);
+                state_pub->send(msg);
                 break;
             }
             case MAVLINK_MSG_ID_STATUSTEXT:
@@ -323,7 +325,8 @@ void FlightController::read_messages() {
                 char buf[1024];
                 sprintf(buf, "%f %f %f %f", actuator_control_target.controls[1], actuator_control_target.controls[2], actuator_control_target.controls[0], actuator_control_target.controls[3]);
                 std::string msgdata(buf);
-                state_pub->send(Message("engine_power", msgdata));
+                Message msg("engine_power", msgdata);
+                state_pub->send(msg);
                 break;
             }
             default:
