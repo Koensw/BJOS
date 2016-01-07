@@ -322,9 +322,15 @@ void FlightController::read_messages() {
             {
                 mavlink_servo_output_raw_t servo_output_raw;
                 mavlink_msg_servo_output_raw_decode(&message, &servo_output_raw);
+                
+                float servo_output_percentage[4];
+                servo_output_percentage[0] = ((float)servo_output_raw.servo1_raw - 1000) / 1000.0;
+                servo_output_percentage[1] = ((float)servo_output_raw.servo2_raw - 1000) / 1000.0;
+                servo_output_percentage[2] = ((float)servo_output_raw.servo3_raw - 1000) / 1000.0;
+                servo_output_percentage[3] = ((float)servo_output_raw.servo4_raw - 1000) / 1000.0;
 
                 char buf[1024];
-                sprintf(buf, "%f %f %f %f", servo_output_raw.servo3_raw, servo_output_raw.servo1_raw, servo_output_raw.servo2_raw, servo_output_raw.servo4_raw);
+                sprintf(buf, "%f %f %f %f", servo_output_percentage[2], servo_output_percentage[0], servo_output_percentage[1], servo_output_percentage[3]);
                 std::string msgdata(buf);
                 Message msg("engine_power", msgdata);
                 state_pub->send(msg);
