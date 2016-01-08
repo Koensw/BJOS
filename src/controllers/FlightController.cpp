@@ -314,13 +314,14 @@ void FlightController::write_thread() {
     // write a message and signal writing
     write_setpoint();
     _write_thrd_running = true;
-    
+                                                                                  1 
     // Pixhawk needs to see off-board commands at minimum 2Hz, otherwise it'll go into failsafe
     while (_write_thrd_running) {
         try {
             boost::this_thread::sleep_for(boost::chrono::milliseconds(100)); //Stream at 10 Hz
             
             write_setpoint();
+            write_estimate();
         }
         catch (boost::thread_interrupted) {
             //if interrupt, stop and let the controller finish resources
@@ -366,6 +367,25 @@ void FlightController::write_setpoint() {
     
     //TODO: check if write is succesfull
     
+    return;
+}
+
+void FlightController::write_estimate() {
+    // pull from estimate
+    std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+    mavlink_vision_position_estimate_t est = _data->vision_position_estimate;
+
+    // double check estimate time
+    if (not est.usec)
+        est.usec = get_time_usec(CLOCK_MONOTONIC);
+
+    // encode message
+    mavlink_message_t message;
+    mavlink_msg_vision_position_estimate_encode(system_id, autopilot_id, &message, &est);
+
+    // do the write
+    serial_port->write_message(message); //no error check
+
     return;
 }
 
@@ -460,12 +480,11 @@ Eigen::Vector3d FlightController::getPositionNED() {
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
     return _data->positionNED;
 }
-/*
+
 Eigen::Vector3d FlightController::getPositionWF() {
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
-    return positionNEDtoWF(_data->positionNED);
+    return positionNEDtoWF(_data->positionNED, _data->visionPosOffset, _data->visionYawOffset);
 }
-*/
 
 Eigen::Vector3d FlightController::getOrientationNED() {
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
@@ -523,7 +542,20 @@ Eigen::Vector3d FlightController::getTargetOrientationCF() {
 Eigen::Vector3d FlightController::getTargetVelocityCF() {
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
     return BodyNEDtoCF(Eigen::Vector3d(
-            _data->current_setpoint.vx, _data->current_setpoint.vy, _data->current_setpoint.vz));
+        _data->current_setpoint.vx, _data->current_setpoint.vy, _data->current_setpoint.vz));
+}
+
+void FlightController::syncVision(Eigen::Vector3d visionPosEstimate, double visionYawToNorth) {
+    double visionYawOffset = -visionYawToNorth;
+
+    Eigen::AngleAxisd Rz(-visionYawOffset, Eigen::Vector3d::UnitZ());
+    Eigen::AngleAxisd Rx(M_PI, Eigen::Vector3d::UnitX());
+
+    Eigen::Vector3d visionPosOffset = Rx*getPositionNED() - Rz*visionPosEstimate;
+
+    std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+    _data->visionPosOffset = visionPosOffset;
+    _data->visionYawOffset = visionYawOffset;
 }
 
 //ALERT: can NOT be used to set roll, pitch, rollspeed or pitchspeed
@@ -588,6 +620,19 @@ Eigen::Vector3d FlightController::BodyNEDtoCF(Eigen::Vector3d vectorNED) {
     Eigen::Affine3d t;
     t = Eigen::AngleAxisd(-M_PI, Eigen::Vector3d::UnitX());
     return t * vectorNED;
+}
+
+//FIXME
+/*Point FlightController::NEDtoWF(Eigen::Vector3d vectorNED, Eigen::Vector3d visionPosOffset) {
+    Eigen::Affine3d t;
+	RotationMatrix R(-M_PI, 'x');
+	return R.rotatePoint(pointNED) - visionPosOffset;
+} */
+
+//NOTE: don't touch this function or change this algorithm in any way before contacting @author!
+Eigen::Vector3d FlightController::positionNEDtoWF(Eigen::Vector3d positionNED, Eigen::Vector3d visionPosOffset, double visionYawOffset) {
+    Eigen::Affine3d t = Eigen::AngleAxisd(visionYawOffset, Eigen::Vector3d::UnitZ())*Eigen::Translation3d(-visionPosOffset)*Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX());
+    return t*positionNED;
 }
 
 bool FlightController::isLanded() {

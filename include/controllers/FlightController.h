@@ -70,6 +70,9 @@
 //   Defines
 // ------------------------------------------------------------------------------
 
+// These typemasks are 'ignore-masks': 1 means ignore, while 0 means use
+// They, thus, have to be combined with &
+//
 //						bit number:		    43210987654321
 #define SET_TARGET_POSITION		15864 //0b0011110111111000
 #define SET_TARGET_VELOCITY		15815 //0b0011110111000111
@@ -104,10 +107,17 @@ namespace bjos {
         uint64_t syncBootTime; //ms
         uint64_t syncUnixTime; //ms
         
+		/* Offset between vision WF and drone WF (frame configuration flipped from drone NED) */
+        Eigen::Vector3d visionPosOffset;
+        double visionYawOffset;
+
         //Used to constantly send setpoints to the drone
         //TODO: make an array-form message, in order to meet the need for sending a path of ~20 setpoints
         mavlink_set_position_target_local_ned_t current_setpoint;
         
+        //Used to stream position and velocity estimates to the drone
+        mavlink_vision_position_estimate_t vision_position_estimate;
+
         //used to retrieve last system time from Pixhawk (normally should not be directly used, instead the synchronized time should be used)
         mavlink_system_time_t sys_time;
 
@@ -123,23 +133,17 @@ namespace bjos {
         FlightController();
         ~FlightController();
 
-        /* Position, orientation, velocity and angular velocity methods */
-
-        /* Positions */
         Eigen::Vector3d getPositionNED();
-        //Eigen::Vector3d getPositionWF();
+        Eigen::Vector3d getPositionWF();
 
-        /* Orientations, where x = roll, y = pitch, z = yaw */
         Eigen::Vector3d getOrientationNED();
         //Eigen::Vector3d getOrientationWF();
         //Eigen::Vector3d getOrientationCF();
 
-        /* Velocities */
         Eigen::Vector3d getVelocityNED();
         //Eigen::Vector3d getVelocityWF();
         //Eigen::Vector3d getVelocityCF();
 
-        /* Angular velocities, where x = roll, y = pitch, z = yaw */
         Eigen::Vector3d getAngularVelocityNED();
         //Eigen::Vector3d getAngularVelocityWF();
         //Eigen::Vector3d getAngularVelocityCF();
@@ -163,7 +167,19 @@ namespace bjos {
         /* setCurrent* functions are to be used by a computer vision algorithm supplying the drone with external absolute measurements of its states */
         void setCurrentPositionWF(Eigen::Vector3d position);	
         void setCurrentVelocityWF(Eigen::Vector3d velocity);
-        void setCurrentAttitudeWF(Eigen::Vector3d angularVelocity);
+        void setCurrentAttitudeWF(Eigen::Vector3d orientation);
+
+        //FIXME: reference frame is missing (and name is not fully compliant)
+        std::tuple<Eigen::Vector3d, Eigen::Vector3d, Eigen::Vector3d, Eigen::Vector3d> getCurrentSetpoint();
+
+		/* At a given moment, the Kinect module calls this function with its current estimate of the drone position and its own rotation w.r.t. the magnetic north
+		 * The drone then uses this information as a constant base for the set*EstimateWF functions */
+		void syncVision(Eigen::Vector3d visionPosOffset, double visionYawOffset);
+
+        /* set*EstimateWF functions are to be used by a computer vision algorithm supplying the drone with external absolute measurements of its states 
+		 * These functions assume 'syncVision' is called beforehand */
+        void setPositionEstimateWF(Eigen::Vector3d posEst);	
+        void setAttitudeEstimateWF(Eigen::Vector3d attEst);
         
         // Return if landed
         bool isLanded();
@@ -196,7 +212,8 @@ namespace bjos {
         
         SharedFlightControllerData *_data;
         
-        /* Frame conversion functions 
+        /* Frame conversion functions
+         * These functions do not access shared data!
          * 
          * The frames used in this program are defined in the Frame Specification.pdf file!
          *
@@ -209,10 +226,9 @@ namespace bjos {
         Eigen::Vector3d NEDtoCF(Eigen::Vector3d vectorNED);
         Eigen::Vector3d positionWFtoNED(Eigen::Vector3d positionWF);
         Eigen::Vector3d WFtoNED(Eigen::Vector3d vectorWF);
-        Eigen::Vector3d positionNEDtoWF(Eigen::Vector3d positionNED);
-        Eigen::Vector3d NEDtoWF(Eigen::Vector3d vectorNED);
-
-        
+        Eigen::Vector3d positionNEDtoWF(Eigen::Vector3d positionNED, Eigen::Vector3d visionPosOffset, double visionYawOffset);
+        Eigen::Vector3d NEDtoWF(Eigen::Vector3d vectorNED, Eigen::Vector3d visionPosOffset);
+      
         //NOTE: only used by main instance
         boost::thread _read_thrd;
         boost::thread _write_thrd;
@@ -223,6 +239,7 @@ namespace bjos {
         void write_thread();
         /* utility functions used by threads */
         void write_setpoint();
+        void write_estimate();
         void read_messages();
         /* initialiser check */
         std::atomic_bool _init_set;
