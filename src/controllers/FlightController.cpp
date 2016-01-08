@@ -314,7 +314,7 @@ void FlightController::write_thread() {
     // write a message and signal writing
     write_setpoint();
     _write_thrd_running = true;
-                                                                                  1 
+                                                                                   
     // Pixhawk needs to see off-board commands at minimum 2Hz, otherwise it'll go into failsafe
     while (_write_thrd_running) {
         try {
