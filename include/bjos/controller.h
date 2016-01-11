@@ -20,7 +20,7 @@ namespace bjos{
         friend class BJOS;
         friend class ControllerInitializationError;
     public:
-        Controller(): _bjos_instance(0), _main_instance(false), _state_update_rate(1) {}
+        Controller(): _bjos_instance(0), _main_instance(false), _state_pub(0) {}
         
         /* Init module is only called for the main node */
         virtual void init(BJOS *bjos) = 0;
@@ -40,18 +40,14 @@ namespace bjos{
             else return true;
         }
         
-        /* Set the update rate in hertz that the controller should update the state (max 1000 Hz) */
-        void setStateUpdateRate(double rate){
-            _state_update_rate = rate;
-        }
-        /* Return a string describing the state of this controller in a controller specific text format */
-        virtual std::string getState() = 0;
+        /* Add a channel to stream */
+        //void addStream();
         
         /* Virtual destructor */
         virtual ~Controller() {}
     protected:
-        /* Update the state of the controller to the communication wrapper */
-        void update_state();
+        /* Send a message to the state channel */
+        void send_state_message(bjcomm::Message msg);
         
         /* Register the controller */
         template <typename Type> bool init(BJOS *bjos, std::string name, Type *&mem){
@@ -67,9 +63,10 @@ namespace bjos{
                 //acquire mutex
                 shared_data_mutex = new BJOS::Mutex(BJOS::mutex_open_only, name.c_str());
                 
-                //start the update_state thread
-                _state_thrd_running = true;
-                _state_thrd = boost::thread(&Controller::update_state, this);
+                //start the publisher
+                _state_pub = new bjcomm::Publisher("status");
+                bool started = _state_pub->start();
+                if(!started) return false;
                 
                 return true;
             }else return false;
@@ -101,6 +98,10 @@ namespace bjos{
                 _state_thrd.join();
             }
             
+            //remove the publisher
+            delete _state_pub;
+            _state_pub = 0;
+            
             //remove the mutex
             delete shared_data_mutex;
             
@@ -124,7 +125,8 @@ namespace bjos{
         
         std::atomic_bool _state_thrd_running;
         boost::thread _state_thrd;
-        double _state_update_rate;
+        
+        bjcomm::Publisher *_state_pub;
     };
 }
 

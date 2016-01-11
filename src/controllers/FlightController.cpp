@@ -55,9 +55,6 @@ FlightController::~FlightController() {
         //stop the serial_port and clean up the pointer
         serial_port->stop();
         delete serial_port;
-
-        //clean up the state bjcomm publisher
-        delete state_pub;
     }
 
     Controller::finalize<SharedFlightControllerData>();
@@ -85,12 +82,6 @@ void FlightController::init(bjos::BJOS *bjos) {
     }
     _raw_sock_name.sun_family = AF_UNIX;
     strcpy(_raw_sock_name.sun_path, "/tmp/bluejay/modules/philips-localization");
-    
-    //Start state publisher, before it is used in read_messages
-    state_pub = new Publisher("status");
-    ret = state_pub->start();
-    if (!ret)
-        throw ControllerInitializationError(this, "Cannot start the state publisher");
     
     //start read thread
     _read_thrd_running = true;
@@ -176,6 +167,15 @@ void FlightController::read_messages() {
                 //decode
                 mavlink_local_position_ned_t local_position_ned;
                 mavlink_msg_local_position_ned_decode(&message, &local_position_ned);
+
+                //bjcomm message handling            
+                Message msg("position_estimate");
+                msg.getStream() << local_position_ned.x << " " << local_position_ned.y << " " << local_position_ned.z;
+                send_state_message(msg);
+                
+                msg = Message("velocity_estimate");
+                msg.getStream() << local_position_ned.vx << " " << local_position_ned.vy << " " << local_position_ned.vz;
+                send_state_message(msg);
                 
                 //put position and velocity data into _data
                 std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
@@ -196,13 +196,6 @@ void FlightController::read_messages() {
                     mavlink_msg_local_position_ned_decode(&message, &initial_position);
                     _init_set = true;
                 }
-
-                //bjcomm message handling
-                char buf[1024];
-                sprintf(buf, "%f %f %f %f %f %f", local_position_ned.x, local_position_ned.y, local_position_ned.z, local_position_ned.vx, local_position_ned.vy, local_position_ned.vz);
-                std::string msgdata(buf);
-                Message msg("position_velocity_estimate", msgdata);
-                state_pub->send(msg);
                 break;
             }
             case MAVLINK_MSG_ID_ATTITUDE:
@@ -211,7 +204,16 @@ void FlightController::read_messages() {
                 mavlink_attitude_t attitude;
                 mavlink_msg_attitude_decode(&message, &attitude);
                 
-                //send the attitude
+               //bjcomm message handling
+                Message msg("attitude_estimate");
+                msg.getStream() << attitude.roll << " " << attitude.pitch << " " << attitude.yaw;
+                send_state_message(msg);
+                
+                msg = Message("attitude_velocity_estimate");
+                msg.getStream() << attitude.rollspeed << " " << attitude.pitchspeed << " " << attitude.yawspeed;
+                send_state_message(msg);
+                
+                //send the attitude to raw stream
                 flight_raw_estimate raw_estimate;
                 raw_estimate.type = FLIGHT_RAW_ORIENTATION;
                 raw_estimate.time = attitude.time_boot_ms - bootTime + unixTime;
@@ -235,13 +237,6 @@ void FlightController::read_messages() {
                 _data->headingWF.angular_velocity.vp = -attitude.pitchspeed;
                 _data->headingWF.angular_velocity.vr = attitude.rollspeed;
                 _data->headingWF.angular_velocity.vy = -attitude.yawspeed;
-
-                //bjcomm message handling
-                char buf[1024];
-                sprintf(buf, "%f %f %f %f %f %f", attitude.roll, attitude.pitch, attitude.yaw, attitude.rollspeed, attitude.pitchspeed, attitude.yawspeed);
-                std::string msgdata(buf);
-                Message msg("attitude_estimate", msgdata);
-                state_pub->send(msg);
                 break;
             }
             case MAVLINK_MSG_ID_STATUSTEXT:
@@ -267,7 +262,7 @@ void FlightController::read_messages() {
                 mavlink_highres_imu_t highres_imu;
                 mavlink_msg_highres_imu_decode(&message, &highres_imu);
                 
-                //send the acc
+                //send the acc to raw stream
                 flight_raw_estimate raw_estimate;
                 raw_estimate.type = FLIGHT_RAW_ACC;
                 raw_estimate.time = highres_imu.time_usec/1000ULL - bootTime + unixTime;
@@ -276,7 +271,7 @@ void FlightController::read_messages() {
                 raw_estimate.data[2] = highres_imu.zacc; 
                 sendto(_raw_sock, &raw_estimate, sizeof(raw_estimate), 0, (const sockaddr *) &_raw_sock_name, SUN_LEN(&_raw_sock_name));
                 
-                //send the acc
+                //send the acc to raw stream
                 raw_estimate.type = FLIGHT_RAW_GYRO;
                 raw_estimate.time = highres_imu.time_usec/1000ULL - bootTime + unixTime;
                 raw_estimate.data[0] = highres_imu.xgyro; 
