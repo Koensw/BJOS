@@ -9,14 +9,13 @@
 
 using namespace bjos;
 
-int SonarController::registerInterface(SonarInterface *interface, Eigen::Vector3d position, Eigen::Vector3d orientation, bool global){
+int SonarController::registerInterface(SonarInterface *interface, Pose pose, bool global){
     if(_interfaces.size() == SharedSonarControllerData::SONAR_SIZE)
         throw std::out_of_range(
         "Registering SonarInterface not possible, limit reached! Recompile with larger SONAR_SIZE.");
     
     _interfaces.push_back(std::make_pair(interface, global));
-    _positions.push_back(position);
-    _orientations.push_back(orientation);
+    _poses.push_back(pose);
     return _interfaces.size()-1;
 }
 
@@ -55,8 +54,7 @@ void SonarController::init(BJOS *bjos){
         _data->sonars[i].max_range = _interfaces[i].first->getMaxRange();
         _data->sonars[i].min_range = _interfaces[i].first->getMinRange();
         _data->sonars[i].field_of_view = _interfaces[i].first->getFieldOfView();
-        _data->sonars[i].position = _positions[i];
-        _data->sonars[i].orientation = _orientations[i];
+        _data->sonars[i].pose = _poses[i];
     }
     
     //start update thread

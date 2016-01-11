@@ -476,6 +476,13 @@ bool FlightController::synchronize_time() {
     return true;
 }
 
+Pose FlightController::getPoseWF(){
+    Pose pose;
+    pose.position = FlightController::getPositionWF();
+    //pose.orienation = FlightController::getOrientationWF(); FIXME: implement
+    return pose;
+}
+
 Eigen::Vector3d FlightController::getPositionNED() {
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
     return _data->positionNED;
@@ -559,6 +566,7 @@ void FlightController::syncVision(Eigen::Vector3d visionPosEstimate, double visi
 }
 
 //ALERT: can NOT be used to set roll, pitch, rollspeed or pitchspeed
+//WARNING: cannot set position at the moment (maybe rework this to use Pose / Twist?)
 void FlightController::setTargetCF(uint16_t type_mask, Eigen::Vector3d position,
         Eigen::Vector3d orientation, Eigen::Vector3d velocity, Eigen::Vector3d angularVelocity) {	
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
@@ -586,6 +594,11 @@ void FlightController::setTargetCF(uint16_t type_mask, Eigen::Vector3d position,
     
     //Mutex already locked above
     _data->current_setpoint = sp;
+}
+
+void FlightController::setTargetVelocityCF(Eigen::Vector3d vel, double yawspeed){
+    if(yawspeed < M_EPS) setTargetCF(SET_TARGET_VELOCITY, Eigen::Vector3d(), vel, Eigen::Vector3d(), Eigen::Vector3d());
+    else setTargetCF(SET_TARGET_VELOCITY & SET_TARGET_YAW_RATE, Eigen::Vector3d(), vel, Eigen::Vector3d(), Eigen::Vector3d(0, 0, yawspeed));
 }
 
 //TODO: fix yaw rotation on Raspberry Pi side in order to send position setpoints

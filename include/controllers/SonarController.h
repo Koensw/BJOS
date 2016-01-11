@@ -14,16 +14,14 @@
 #include "../bjos/helpers/error.h"
 
 #include "sonar/SonarInterface.h"
-#include <Eigen/Core>
-#include <Eigen/Geometry>
 
+#include "../libs/geometry.h"
 
 namespace bjos{
     struct SonarData{
         int id;
 
-        Eigen::Vector3d position;
-        Eigen::Vector3d orientation;
+        Pose pose;
         
         double field_of_view;
         double min_range;
@@ -55,8 +53,7 @@ namespace bjos{
         WARNING: all should be added before init
         WARNING: the controller will delete those interfaces when finalizing
         */
-        int registerInterface(SonarInterface *, Eigen::Vector3d position, Eigen::Vector3d orientation, 
-                bool global = false);
+        int registerInterface(SonarInterface *, Pose pose, bool global = false);
         
         /* Get / set global flag (WARNING: only recognized by main instance) */
         void setGlobalRead(bool global){
@@ -110,8 +107,7 @@ namespace bjos{
         
         //NOTE: only used by main instance
         std::vector<std::pair<SonarInterface*, bool> > _interfaces;
-        std::vector<Eigen::Vector3d> _positions;
-        std::vector<Eigen::Vector3d> _orientations;
+        std::vector<Pose> _poses;
         boost::thread _thrd;
         std::atomic_bool _thrd_running;
         bool _global_read;
