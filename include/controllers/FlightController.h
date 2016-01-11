@@ -133,7 +133,7 @@ namespace bjos {
     class FlightController : public Controller {
     public:
         FlightController();
-        ~FlightController();
+        virtual ~FlightController();
 
         Pose getPoseWF();
         

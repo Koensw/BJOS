@@ -23,10 +23,11 @@ add_library(bjos SHARED
     src/bjos/helpers/process.cpp
     src/controllers/SonarController.cpp
     src/controllers/FlightController.cpp
+    src/controllers/GripperController.cpp
     src/controllers/flight/serial_port.cpp
     src/libs/i2c.cpp
 )
-target_link_libraries(bjos ${Boost_THREAD_LIBRARY} ${Boost_SYSTEM_LIBRARY} pthread rt bjcomm zmq) #FIXME: zmq should not need an explicit specification
+target_link_libraries(bjos ${Boost_THREAD_LIBRARY} ${Boost_SYSTEM_LIBRARY} pthread rt wiringPi bjcomm zmq) #FIXME: zmq should not need an explicit specification
 
 #### LOADERS ####
 # flight loader
@@ -42,6 +43,13 @@ add_executable(sonar_loader
 )
 target_link_libraries(sonar_loader ${Boost_THREAD_LIBRARY} ${Boost_SYSTEM_LIBRARY} bjos)
 
+# gripper loader
+add_executable(gripper_loader
+    src/loader/test_gripper.cpp
+)
+target_link_libraries(gripper_loader ${Boost_THREAD_LIBRARY} ${Boost_SYSTEM_LIBRARY} bjos)
+
+# default loader
 add_executable(default_loader
     src/controllers/sonar/DevantechSonarInterface.cpp
     src/loader/test_default.cpp
@@ -49,7 +57,6 @@ add_executable(default_loader
 target_link_libraries(default_loader ${Boost_THREAD_LIBRARY} ${Boost_SYSTEM_LIBRARY} bjos)
 
 ### TEST ###
-
 # build the test offboard interactive executable
 add_executable(test_offboard_interactive
     test/test_offboard_interactive.cpp
@@ -61,6 +68,12 @@ add_executable(test_receiver
     test/test_receiver.cpp
 )
 target_link_libraries(test_receiver bjos)
+
+# test_gripper
+add_executable(test_gripper
+    test/test_gripper.cpp
+)
+target_link_libraries(test_gripper bjos)
 
 # example controller
 add_executable(bjos_example

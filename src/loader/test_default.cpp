@@ -12,6 +12,8 @@
 
 #include "controllers/SonarController.h"
 #include "controllers/FlightController.h"
+#include "controllers/GripperController.h"
+
 #include "controllers/sonar/DevantechSonarInterface.h"
 
 /*
@@ -22,6 +24,7 @@ using namespace bjos;
 
 SonarController *sonar;
 FlightController *flight;
+GripperController *gripper;
 
 /* Initialize the OS */
 void OSInit(){
@@ -34,6 +37,10 @@ void OSInit(){
         Process::installSignalHandler();
         BJOS *bjos = BJOS::getOS();
 
+        //start wiring pi
+        wiringPiSetup();
+        int fd = wiringPiI2CSetup(0x40);
+        
         //start i2c
         /*I2C::start("/dev/i2c-1");
         
@@ -53,7 +60,11 @@ void OSInit(){
         */
         //load the flight controller
         flight = new FlightController();
-        bjos->initController(flight);        
+        bjos->initController(flight);
+
+        //load the gripper controller
+        gripper = new GripperController(fd);
+        bjos->initController(gripper);        
     }catch(ControllerInitializationError &init_err){
         Log::fatal(init_err.getControllerName(), init_err.what());
         std::exit(0);
@@ -67,13 +78,14 @@ void OSFinalize(){
     bjos->shutdown();
     
     //wait for finalizing clients
-    while(!flight->canFinalize()){ //|| !flight->canFinalize()){
-        Log::info("default_loader", "Waiting for %d clients to finish...", bjos->getControllerCount("sonar")+bjos->getControllerCount("flight")-2);
+    while(/*!sonar->canFinalize() ||*/ !flight->canFinalize() || !gripper->canFinalize()){
+        Log::info("default_loader", "Waiting for %d clients to finish...", bjos->getControllerCount("sonar")+bjos->getControllerCount("flight")+bjos->getControllerCount("gripper")-3);
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
     //delete pointers
 //    delete sonar;
     delete flight;
+    delete gripper;
     
     //stop i2c
 //    I2C::stop();
