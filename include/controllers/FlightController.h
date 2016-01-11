@@ -38,7 +38,7 @@
 #include "../libs/log.h"
 
 #include "../bjos/bjos.h"
-#include "../bjos/controller/controller.h"
+#include "../bjos/controller.h"
 #include "../bjos/helpers/error.h"
 
 #include "flight/serial_port.h"
@@ -187,8 +187,12 @@ namespace bjos {
         /* Return raw sensor data */
         IMUSensorData getIMUDataCF();
         
+        /* Return the state of this controller */
+        std::string getState();
+
     private:
         Serial_Port *serial_port;
+        bjcomm::Publisher *state_pub;
         
         /* Set offboard mode - has to be done in order to send setpoints */
         //NOTE: returns -1 on write error, returns 0 on double (de-)activation, returns 1 on success;

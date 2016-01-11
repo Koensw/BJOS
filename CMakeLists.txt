@@ -18,6 +18,7 @@ include_directories(include/)
 # build the bjos library
 add_library(bjos SHARED
     src/bjos/bjos.cpp
+    src/bjos/controller.cpp
     src/bjos/helpers/error.cpp
     src/bjos/helpers/process.cpp
     src/controllers/SonarController.cpp
@@ -25,15 +26,9 @@ add_library(bjos SHARED
     src/controllers/flight/serial_port.cpp
     src/libs/i2c.cpp
 )
-target_link_libraries(bjos ${Boost_THREAD_LIBRARY} ${Boost_SYSTEM_LIBRARY} pthread rt)
+target_link_libraries(bjos ${Boost_THREAD_LIBRARY} ${Boost_SYSTEM_LIBRARY} pthread rt bjcomm zmq) #FIXME: zmq should not need an explicit specification
 
 #### LOADERS ####
-# build the test loader
-add_executable(test_loader
-    src/loader/test.cpp
-)
-target_link_libraries(test_loader bjos)
-
 # flight loader
 add_executable(flight_loader
     src/loader/test_flight.cpp
@@ -60,6 +55,12 @@ add_executable(test_offboard_interactive
     test/test_offboard_interactive.cpp
 )
 target_link_libraries(test_offboard_interactive bjos)
+
+# test logger controller
+add_executable(test_receiver
+    test/test_receiver.cpp
+)
+target_link_libraries(test_receiver bjos)
 
 # example controller
 add_executable(bjos_example

@@ -12,8 +12,10 @@
 #include "controllers/FlightController.h"
 
 #include <chrono>
+#include <sstream>
 
 using namespace bjos;
+using namespace bjcomm;
 
 uint64_t get_time_usec(clockid_t clk_id)
 {
@@ -115,7 +117,7 @@ void FlightController::init(bjos::BJOS *bjos) {
                 "Could not set offboard mode: unable to write message on serial port");
     else if (result == 0)
         Log::warn("FlightController::init", "double (de-)activation of offboard mode [ignored]");
-    
+
     // Done!
 }
 
@@ -167,6 +169,15 @@ void FlightController::read_messages() {
                 //decode
                 mavlink_local_position_ned_t local_position_ned;
                 mavlink_msg_local_position_ned_decode(&message, &local_position_ned);
+
+                //bjcomm message handling            
+                Message msg("position_estimate");
+                msg.getStream() << local_position_ned.x << " " << local_position_ned.y << " " << local_position_ned.z;
+                send_state_message(msg);
+                
+                msg = Message("velocity_estimate");
+                msg.getStream() << local_position_ned.vx << " " << local_position_ned.vy << " " << local_position_ned.vz;
+                send_state_message(msg);
                 
                 //put position and velocity data into _data
                 std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
@@ -189,7 +200,16 @@ void FlightController::read_messages() {
                 mavlink_attitude_t attitude;
                 mavlink_msg_attitude_decode(&message, &attitude);
                 
-                //send the attitude
+               //bjcomm message handling
+                Message msg("attitude_estimate");
+                msg.getStream() << attitude.roll << " " << attitude.pitch << " " << attitude.yaw;
+                send_state_message(msg);
+                
+                msg = Message("attitude_rate_estimate");
+                msg.getStream() << attitude.rollspeed << " " << attitude.pitchspeed << " " << attitude.yawspeed;
+                send_state_message(msg);
+                
+                //send the attitude to raw stream
                 flight_raw_estimate raw_estimate;
                 raw_estimate.type = FLIGHT_RAW_ORIENTATION;
                 raw_estimate.time = attitude.time_boot_ms - bootTime + unixTime;
@@ -233,7 +253,7 @@ void FlightController::read_messages() {
                 mavlink_highres_imu_t highres_imu;
                 mavlink_msg_highres_imu_decode(&message, &highres_imu);
                 
-                //send the acc
+                //send the acc to raw stream
                 flight_raw_estimate raw_estimate;
                 raw_estimate.type = FLIGHT_RAW_ACC;
                 raw_estimate.time = highres_imu.time_usec/1000ULL - bootTime + unixTime;
@@ -242,7 +262,7 @@ void FlightController::read_messages() {
                 raw_estimate.data[2] = highres_imu.zacc; 
                 sendto(_raw_sock, &raw_estimate, sizeof(raw_estimate), 0, (const sockaddr *) &_raw_sock_name, SUN_LEN(&_raw_sock_name));
                 
-                //send the acc
+                //send the acc to raw stream
                 raw_estimate.type = FLIGHT_RAW_GYRO;
                 raw_estimate.time = highres_imu.time_usec/1000ULL - bootTime + unixTime;
                 raw_estimate.data[0] = highres_imu.xgyro; 
@@ -283,6 +303,24 @@ void FlightController::read_messages() {
                         Log::info("FlightController::read_messages", "Unable to handle landed state %" PRIu8, extended_sys_state.landed_state);
                     }
                 }
+            }
+            case MAVLINK_MSG_ID_SERVO_OUTPUT_RAW:
+            {
+                mavlink_servo_output_raw_t servo_output_raw;
+                mavlink_msg_servo_output_raw_decode(&message, &servo_output_raw);
+                
+                float servo_output_percentage[4];
+                servo_output_percentage[0] = ((float)servo_output_raw.servo1_raw - 1000) / 1000.0;
+                servo_output_percentage[1] = ((float)servo_output_raw.servo2_raw - 1000) / 1000.0;
+                servo_output_percentage[2] = ((float)servo_output_raw.servo3_raw - 1000) / 1000.0;
+                servo_output_percentage[3] = ((float)servo_output_raw.servo4_raw - 1000) / 1000.0;
+
+                char buf[1024];
+                sprintf(buf, "%f %f %f %f", servo_output_percentage[2], servo_output_percentage[0], servo_output_percentage[1], servo_output_percentage[3]);
+                std::string msgdata(buf);
+                Message msg("engine_power", msgdata);
+                state_pub->send(msg);
+                break;
             }
             default:
             {

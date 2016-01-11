@@ -10,7 +10,7 @@
 #include <boost/interprocess/containers/vector.hpp>
 
 #include "../bjos/bjos.h"
-#include "../bjos/controller/controller.h"
+#include "../bjos/controller.h"
 #include "../bjos/helpers/error.h"
 
 #include "sonar/SonarInterface.h"
@@ -75,6 +75,9 @@ namespace bjos{
             std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
             return _data->update_time;
         }
+        
+        /* Get the state of the sonar controller */
+        std::string getState();
         
         /* Finalize this controller */
         ~SonarController(){
