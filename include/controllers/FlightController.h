@@ -219,7 +219,7 @@ namespace bjos {
          */
         //Eigen::Vector3d positionCFtoBodyNED(Eigen::Vector3d positionCF);
         Eigen::Vector3d CFtoBodyNED(Eigen::Vector3d vectorCF);
-        Eigen::Vector3d positionNEDtoCF(Eigen::Vector3d positionNED);
+        Eigen::Vector3d positionNEDtoCF(Eigen::Vector3d positionNED, double yawNED);
         Eigen::Vector3d BodyNEDtoCF(Eigen::Vector3d vectorNED);
         Eigen::Vector3d NEDtoCF(Eigen::Vector3d vectorNED, double yawNED);
         Eigen::Vector3d positionWFtoNED(Eigen::Vector3d positionWF, Eigen::Vector3d visionPosOffset, double visionYawOffset);
