@@ -601,6 +601,24 @@ void FlightController::setTargetVelocityCF(Eigen::Vector3d vel, double yawspeed)
     else setTargetCF(SET_TARGET_VELOCITY & SET_TARGET_YAW_RATE, Eigen::Vector3d(), vel, Eigen::Vector3d(), Eigen::Vector3d(0, 0, yawspeed));
 }
 
+void FlightController::setPositionEstimateWF(Eigen::Vector3d posEst) {
+    std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+    Eigen::Vector3d posEstNED = positionWFtoNED(posEst, _data->visionPosOffset, _data->visionYawOffset);
+
+    _data->vision_position_estimate.x = posEstNED[0];
+    _data->vision_position_estimate.y = posEstNED[1];
+    _data->vision_position_estimate.z = posEstNED[2];
+}
+
+void FlightController::setAttitudeEstimateWF(double yawEst) {
+    std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+    Eigen::Vector3d attEstNED = orientationWFtoNED(Eigen::Vector3d(_data->orientationNED[0], -_data->orientationNED[1], yawEst), _data->visionYawOffset);
+
+    _data->vision_position_estimate.roll = attEstNED[0];
+    _data->vision_position_estimate.pitch = attEstNED[1];
+    _data->vision_position_estimate.yaw = attEstNED[2];
+}
+
 //TODO: fix yaw rotation on Raspberry Pi side in order to send position setpoints
 /*Eigen::Vector3d FlightController::positionCFtoBodyNED(Eigen::Vector3d positionCF) {
     Eigen::Affine3d t;
@@ -645,6 +663,14 @@ Eigen::Vector3d FlightController::BodyNEDtoCF(Eigen::Vector3d vectorNED) {
 Eigen::Vector3d FlightController::positionWFtoNED(Eigen::Vector3d positionWF, Eigen::Vector3d visionPosOffset, double visionYawOffset) {
     Eigen::Affine3d t = Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX())*Eigen::Translation3d(visionPosOffset)*Eigen::AngleAxisd(visionYawOffset, Eigen::Vector3d::UnitZ());
     return t*positionWF;
+}
+
+Eigen::Vector3d FlightController::orientationWFtoNED(Eigen::Vector3d orientationWF, double visionYawOffset) {
+    Eigen::Vector3d out;
+    out[0] = orientationWF[0];
+    out[1] = -orientationWF[1];
+    out[2] = orientationWF[2] + visionYawOffset;
+    return out;
 }
 
 //NOTE: don't touch this function or change this algorithm in any way before contacting @author!

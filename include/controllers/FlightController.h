@@ -179,7 +179,7 @@ namespace bjos {
         /* set*EstimateWF functions are to be used by a computer vision algorithm supplying the drone with external absolute measurements of its states 
 		 * These functions assume 'syncVision' is called beforehand */
         void setPositionEstimateWF(Eigen::Vector3d posEst);	
-        void setAttitudeEstimateWF(Eigen::Vector3d attEst);
+        void setAttitudeEstimateWF(double yawEst);
         
         // Return if landed
         bool isLanded();
@@ -223,6 +223,7 @@ namespace bjos {
         Eigen::Vector3d BodyNEDtoCF(Eigen::Vector3d vectorNED);
         Eigen::Vector3d NEDtoCF(Eigen::Vector3d vectorNED, double yawNED);
         Eigen::Vector3d positionWFtoNED(Eigen::Vector3d positionWF, Eigen::Vector3d visionPosOffset, double visionYawOffset);
+        Eigen::Vector3d orientationWFtoNED(Eigen::Vector3d positionWF, double visionYawOffset);
         Eigen::Vector3d WFtoNED(Eigen::Vector3d vectorWF);
         Eigen::Vector3d positionNEDtoWF(Eigen::Vector3d positionNED, Eigen::Vector3d visionPosOffset, double visionYawOffset);
         Eigen::Vector3d orientationNEDtoWF(Eigen::Vector3d positionNED, double visionYawOffset);
