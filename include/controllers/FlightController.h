@@ -22,10 +22,14 @@
 
 #include <signal.h>
 #include <time.h>
-#include "sys/time.h"
 #include <errno.h>
 #include <string.h>
 #include <inttypes.h>
+
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <stdio.h>
 
 #include <iostream>
 
@@ -39,6 +43,7 @@
 #include "../bjos/helpers/error.h"
 
 #include "flight/serial_port.h"
+#include "flight/raw_estimate.h"
 
 #ifdef _WIN32
 #include "mavlink\include\mavlink\v1.0\common\mavlink.h"
@@ -51,22 +56,25 @@
 // ------------------------------------------------------------------------------
 /*
  * MAVLink messages used per implemented function:
- *	int setTargetCF(...)		--- SET_POSITION_TARGET_LOCAL_NED
- *	int setCurrentPosition(...)	--- ATT_POS_MOCAP with ~.q = {1 0 0 0}
- *	void readMessages(...)		--- Decodes incoming ATTITUDE and LOCAL_POSITION_NED messages
- *
- *	no further communication is possible with the drone (as of now)
+ *	setTargetCF		        --- SET_POSITION_TARGET_LOCAL_NED
+ *	setCurrentPosition	    --- VISION_POSITION_ESTIMATE
+ *  toggle_offboard_control --- COMMAND_LONG (MAV_CMD_NAV_GUIDED_ENABLE)
+ *  synchronize_time        --- SYSTEM_TIME
+ *	readMessages            --- Decodes the following incoming messages:
+ *                                      ATTITUDE, LOCAL_POSITION_NED, STATUSTEXT, SYSTEM_TIME, HIGHRES_IMU, EXTENDED_SYS_STATE
  */
 
 // ------------------------------------------------------------------------------
 //   Defines
 // ------------------------------------------------------------------------------
 
-//						bit number:			 210987654321
-#define SET_TARGET_POSITION		3576 //0b0000110111111000
-#define SET_TARGET_VELOCITY		3527 //0b0000110111000111
-#define SET_TARGET_YAW_ANGLE	2559 //0b0000100111111111
-#define SET_TARGET_YAW_RATE		1535 //0b0000010111111111
+//						bit number:		    43210987654321
+#define SET_TARGET_POSITION		15864 //0b0011110111111000
+#define SET_TARGET_VELOCITY		15815 //0b0011110111000111
+#define SET_TARGET_YAW_ANGLE	14847 //0b0011100111111111
+#define SET_TARGET_YAW_RATE		13823 //0b0011010111111111
+#define SET_TARGET_LAND         11719 //0b0010110111000111
+#define SET_TARGET_TAKEOFF      7623  //0b0001110111000111
 
 /* helper function */
 uint64_t get_time_usec();
@@ -104,15 +112,19 @@ namespace bjos {
         
         //used to retrieve last system time from Pixhawk (normally should not be directly used, instead the synchronized time should be used)
         mavlink_system_time_t sys_time;
-        
+
+        //Tracks if the drone is landed or not
+        bool landed;
+
         //raw sensors data
         IMUSensorData imuNED;
     };
     
     class FlightController : public Controller {
     public:
-        FlightController() : system_id(0), autopilot_id(0),_data(nullptr), _read_thrd_running(false), _write_thrd_running(false), _init_set(false) {}
-        
+        FlightController();
+        ~FlightController();
+
         float getRoll();
         float getPitch();
         float getYaw();
@@ -147,48 +159,18 @@ namespace bjos {
         void setCurrentVelocityWF(float vxvyvz[3]);
         void setCurrentAttitudeWF(float rpy[3]);
         
+        // Return if landed
+        bool isLanded();
+
         /* Return raw sensor data */
         IMUSensorData getIMUDataCF();
         
         /* Return the state of this controller */
         std::string getState();
-        
-        ///Q: correct?
-        /* Finalize this controller */
-        ~FlightController() {
-            std::cout << "FlightController destructor" << std::endl;
-            if (isMainInstance()) {
-                //disable offboard control mode if not already
-                int result = toggle_offboard_control(false);
-                if (result == -1)
-                    Log::error("FlightController::init", "Could not set offboard mode: unable to write message on serial port");
-                else if (result == 0)
-                    Log::warn("FlightController::init", "double (de-)activation of offboard mode [ignored]");
-                
-                //stop threads, wait for finish
-                _read_thrd_running = false;
-                _write_thrd_running = false;
-                _read_thrd.interrupt();
-                _write_thrd.interrupt();
-                _read_thrd.join();
-                _write_thrd.join();
 
-				//if the read_trhd is still waiting to receive an initial MAVLink message: close it and throw an ControllerInitializationError
-				if (_init_set == false) {
-					_init_set = true;
-					Log::error("FlightController::init", "Did not receive any MAVLink messages, check physical connections and make sure it is running on the right port!");
-				}
-                
-                //stop the serial_port and clean up the pointer
-                serial_port->stop();
-                delete serial_port;
-            }
-            
-            Controller::finalize<SharedFlightControllerData>();
-        }
-        
     private:
         Serial_Port *serial_port;
+        bjcomm::Publisher *state_pub;
         
         /* Set offboard mode - has to be done in order to send setpoints */
         //NOTE: returns -1 on write error, returns 0 on double (de-)activation, returns 1 on success;
@@ -244,6 +226,10 @@ namespace bjos {
         void read_messages();
         /* initialiser check */
         std::atomic_bool _init_set;
+    
+        //raw socket used by Philips (WARNING: sends raw struct data, is not portable and not needed because of our own communication layer: need fix later)
+        int _raw_sock;
+        struct sockaddr_un _raw_sock_name;
     };
     
 }

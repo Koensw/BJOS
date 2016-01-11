@@ -26,10 +26,12 @@ float TAKEOFF = 2.0;
 float ZVEL = 0.5;
 float YAWR = 0.2;
 
-Heading handle_input(char c)
+std::pair<uint16_t, Heading> handle_input(char c)
 {
 	static Heading setp_old;
+    static uint16_t tm_old;
 	Heading setp = Heading();
+    uint16_t tm = SET_TARGET_VELOCITY;
 	switch (c) {
 	case 'w':
 		std::cout << "Going forward" << std::endl;
@@ -57,12 +59,16 @@ Heading handle_input(char c)
 
 	case 'e':
 		std::cout << "Turning left" << std::endl;
+        setp = setp_old;
 		setp.angular_velocity.vy = -YAWR;
+        tm &= SET_TARGET_YAW_RATE;
 		break;
 
 	case 'r':
 		std::cout << "Turning right" << std::endl;
+        setp = setp_old;
 		setp.angular_velocity.vy = YAWR;
+        tm &= SET_TARGET_YAW_RATE;
 		break;
 
 	case 'o':
@@ -72,15 +78,17 @@ Heading handle_input(char c)
 		break;
 
 	case 'l':
-		std::cout << "Going downward" << std::endl;
+		std::cout << "Landing" << std::endl;
 		setp.velocity.vz = -ZVEL;
 		setp.velocity.vx = setp.velocity.vy = 0;
+        tm = SET_TARGET_LAND;
 		break;
 
     case 't':
 		std::cout << "Takeoff!" << std::endl;
 		setp.velocity.vz = TAKEOFF;
 		setp.velocity.vx = setp.velocity.vy = 0;
+        tm = SET_TARGET_TAKEOFF;
 		break;
 
 	case 'q':
@@ -91,6 +99,7 @@ Heading handle_input(char c)
 
 	case '\n':
 		setp = setp_old;
+        tm = tm_old;
 		break;
 
 	case 'h':
@@ -101,7 +110,8 @@ Heading handle_input(char c)
 	}
 
 	setp_old = setp;
-	return setp;
+    tm_old = tm;
+	return std::pair<uint16_t, Heading>(tm, setp);
 }
 
 int main(){
@@ -126,11 +136,8 @@ int main(){
 	do {
 		ret = std::cin.get();
 		if (!Process::isActive()) ret = 'q';
-		action = handle_input(ret);
-		if (fabsf(action.angular_velocity.vy) < M_EPS)
-			flight.setTargetCF(SET_TARGET_VELOCITY, Pose(), action);
-		else
-			flight.setTargetCF(SET_TARGET_VELOCITY & SET_TARGET_YAW_RATE, Pose(), action);
+		std::pair<uint16_t, Heading> action = handle_input(ret);
+		flight.setTargetCF(action.first, Pose(), action.second);
 	} while (ret != 'q');
 
 	std::cout << "Byebye!";
