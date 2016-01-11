@@ -164,11 +164,6 @@ namespace bjos {
         Eigen::Vector3d getTargetOrientationCF();
         Eigen::Vector3d getTargetVelocityCF();
         
-        /* setCurrent* functions are to be used by a computer vision algorithm supplying the drone with external absolute measurements of its states */
-        void setCurrentPositionWF(Eigen::Vector3d position);	
-        void setCurrentVelocityWF(Eigen::Vector3d velocity);
-        void setCurrentAttitudeWF(Eigen::Vector3d orientation);
-
         //FIXME: reference frame is missing (and name is not fully compliant)
         std::tuple<Eigen::Vector3d, Eigen::Vector3d, Eigen::Vector3d, Eigen::Vector3d> getCurrentSetpoint();
 
