@@ -215,16 +215,14 @@ namespace bjos {
         /* Frame conversion functions
          * These functions do not access shared data!
          * 
-         * The frames used in this program are defined in the Frame Specification.pdf file!
-         *
-         * Make sure you have a mutex lock on the shared data before calling this!
+         * The frames used in this program are defined in the Frame Specification.pdf file
          */
         //Eigen::Vector3d positionCFtoBodyNED(Eigen::Vector3d positionCF);
         Eigen::Vector3d CFtoBodyNED(Eigen::Vector3d vectorCF);
         Eigen::Vector3d positionNEDtoCF(Eigen::Vector3d positionNED);
         Eigen::Vector3d BodyNEDtoCF(Eigen::Vector3d vectorNED);
-        Eigen::Vector3d NEDtoCF(Eigen::Vector3d vectorNED);
-        Eigen::Vector3d positionWFtoNED(Eigen::Vector3d positionWF);
+        Eigen::Vector3d NEDtoCF(Eigen::Vector3d vectorNED, double yawNED);
+        Eigen::Vector3d positionWFtoNED(Eigen::Vector3d positionWF, double yawNED);
         Eigen::Vector3d WFtoNED(Eigen::Vector3d vectorWF);
         Eigen::Vector3d positionNEDtoWF(Eigen::Vector3d positionNED, Eigen::Vector3d visionPosOffset, double visionYawOffset);
         Eigen::Vector3d NEDtoWF(Eigen::Vector3d vectorNED, Eigen::Vector3d visionPosOffset);
