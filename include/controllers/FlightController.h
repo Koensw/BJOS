@@ -44,6 +44,8 @@
 #include "flight/serial_port.h"
 #include "flight/raw_estimate.h"
 
+#include "../libs/geometry.h"
+
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
@@ -133,6 +135,8 @@ namespace bjos {
         FlightController();
         ~FlightController();
 
+        Pose getPoseWF();
+        
         Eigen::Vector3d getPositionNED();
         Eigen::Vector3d getPositionWF();
 
@@ -160,6 +164,7 @@ namespace bjos {
          */
         void setTargetCF(uint16_t type_mask, Eigen::Vector3d position, Eigen::Vector3d orientation, Eigen::Vector3d velocity,
                 Eigen::Vector3d angularVelocity);
+        void setTargetVelocityCF(Eigen::Vector3d vel, double yawspeed = 0);
 
         Eigen::Vector3d getTargetOrientationCF();
         Eigen::Vector3d getTargetVelocityCF();

@@ -40,8 +40,9 @@ void OSInit(){
         double yaw[3] = {1.57079632679, -1.57079632679, 0};
         for(int i=0; i<3; ++i){
             SonarInterface *interface = new DevantechSonarInterface(address[i]);
-            sonar->registerInterface(interface, Eigen::Vector3d(0,0,0),
-                    Eigen::Vector3d(0, yaw[i], 0), (i == 0));
+            Pose pose;
+            pose.orientation = Eigen::Vector3d(0, 0, yaw[i]);
+            sonar->registerInterface(interface, pose, (i == 0));
         }
         
         bjos->initController(sonar);
