@@ -601,18 +601,18 @@ Eigen::Vector3d FlightController::CFtoBodyNED(Eigen::Vector3d vectorCF) {
     return t * vectorCF;
 }
 
-Eigen::Vector3d FlightController::positionNEDtoCF(Eigen::Vector3d positionNED) {
+Eigen::Vector3d FlightController::positionNEDtoCF(Eigen::Vector3d positionNED, double yawNED) {
     Eigen::Vector3d res = positionNED - _data->positionNED;
     Eigen::Affine3d t;
     t = Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX());
-    t *= Eigen::AngleAxisd(_data->orientationNED[2], Eigen::Vector3d::UnitZ());
+    t *= Eigen::AngleAxisd(yawNED, Eigen::Vector3d::UnitZ());
     return t * res;
 }
 
-Eigen::Vector3d FlightController::NEDtoCF(Eigen::Vector3d vectorNED) {
+Eigen::Vector3d FlightController::NEDtoCF(Eigen::Vector3d vectorNED, double yawNED) {
     Eigen::Affine3d t;
     t = Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX());
-    t *= Eigen::AngleAxisd(_data->orientationNED[2], Eigen::Vector3d::UnitZ());
+    t *= Eigen::AngleAxisd(yawNED, Eigen::Vector3d::UnitZ());
     return t * vectorNED;
 }
 
