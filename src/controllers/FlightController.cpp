@@ -490,11 +490,11 @@ Eigen::Vector3d FlightController::getOrientationNED() {
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
     return _data->orientationNED;
 }
-/*
+
 Eigen::Vector3d FlightController::getOrientationWF() {
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
-    return NEDtoWF(_data->orientationNED);
-}*/
+    return orientationNEDtoWF(_data->orientationNED, _data->visionYawOffset);
+}
 /*
 Eigen::Vector3d FlightController::getOrientationCF() {
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
@@ -633,6 +633,14 @@ Eigen::Vector3d FlightController::BodyNEDtoCF(Eigen::Vector3d vectorNED) {
 Eigen::Vector3d FlightController::positionNEDtoWF(Eigen::Vector3d positionNED, Eigen::Vector3d visionPosOffset, double visionYawOffset) {
     Eigen::Affine3d t = Eigen::AngleAxisd(visionYawOffset, Eigen::Vector3d::UnitZ())*Eigen::Translation3d(-visionPosOffset)*Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX());
     return t*positionNED;
+}
+
+Eigen::Vector3d FlightController::orientationNEDtoWF(Eigen::Vector3d orientationNED, double visionYawOffset) {
+    Eigen::Vector3d out;
+    out[0] = orientationNED[0];
+    out[1] = -orientationNED[1];
+    out[2] = orientationNED[2] - visionYawOffset;
+    return out;
 }
 
 bool FlightController::isLanded() {

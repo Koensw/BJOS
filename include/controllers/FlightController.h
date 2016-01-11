@@ -137,7 +137,7 @@ namespace bjos {
         Eigen::Vector3d getPositionWF();
 
         Eigen::Vector3d getOrientationNED();
-        //Eigen::Vector3d getOrientationWF();
+        Eigen::Vector3d getOrientationWF();
         //Eigen::Vector3d getOrientationCF();
 
         Eigen::Vector3d getVelocityNED();
@@ -225,6 +225,7 @@ namespace bjos {
         Eigen::Vector3d positionWFtoNED(Eigen::Vector3d positionWF, double yawNED);
         Eigen::Vector3d WFtoNED(Eigen::Vector3d vectorWF);
         Eigen::Vector3d positionNEDtoWF(Eigen::Vector3d positionNED, Eigen::Vector3d visionPosOffset, double visionYawOffset);
+        Eigen::Vector3d orientationNEDtoWF(Eigen::Vector3d positionNED, double visionYawOffset);
         Eigen::Vector3d NEDtoWF(Eigen::Vector3d vectorNED, Eigen::Vector3d visionPosOffset);
       
         //NOTE: only used by main instance
