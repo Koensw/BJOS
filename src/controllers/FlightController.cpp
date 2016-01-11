@@ -25,6 +25,9 @@ uint64_t get_time_usec(clockid_t clk_id)
 FlightController::FlightController() : system_id(0), autopilot_id(0), _data(nullptr), _read_thrd_running(false), _write_thrd_running(false), _init_set(false) {}
 
 FlightController::~FlightController() {
+     //check if available
+    if(!Controller::isAvailable()) return;
+    
     if (isMainInstance()) {
         //disable offboard control mode if not already
         int result = toggle_offboard_control(false);

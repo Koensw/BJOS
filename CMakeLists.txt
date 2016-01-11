@@ -82,9 +82,6 @@ add_executable(bjos_example
 )
 target_link_libraries(bjos_example bjos)
 
-
-
-
 #### INSTALL ####
 install(TARGETS bjos
         RUNTIME DESTINATION /usr/local/bin

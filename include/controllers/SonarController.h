@@ -75,8 +75,11 @@ namespace bjos{
         }
         
         /* Finalize this controller */
-        ~SonarController(){
-            if(isMainInstance()){
+        virtual ~SonarController(){
+            //check if available
+            if(!Controller::isAvailable()) return;
+            
+            if(isMainInstance()){                
                 //stop thread, wait for finish
                 _thrd_running = false;
                 _thrd.interrupt();

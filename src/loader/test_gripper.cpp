@@ -31,8 +31,11 @@ void OSInit(){
         Process::installSignalHandler();
         BJOS *bjos = BJOS::getOS();
 
-        gripper = new GripperController();
+        //start the wiring pi library
+        wiringPiSetup();
+        int fd = wiringPiI2CSetup(0x40);
         
+        gripper = new GripperController(fd);
         bjos->initController(gripper);
     }catch(ControllerInitializationError &init_err){
         Log::fatal(init_err.getControllerName(), init_err.what());

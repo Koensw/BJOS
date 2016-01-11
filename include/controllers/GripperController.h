@@ -16,9 +16,9 @@
 #include <mutex>
 #include <thread>
 
-#include "bjos/bjos.h"
-#include "bjos/helpers/process.h"
-#include "bjos/controller/controller.h"
+#include "../bjos/bjos.h"
+#include "../bjos/helpers/process.h"
+#include "../bjos/controller/controller.h"
 
 #include <stdio.h>    // Used for printf() statements
 #include <wiringPi.h> // Include WiringPi library!
@@ -62,46 +62,32 @@
 
 #define DEMO_CUP_PWM 1000   //PWM for the gripper that ensures the demo cup is gripped
 
+//FIXME: this should be a param that can be given to the loader of the controller!
+#define GRIPPER_CH7 3
+#define GRIPPER_CH8 4
+#define GRIPPER_PWM_FREQ 1000
+
 namespace bjos {
     struct SharedGripperData{
         int armheight;
-        
     };
     
     class GripperController : public Controller{
     public:
         GripperController();
-        ~GripperController();
-
-        // Pin number declarations. We're using the Broadcom chip pin numbers.
-        const int ch7 = 3; // RC input
-        const int ch8 = 4; // RC input
-        int fd = 0; // I2C device
-        
-        /* Functions for the I2C connection with the pwm board
-         ################################################################################################################
-        */
-        void reset();
-        void setPWMFreq(int freq);
-        void setPWM(uint8_t device, int off_value);
-        int getPWM(uint8_t led);
-
-        /* Arduino functions
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        */
-        long map(long x, long in_min, long in_max, long out_min, long out_max);
-        int pulseIn(int pin, int level);
+        GripperController(int fd);
+        virtual ~GripperController();
 
         /* Gripper functions
         $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
         */
-        void gripper_close_pwm(int pwm);
+        void gripperClosePWM(int pwm);
         void pickup();
         void release();
 
         // redundant functions that use force feedback
-        void gripper_close_force(int limit);
-        void gripper_close_object(char* object);
+        void gripperCloseForce(int limit);
+        void gripperCloseObject(char* object);
 
         /* RC functions 
         &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
@@ -110,10 +96,27 @@ namespace bjos {
         bool check_RC();
 
     private:
+        /* Functions for the I2C connection with the pwm board
+         ################################################################################################################
+        */
+        void reset();
+        void set_pwm_freq(int freq);
+        void set_pwm(uint8_t device, int off_value);
+        int get_pwm(uint8_t led);
+
+        /* Arduino functions
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        */
+        long map(long x, long in_min, long in_max, long out_min, long out_max);
+        int pulse_in(int pin, int level);
+
+        
         /* Initialize the main instance */ 
         void init(BJOS *bjos);
         /* load node is called for all childeren */
         void load(BJOS *bjos);
+        
+        int _fd = 0; // I2C device
         
         SharedGripperData *_data;
     };

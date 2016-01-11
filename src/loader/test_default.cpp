@@ -40,6 +40,10 @@ void OSInit(){
         //start i2c
         I2C::start("/dev/i2c-1");
         
+        //start wiring pi
+        wiringPiSetup();
+        int fd = wiringPiI2CSetup(0x40);
+        
         //load the sonar controller
         sonar = new SonarController(true);
         unsigned char address[3] = {0x70, 0x71, 0x72};
@@ -60,7 +64,7 @@ void OSInit(){
         bjos->initController(flight);
 
         //load the gripper controller
-        gripper = new GripperController();
+        gripper = new GripperController(fd);
         bjos->initController(gripper);        
     }catch(ControllerInitializationError &init_err){
         Log::fatal(init_err.getControllerName(), init_err.what());

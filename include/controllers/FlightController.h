@@ -123,7 +123,7 @@ namespace bjos {
     class FlightController : public Controller {
     public:
         FlightController();
-        ~FlightController();
+        virtual ~FlightController();
 
         float getRoll();
         float getPitch();
