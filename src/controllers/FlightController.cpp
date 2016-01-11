@@ -217,9 +217,9 @@ void FlightController::read_messages() {
                 flight_raw_estimate raw_estimate;
                 raw_estimate.type = FLIGHT_RAW_ORIENTATION;
                 raw_estimate.time = attitude.time_boot_ms - bootTime + unixTime;
-                raw_estimate.data[0] = attitude.roll; 
+                raw_estimate.data[0] = -attitude.roll; 
                 raw_estimate.data[1] = attitude.pitch; 
-                raw_estimate.data[2] = attitude.yaw; 
+                raw_estimate.data[2] = -attitude.yaw; 
                 sendto(_raw_sock, &raw_estimate, sizeof(raw_estimate), 0, (const sockaddr *) &_raw_sock_name, SUN_LEN(&_raw_sock_name));
                 
                 //put attitude data into _data
