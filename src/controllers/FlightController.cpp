@@ -164,6 +164,7 @@ void FlightController::read_messages() {
         shared_data_mutex->unlock();
         
         //Handle message per id
+        std::stringstream sstr;
         switch (message.msgid) {
             case MAVLINK_MSG_ID_LOCAL_POSITION_NED:
             {
@@ -175,11 +176,15 @@ void FlightController::read_messages() {
 
                 //bjcomm message handling            
                 Message msg("position_estimate");
-                msg.getStream() << local_position_ned.x << " " << local_position_ned.y << " " << local_position_ned.z;
+                sstr.clear();
+                sstr << local_position_ned.x << " " << local_position_ned.y << " " << local_position_ned.z;
+                msg.setData(sstr.str());
                 send_state_message(msg);
                 
                 msg = Message("velocity_estimate");
-                msg.getStream() << local_position_ned.vx << " " << local_position_ned.vy << " " << local_position_ned.vz;
+                sstr.clear();
+                sstr << local_position_ned.vx << " " << local_position_ned.vy << " " << local_position_ned.vz;
+                msg.setData(sstr.str());
                 send_state_message(msg);
                 
                 //put position and velocity data into _data
@@ -205,11 +210,15 @@ void FlightController::read_messages() {
                 
                //bjcomm message handling
                 Message msg("attitude_estimate");
-                msg.getStream() << attitude.roll << " " << attitude.pitch << " " << attitude.yaw;
+                sstr.clear();
+                sstr << attitude.roll << " " << attitude.pitch << " " << attitude.yaw;
+                msg.setData(sstr.str());
                 send_state_message(msg);
                 
                 msg = Message("attitude_rate_estimate");
-                msg.getStream() << attitude.rollspeed << " " << attitude.pitchspeed << " " << attitude.yawspeed;
+                sstr.clear();
+                sstr << attitude.rollspeed << " " << attitude.pitchspeed << " " << attitude.yawspeed;
+                msg.setData(sstr.str());
                 send_state_message(msg);
                 
                 //send the attitude to raw stream
