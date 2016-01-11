@@ -209,7 +209,7 @@ void FlightController::read_messages() {
                 msg.getStream() << attitude.roll << " " << attitude.pitch << " " << attitude.yaw;
                 send_state_message(msg);
                 
-                msg = Message("attitude_velocity_estimate");
+                msg = Message("attitude_rate_estimate");
                 msg.getStream() << attitude.rollspeed << " " << attitude.pitchspeed << " " << attitude.yawspeed;
                 send_state_message(msg);
                 
