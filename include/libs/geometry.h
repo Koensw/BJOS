@@ -23,17 +23,19 @@
 
 /*
  * Point/Vector in a frame
- * x - forward/back
- * y - left/right
- * z - up/down
- * 
- * r - roll (x)
- * p - pitch (y)
- * y - yaw (z)
+ * x - forward/back (0)
+ * y - left/right   (1)
+ * z - up/down      (2)
  */
 typedef Eigen::Vector3d Vector;
 typedef Eigen::Vector3d Point;
 
+/*
+ * RotationVector in a frame
+ * r - roll         (0)
+ * p - pitch        (1)
+ * y - yaw          (2)
+ */
 class RotationVector: public Vector{
 public:
     RotationVector() {}

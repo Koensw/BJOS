@@ -597,8 +597,8 @@ void FlightController::setTargetCF(uint16_t type_mask, Eigen::Vector3d position,
 }
 
 void FlightController::setTargetVelocityCF(Eigen::Vector3d vel, double yawspeed){
-    if(yawspeed < M_EPS) setTargetCF(SET_TARGET_VELOCITY, Eigen::Vector3d(), vel, Eigen::Vector3d(), Eigen::Vector3d());
-    else setTargetCF(SET_TARGET_VELOCITY & SET_TARGET_YAW_RATE, Eigen::Vector3d(), vel, Eigen::Vector3d(), Eigen::Vector3d(0, 0, yawspeed));
+    if(yawspeed < M_EPS) setTargetCF(SET_TARGET_VELOCITY, Eigen::Vector3d(),Eigen::Vector3d(), vel, Eigen::Vector3d());
+    else setTargetCF(SET_TARGET_VELOCITY & SET_TARGET_YAW_RATE, Eigen::Vector3d(), Eigen::Vector3d(), vel, Eigen::Vector3d(0, 0, yawspeed));
 }
 
 void FlightController::setPositionEstimateWF(Eigen::Vector3d posEst) {
