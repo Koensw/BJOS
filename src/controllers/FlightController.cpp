@@ -642,6 +642,11 @@ Eigen::Vector3d FlightController::BodyNEDtoCF(Eigen::Vector3d vectorNED) {
 	return R.rotatePoint(pointNED) - visionPosOffset;
 } */
 
+Eigen::Vector3d FlightController::positionWFtoNED(Eigen::Vector3d positionWF, Eigen::Vector3d visionPosOffset, double visionYawOffset) {
+    Eigen::Affine3d t = Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX())*Eigen::Translation3d(visionPosOffset)*Eigen::AngleAxisd(visionYawOffset, Eigen::Vector3d::UnitZ());
+    return t*positionWF;
+}
+
 //NOTE: don't touch this function or change this algorithm in any way before contacting @author!
 Eigen::Vector3d FlightController::positionNEDtoWF(Eigen::Vector3d positionNED, Eigen::Vector3d visionPosOffset, double visionYawOffset) {
     Eigen::Affine3d t = Eigen::AngleAxisd(visionYawOffset, Eigen::Vector3d::UnitZ())*Eigen::Translation3d(-visionPosOffset)*Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX());
