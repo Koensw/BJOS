@@ -76,9 +76,6 @@ namespace bjos{
             return _data->update_time;
         }
         
-        /* Get the state of the sonar controller */
-        std::string getState();
-        
         /* Finalize this controller */
         ~SonarController(){
             if(isMainInstance()){

@@ -186,10 +186,6 @@ namespace bjos {
 
         /* Return raw sensor data */
         IMUSensorData getIMUDataCF();
-        
-        /* Return the state of this controller */
-        std::string getState();
-
     private:
         Serial_Port *serial_port;
         bjcomm::Publisher *state_pub;

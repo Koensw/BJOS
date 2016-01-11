@@ -53,10 +53,6 @@ public:
         shared_data_mutex->unlock();
     }
     
-    std::string getState(){
-        return "example state";
-    }
-    
     /* If necessary you can overload the isAvailable method of the superclass */
     bool isAvailable(){
         //ALERT: first call the super class method to make sure the general interface is available because this function should be safe to call also if not initialized

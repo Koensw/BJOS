@@ -67,7 +67,7 @@ void SonarController::load(bjos::BJOS *bjos){
 }
 
 //TODO: this need to be extended
-std::string SonarController::getState(){
+/*std::string SonarController::getState(){
     std::ostringstream state;
     state << "distance ";
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
@@ -77,7 +77,7 @@ std::string SonarController::getState(){
     }
     state << std::endl;
     return state.str();
-}
+}*/
 
 void SonarController::update_sonars(){
     bool frst = true;
