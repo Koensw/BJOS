@@ -36,7 +36,7 @@ namespace bjos{
         /* Check if this module can finalize
         * NOTE: normally this is always possible, only the main process should wait for it clients */
         bool canFinalize(){
-            if(_main_instance) return _bjos_instance->getControllerCount(_controller_name) == 1;
+            if(_bjos_instance && _main_instance) return _bjos_instance->getControllerCount(_controller_name) == 1;
             else return true;
         }
         
