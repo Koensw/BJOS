@@ -163,8 +163,10 @@ void FlightController::read_messages() {
         uint64_t bootTime = _data->syncBootTime;
         shared_data_mutex->unlock();
         
-        //Handle message per id
+        // stringstream utility for sending bjcomm messages
         std::stringstream sstr;
+
+        //Handle message per id
         switch (message.msgid) {
             case MAVLINK_MSG_ID_LOCAL_POSITION_NED:
             {
@@ -173,7 +175,7 @@ void FlightController::read_messages() {
                 //decode
                 mavlink_local_position_ned_t local_position_ned;
                 mavlink_msg_local_position_ned_decode(&message, &local_position_ned);
-
+                
                 //bjcomm message handling            
                 Message msg("position_estimate");
                 sstr.clear();
