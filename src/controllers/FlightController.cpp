@@ -169,18 +169,26 @@ void FlightController::read_messages() {
         //Handle message per id
         switch (message.msgid) {
             case MAVLINK_MSG_ID_LOCAL_POSITION_NED:
-            {
-                //Log::info("FlightController::read_messages", "MAVLINK_MSG_LOCAL_POSITION_NED");
-                
+            {                
                 //decode
                 mavlink_local_position_ned_t local_position_ned;
                 mavlink_msg_local_position_ned_decode(&message, &local_position_ned);
                 
-                msg = Message("velocity_estimate");
-                sstr.clear();
-                sstr << local_position_ned.vx << " " << local_position_ned.vy << " " << local_position_ned.vz;
-                msg.setData(sstr.str());
-                send_state_message(msg);
+                if (_vision_sync) {
+                    //bjcomm message handling            
+                    Message msg("position_estimate");
+                    Eigen::Vector3d wf = positionNEDtoWF(Eigen::Vector3d(local_position_ned.x, local_position_ned.y, local_position_ned.z), _data->visionPosOffset, _data->visionYawOffset);
+                    sstr.clear();
+                    sstr << wf[0] << " " << wf[1] << " " << wf[2];
+                    msg.setData(sstr.str());
+                    send_state_message(msg);
+                    
+                    msg = Message("velocity_estimate");
+                    sstr.clear();
+                    sstr << local_position_ned.vx << " " << local_position_ned.vy << " " << local_position_ned.vz;
+                    msg.setData(sstr.str());
+                    send_state_message(msg);
+                }
                 
                 //put position and velocity data into _data
                 std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
@@ -190,16 +198,6 @@ void FlightController::read_messages() {
                 _data->velocityNED[0] = local_position_ned.vx;
                 _data->velocityNED[1] = local_position_ned.vy;
                 _data->velocityNED[2] = local_position_ned.vz;
-
-                if (_vision_sync) {
-                    //bjcomm message handling            
-                    Message msg("position_estimate");
-                    Eigen::Vector3d wf = positionNEDtoWF(Eigen::Vector3d(local_position_ned.x, local_position_ned.y, local_position_ned.z), _data->visionPosOffset, _data->visionYawOffset);
-                    sstr.clear();
-                    sstr << wf[0] << " " << wf[1] << " " << wf[2];
-                    msg.setData(sstr.str());
-                    send_state_message(msg);
-                }
                 
                 if (!_init_set) {
                     mavlink_msg_local_position_ned_decode(&message, &initial_position);
@@ -213,7 +211,7 @@ void FlightController::read_messages() {
                 mavlink_attitude_t attitude;
                 mavlink_msg_attitude_decode(&message, &attitude);
                 
-               //bjcomm message handling
+                //bjcomm message handling
                 Message msg("attitude_estimate");
                 sstr.clear();
                 sstr << attitude.roll << " " << attitude.pitch << " " << attitude.yaw;
@@ -332,11 +330,12 @@ void FlightController::read_messages() {
                 servo_output_percentage[2] = ((float)servo_output_raw.servo3_raw - 1000) / 1000.0;
                 servo_output_percentage[3] = ((float)servo_output_raw.servo4_raw - 1000) / 1000.0;
 
-                /*char buf[1024];
-                sprintf(buf, "%f %f %f %f", servo_output_percentage[2], servo_output_percentage[0], servo_output_percentage[1], servo_output_percentage[3]);
-                std::string msgdata(buf);
-                Message msg("engine_power", msgdata);
-                state_pub->send(msg);*/
+                Message msg("engine_power");
+                sstr.clear();
+                //FIXME: are we sure this order is right?
+                sstr << servo_output_percentage[2] << " " << servo_output_percentage[0] << " " << servo_output_percentage[1] << " " << servo_output_percentage[3];
+                msg.setData(sstr.str());
+                send_state_message(msg);
                 break;
             }
             default:
