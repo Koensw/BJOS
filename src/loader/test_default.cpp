@@ -29,7 +29,7 @@ GripperController *gripper;
 /* Initialize the OS */
 void OSInit(){
     try{
-        Log::info("default_loader", "Starting loader %s", "test_sonar");
+        Log::info("default_loader", "Starting loader %s", "test_default");
         //if(BJOS::getState() != BJOS::UNINITIALIZED) Log::warn("BJOS already running... expecting incorrect shutdown so will continue.");
         
         //init the OS
@@ -38,8 +38,8 @@ void OSInit(){
         BJOS *bjos = BJOS::getOS();
 
         //start wiring pi
-        wiringPiSetup();
-        int fd = wiringPiI2CSetup(0x40);
+        //wiringPiSetup();
+        //int fd = wiringPiI2CSetup(0x40);
         
         //start i2c
         /*I2C::start("/dev/i2c-1");
@@ -63,8 +63,8 @@ void OSInit(){
         bjos->initController(flight);
 
         //load the gripper controller
-        gripper = new GripperController(fd);
-        bjos->initController(gripper);        
+        //gripper = new GripperController(fd);
+        //bjos->initController(gripper);        
     }catch(ControllerInitializationError &init_err){
         Log::fatal(init_err.getControllerName(), init_err.what());
         std::exit(0);
