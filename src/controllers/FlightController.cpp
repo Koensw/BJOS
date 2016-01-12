@@ -176,11 +176,11 @@ void FlightController::read_messages() {
                 mavlink_local_position_ned_t local_position_ned;
                 mavlink_msg_local_position_ned_decode(&message, &local_position_ned);
                 
-/*                msg = Message("velocity_estimate");
+                msg = Message("velocity_estimate");
                 sstr.clear();
                 sstr << local_position_ned.vx << " " << local_position_ned.vy << " " << local_position_ned.vz;
                 msg.setData(sstr.str());
-                send_state_message(msg);*/
+                send_state_message(msg);
                 
                 //put position and velocity data into _data
                 std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
@@ -214,7 +214,7 @@ void FlightController::read_messages() {
                 mavlink_msg_attitude_decode(&message, &attitude);
                 
                //bjcomm message handling
-/*                Message msg("attitude_estimate");
+                Message msg("attitude_estimate");
                 sstr.clear();
                 sstr << attitude.roll << " " << attitude.pitch << " " << attitude.yaw;
                 msg.setData(sstr.str());
@@ -224,7 +224,7 @@ void FlightController::read_messages() {
                 sstr.clear();
                 sstr << attitude.rollspeed << " " << attitude.pitchspeed << " " << attitude.yawspeed;
                 msg.setData(sstr.str());
-                send_state_message(msg);*/
+                send_state_message(msg);
                 
                 //send the attitude to raw stream
                 flight_raw_estimate raw_estimate;
