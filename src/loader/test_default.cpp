@@ -78,8 +78,8 @@ void OSFinalize(){
     bjos->shutdown();
     
     //wait for finalizing clients
-    while(/*!sonar->canFinalize() ||*/ !flight->canFinalize() || !gripper->canFinalize()){
-        Log::info("default_loader", "Waiting for %d clients to finish...", bjos->getControllerCount("sonar")+bjos->getControllerCount("flight")+bjos->getControllerCount("gripper")-3);
+    while(/*!sonar->canFinalize() || !gripper->canFinalize() || */ !flight->canFinalize()){
+        Log::info("default_loader", "Waiting for %d clients to finish...", /*bjos->getControllerCount("sonar")-1+bjos->getControllerCount("gripper")-1+*/ bjos->getControllerCount("flight")-1);
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
     //delete pointers
