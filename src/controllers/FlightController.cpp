@@ -619,6 +619,8 @@ void FlightController::syncVision(Eigen::Vector3d visionPosEstimate, double visi
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
     _data->visionPosOffset = visionPosOffset;
     _data->visionYawOffset = visionYawOffset;
+
+    Log::info("FlightController::syncVision", "synced Vision: %i", _vision_sync.load());
 }
 
 //ALERT: can NOT be used to set roll, pitch, rollspeed or pitchspeed
