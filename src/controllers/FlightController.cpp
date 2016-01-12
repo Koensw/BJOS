@@ -181,11 +181,11 @@ void FlightController::read_messages() {
                 msg.setData(sstr.str());
                 send_state_message(msg);
                 
-                msg = Message("velocity_estimate");
+/*                msg = Message("velocity_estimate");
                 sstr.clear();
                 sstr << local_position_ned.vx << " " << local_position_ned.vy << " " << local_position_ned.vz;
                 msg.setData(sstr.str());
-                send_state_message(msg);
+                send_state_message(msg);*/
                 
                 //put position and velocity data into _data
                 std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
@@ -209,7 +209,7 @@ void FlightController::read_messages() {
                 mavlink_msg_attitude_decode(&message, &attitude);
                 
                //bjcomm message handling
-                Message msg("attitude_estimate");
+/*                Message msg("attitude_estimate");
                 sstr.clear();
                 sstr << attitude.roll << " " << attitude.pitch << " " << attitude.yaw;
                 msg.setData(sstr.str());
@@ -219,7 +219,7 @@ void FlightController::read_messages() {
                 sstr.clear();
                 sstr << attitude.rollspeed << " " << attitude.pitchspeed << " " << attitude.yawspeed;
                 msg.setData(sstr.str());
-                send_state_message(msg);
+                send_state_message(msg);*/
                 
                 //send the attitude to raw stream
                 flight_raw_estimate raw_estimate;
@@ -327,11 +327,11 @@ void FlightController::read_messages() {
                 servo_output_percentage[2] = ((float)servo_output_raw.servo3_raw - 1000) / 1000.0;
                 servo_output_percentage[3] = ((float)servo_output_raw.servo4_raw - 1000) / 1000.0;
 
-                char buf[1024];
+                /*char buf[1024];
                 sprintf(buf, "%f %f %f %f", servo_output_percentage[2], servo_output_percentage[0], servo_output_percentage[1], servo_output_percentage[3]);
                 std::string msgdata(buf);
                 Message msg("engine_power", msgdata);
-                state_pub->send(msg);
+                state_pub->send(msg);*/
                 break;
             }
             default:
