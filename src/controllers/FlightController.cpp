@@ -617,7 +617,6 @@ void FlightController::syncVision(Eigen::Vector3d visionPosEstimate, double visi
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
     _data->visionPosOffset = visionPosOffset;
     _data->visionYawOffset = visionYawOffset;
-
     _data->_vision_sync = true;
 }
 
