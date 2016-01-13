@@ -67,6 +67,12 @@ add_executable(test_offboard_interactive
 )
 target_link_libraries(test_offboard_interactive bjos)
 
+# build the test sync vision executable
+add_executable(test_sync_vision
+    test/test_sync_vision.cpp
+)
+target_link_libraries(test_sync_vision bjos)
+
 # test logger controller
 add_executable(test_receiver
     test/test_receiver.cpp
