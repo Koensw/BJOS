@@ -125,6 +125,7 @@ void FlightController::init(bjos::BJOS *bjos) {
 }
 
 void FlightController::load(bjos::BJOS *bjos) {
+    Log::info("FC::load", "new instance loaded");
     Controller::load(bjos, "flight", _data);
 }
 
@@ -183,6 +184,7 @@ void FlightController::read_messages() {
                 _data->velocityNED[1] = local_position_ned.vy;
                 _data->velocityNED[2] = local_position_ned.vz;
 
+                Log::info("blabla", "blablabla %i", _data->_vision_sync);
                 if (_data->_vision_sync) {
                     //bjcomm message handling            
                     Message msg("position_estimate");
