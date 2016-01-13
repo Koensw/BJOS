@@ -24,7 +24,7 @@ uint64_t get_time_usec(clockid_t clk_id)
     return _time_stamp.tv_sec * 1000000ULL + _time_stamp.tv_nsec / 1000ULL;
 }
 
-FlightController::FlightController() : system_id(0), autopilot_id(0), _vision_sync(false), _data(nullptr), _read_thrd_running(false), _write_thrd_running(false), _init_set(false) {}
+FlightController::FlightController() : system_id(0), autopilot_id(0), _data(nullptr), _read_thrd_running(false), _write_thrd_running(false), _init_set(false) {}
 
 FlightController::~FlightController() {
      //check if available
