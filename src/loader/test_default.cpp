@@ -38,8 +38,8 @@ void OSInit(){
         BJOS *bjos = BJOS::getOS();
 
         //start wiring pi
-        //wiringPiSetup();
-        //int fd = wiringPiI2CSetup(0x40);
+        wiringPiSetupSys();
+        int fd = wiringPiI2CSetup(0x40);
         
         //start i2c
         /*I2C::start("/dev/i2c-1");
@@ -63,8 +63,8 @@ void OSInit(){
         bjos->initController(flight);
 
         //load the gripper controller
-        //gripper = new GripperController(fd);
-        //bjos->initController(gripper);        
+        gripper = new GripperController(fd);
+        bjos->initController(gripper);        
     }catch(ControllerInitializationError &init_err){
         Log::fatal(init_err.getControllerName(), init_err.what());
         std::exit(0);
@@ -78,8 +78,8 @@ void OSFinalize(){
     bjos->shutdown();
     
     //wait for finalizing clients
-    while(/*!sonar->canFinalize() || !gripper->canFinalize() || */ !flight->canFinalize()){
-        Log::info("default_loader", "Waiting for %d clients to finish...", /*bjos->getControllerCount("sonar")-1+bjos->getControllerCount("gripper")-1+*/ bjos->getControllerCount("flight")-1);
+    while(/*!sonar->canFinalize() ||*/ !gripper->canFinalize() || !flight->canFinalize()){
+        Log::info("default_loader", "Waiting for %d clients to finish...", /*bjos->getControllerCount("sonar")-1*/ + bjos->getControllerCount("gripper")-1 + bjos->getControllerCount("flight")-1);
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
     //delete pointers

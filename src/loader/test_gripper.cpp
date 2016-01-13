@@ -32,7 +32,7 @@ void OSInit(){
         BJOS *bjos = BJOS::getOS();
 
         //start the wiring pi library
-        wiringPiSetup();
+        wiringPiSetupSys();
         int fd = wiringPiI2CSetup(0x40);
         
         gripper = new GripperController(fd);
