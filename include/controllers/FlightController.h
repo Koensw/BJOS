@@ -126,6 +126,9 @@ namespace bjos {
         //Tracks if the drone is landed or not
         bool landed;
 
+        // syncVision check
+        bool _vision_sync;
+
         //raw sensors data
         IMUSensorData imuNED;
     };
@@ -200,9 +203,6 @@ namespace bjos {
         //Used by messaging part
         int system_id;
         int autopilot_id;
-
-        // syncVision check
-        std::atomic_bool _vision_sync;
         
         //Used as reference for every setpoint (init_pos is considered [0, 0, 0] @ higher level, this is the abstractor)
         mavlink_local_position_ned_t initial_position;

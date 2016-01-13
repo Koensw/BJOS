@@ -24,7 +24,7 @@ uint64_t get_time_usec(clockid_t clk_id)
     return _time_stamp.tv_sec * 1000000ULL + _time_stamp.tv_nsec / 1000ULL;
 }
 
-FlightController::FlightController() : system_id(0), autopilot_id(0), _vision_sync(false), _data(nullptr), _read_thrd_running(false), _write_thrd_running(false), _init_set(false) {}
+FlightController::FlightController() : system_id(0), autopilot_id(0), _data(nullptr), _read_thrd_running(false), _write_thrd_running(false), _init_set(false) {}
 
 FlightController::~FlightController() {
      //check if available
@@ -174,22 +174,6 @@ void FlightController::read_messages() {
                 mavlink_local_position_ned_t local_position_ned;
                 mavlink_msg_local_position_ned_decode(&message, &local_position_ned);
                 
-                if (_vision_sync) {
-                    //bjcomm message handling            
-                    Message msg("position_estimate");
-                    Eigen::Vector3d wf = positionNEDtoWF(Eigen::Vector3d(local_position_ned.x, local_position_ned.y, local_position_ned.z), _data->visionPosOffset, _data->visionYawOffset);
-                    sstr.clear();
-                    sstr << wf[0] << " " << wf[1] << " " << wf[2];
-                    msg.setData(sstr.str());
-                    send_state_message(msg);
-                    
-                    msg = Message("velocity_estimate");
-                    sstr.clear();
-                    sstr << local_position_ned.vx << " " << local_position_ned.vy << " " << local_position_ned.vz;
-                    msg.setData(sstr.str());
-                    send_state_message(msg);
-                }
-                
                 //put position and velocity data into _data
                 std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
                 _data->positionNED[0] = local_position_ned.x;
@@ -198,6 +182,22 @@ void FlightController::read_messages() {
                 _data->velocityNED[0] = local_position_ned.vx;
                 _data->velocityNED[1] = local_position_ned.vy;
                 _data->velocityNED[2] = local_position_ned.vz;
+
+                if (_data->_vision_sync) {
+                    //bjcomm message handling            
+                    Message msg("position_estimate");
+                    Eigen::Vector3d wf = positionNEDtoWF(Eigen::Vector3d(local_position_ned.x, local_position_ned.y, local_position_ned.z), _data->visionPosOffset, _data->visionYawOffset);
+                    sstr.clear();
+                    sstr << wf[0] << " " << wf[1] << " " << wf[2];
+                    msg.setData(sstr.str());
+                    send_state_message(msg);
+
+                    msg = Message("velocity_estimate");
+                    sstr.clear();
+                    sstr << local_position_ned.vx << " " << local_position_ned.vy << " " << local_position_ned.vz;
+                    msg.setData(sstr.str());
+                    send_state_message(msg);
+                }
                 
                 if (!_init_set) {
                     mavlink_msg_local_position_ned_decode(&message, &initial_position);
@@ -614,11 +614,10 @@ void FlightController::syncVision(Eigen::Vector3d visionPosEstimate, double visi
 
     Eigen::Vector3d visionPosOffset = Rx*getPositionNED() - Rz*visionPosEstimate;
 
-    _vision_sync = true;
-
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
     _data->visionPosOffset = visionPosOffset;
     _data->visionYawOffset = visionYawOffset;
+    _data->_vision_sync = true;
 }
 
 //ALERT: can NOT be used to set roll, pitch, rollspeed or pitchspeed
