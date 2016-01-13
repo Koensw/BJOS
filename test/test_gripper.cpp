@@ -32,8 +32,9 @@ int main(){
     }
 
 	GripperController gripper;
+    printf("loading..\n");
 	bjos->getController("gripper", &gripper);
-    if(!gripper.isAvailable()){
+    if(!gripper.isAvailable()) {
         std::cout << "Failed to retrieve gripper controller" << std::endl;
         return 0;
     }

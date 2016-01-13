@@ -69,13 +69,14 @@
 
 namespace bjos {
     struct SharedGripperData{
+        int address;
         int armheight;
     };
     
     class GripperController : public Controller{
     public:
         GripperController();
-        GripperController(int fd);
+        GripperController(int address);
         virtual ~GripperController();
 
         /* Gripper functions
@@ -116,6 +117,7 @@ namespace bjos {
         /* load node is called for all childeren */
         void load(BJOS *bjos);
         
+        int _address = 0; //temp place to store the address until init
         int _fd = 0; // I2C device
         
         SharedGripperData *_data;

@@ -15,21 +15,29 @@
 
 using namespace bjos;
 
-GripperController::GripperController(): _fd(-1), _data(0) {}
-GripperController::GripperController(int fd): _fd(fd), _data(0) {}
+GripperController::GripperController(): _address(-1), _fd(-1), _data(0) {}
+GripperController::GripperController(int addr): _address(addr), _fd(-1), _data(0) {}
 GripperController::~GripperController(){
     if(!Controller::isAvailable()) return;
     
     Controller::finalize<SharedGripperData>();
 }
 
-void GripperController::init(BJOS *bjos){
+void GripperController::init(BJOS *bjos){        
     bool ret = Controller::init(bjos, "gripper", _data);
+        
     if(!ret){
         //controller cannot be initialized...
         throw ControllerInitializationError(this, "Cannot initialize controller"); 
     }
         
+    //load i2c (TODO: all I2C operations should take only place in loader and only in main thread?)
+    if(_address < 0){
+        //controller cannot be initialized...
+        throw ControllerInitializationError(this, "Address not given to controller");
+    }
+    _fd = wiringPiI2CSetup(_address);
+    
     //set pin modes and config
     pinMode(GRIPPER_CH7, INPUT);     // Set regular as INPUT
     pinMode(GRIPPER_CH8, INPUT);      // Set regular as INPUT
@@ -39,10 +47,21 @@ void GripperController::init(BJOS *bjos){
     //reset gripper
     reset();
     set_pwm_freq(GRIPPER_PWM_FREQ);
+    
+    std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+    _data->address = _address;
 }
 
-void GripperController::load(BJOS *bjos){
+void GripperController::load(BJOS *bjos){    
     Controller::load(bjos, "gripper", _data);
+        
+    int addr = 0;
+    shared_data_mutex->lock();
+    addr = _data->address;
+    shared_data_mutex->unlock();
+        
+    //load i2c (TODO: all I2C operations should take only place in loader and only in main thread?)
+    _fd = wiringPiI2CSetup(addr);
 }
 
 void GripperController::reset() {
@@ -52,7 +71,7 @@ void GripperController::reset() {
 }
 
 void GripperController::set_pwm_freq(int freq) {
-    printf("setPWMFreqn");
+    printf("setPWMFreqn\n");
     uint8_t prescale_val = (CLOCK_FREQ / 4096 / freq) - 1;
     wiringPiI2CWriteReg8(_fd, MODE1, 0x10); //sleep
     wiringPiI2CWriteReg8(_fd, PRE_SCALE, prescale_val); // multiplyer for PWM frequency

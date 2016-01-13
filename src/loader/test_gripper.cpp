@@ -33,10 +33,11 @@ void OSInit(){
 
         //start the wiring pi library
         wiringPiSetupSys();
-        int fd = wiringPiI2CSetup(0x40);
         
-        gripper = new GripperController(fd);
+        gripper = new GripperController(0x40);
         bjos->initController(gripper);
+        
+        gripper->gripperClosePWM(0);
     }catch(ControllerInitializationError &init_err){
         Log::fatal(init_err.getControllerName(), init_err.what());
         std::exit(0);
