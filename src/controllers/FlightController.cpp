@@ -534,7 +534,7 @@ bool FlightController::synchronize_time() {
 Pose FlightController::getPoseWF(){
     Pose pose;
     pose.position = FlightController::getPositionWF();
-    //pose.orienation = FlightController::getOrientationWF(); FIXME: implement
+    pose.orientation = FlightController::getOrientationWF();
     return pose;
 }
 
