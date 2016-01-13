@@ -1,14 +1,18 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(bjos)
-find_package(Boost COMPONENTS system thread REQUIRED)
+find_package(Boost COMPONENTS atomic filesystem system thread REQUIRED)
+include_directories(SYSTEM ${Boost_INCLUDE_DIR})
+
+find_path(BJCOMM_INCLUDE_DIR NAMES bjcomm/interface.h PATHS /usr/include /usr/local/include)
+find_library(BJCOMM_LIBRARY libbjcomm.so)
+include_directories(SYSTEM ${BJCOMM_INCLUDE_DIR})
 
 # load eigen3
 find_package( PkgConfig )
 pkg_check_modules( EIGEN3 REQUIRED eigen3 )
-include_directories( ${EIGEN3_INCLUDE_DIRS} )
+include_directories(SYSTEM ${EIGEN3_INCLUDE_DIRS} )
 
 # set compiler and flags
-set(CMAKE_CXX_COMPILER "/usr/bin/g++")
 set(CMAKE_CXX_FLAGS "-g -Wall -Wextra -pedantic --std=c++11 ${CMAKE_CXX_FLAGS}")
 
 # include the headers
@@ -27,34 +31,34 @@ add_library(bjos SHARED
     src/controllers/flight/serial_port.cpp
     src/libs/i2c.cpp
 )
-target_link_libraries(bjos ${Boost_THREAD_LIBRARY} ${Boost_SYSTEM_LIBRARY} pthread rt wiringPi bjcomm zmq) #FIXME: zmq should not need an explicit specification
+target_link_libraries(bjos ${Boost_LIBRARIES} pthread rt wiringPi ${BJCOMM_LIBRARY} zmq) #FIXME: zmq should not need an explicit specification
 
 #### LOADERS ####
 # flight loader
 add_executable(flight_loader
     src/loader/test_flight.cpp
 )
-target_link_libraries(flight_loader ${Boost_THREAD_LIBRARY} ${Boost_SYSTEM_LIBRARY} bjos)
+target_link_libraries(flight_loader bjos)
 
 # sonar loader
 add_executable(sonar_loader
     src/controllers/sonar/DevantechSonarInterface.cpp
     src/loader/test_sonar.cpp
 )
-target_link_libraries(sonar_loader ${Boost_THREAD_LIBRARY} ${Boost_SYSTEM_LIBRARY} bjos)
+target_link_libraries(sonar_loader bjos)
 
 # gripper loader
 add_executable(gripper_loader
     src/loader/test_gripper.cpp
 )
-target_link_libraries(gripper_loader ${Boost_THREAD_LIBRARY} ${Boost_SYSTEM_LIBRARY} bjos)
+target_link_libraries(gripper_loader bjos)
 
 # default loader
 add_executable(default_loader
     src/controllers/sonar/DevantechSonarInterface.cpp
     src/loader/test_default.cpp
 )
-target_link_libraries(default_loader ${Boost_THREAD_LIBRARY} ${Boost_SYSTEM_LIBRARY} bjos)
+target_link_libraries(default_loader bjos)
 
 ### TEST ###
 # build the test offboard interactive executable
