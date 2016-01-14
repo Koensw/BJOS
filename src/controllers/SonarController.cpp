@@ -4,15 +4,15 @@
 #include <thread>
 #include <stdexcept>
 
-#include "libs/geometry.h"
-
 #include "controllers/sonar/SonarInterface.h"
 #include "bjos/helpers/error.h"
 
 using namespace bjos;
 
 int SonarController::registerInterface(SonarInterface *interface, Pose pose, bool global){
-    if(_interfaces.size() == SharedSonarControllerData::SONAR_SIZE) throw std::out_of_range("Registering SonarInterface not possible, limit reached! Recompile with larger SONAR_SIZE.");
+    if(_interfaces.size() == SharedSonarControllerData::SONAR_SIZE)
+        throw std::out_of_range(
+        "Registering SonarInterface not possible, limit reached! Recompile with larger SONAR_SIZE.");
     
     _interfaces.push_back(std::make_pair(interface, global));
     _poses.push_back(pose);
@@ -54,8 +54,6 @@ void SonarController::init(BJOS *bjos){
         _data->sonars[i].max_range = _interfaces[i].first->getMaxRange();
         _data->sonars[i].min_range = _interfaces[i].first->getMinRange();
         _data->sonars[i].field_of_view = _interfaces[i].first->getFieldOfView();
-        
-        //TODO: set pose
         _data->sonars[i].pose = _poses[i];
     }
     
@@ -68,14 +66,25 @@ void SonarController::load(bjos::BJOS *bjos){
     Controller::load(bjos, "sonar", _data);
 }
 
+//TODO: this need to be extended
+/*std::string SonarController::getState(){
+    std::ostringstream state;
+    state << "distance ";
+    std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+    std::vector<SonarData> res;
+    for(size_t i=0; i<_data->sonar_size; ++i){
+        state << _data->sonars[i].distance;
+    }
+    state << std::endl;
+    return state.str();
+}*/
+
 void SonarController::update_sonars(){
     bool frst = true;
     
     //FIXME: interrupted over whole block
     while(_thrd_running){
         //TODO: handle sonars that are not active
-        
-        
         try{
             if(!frst){
                 std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
@@ -93,7 +102,8 @@ void SonarController::update_sonars(){
                 else if(_interfaces[i].second) _interfaces[i].first->globalReadDistance();
             }
             
-            boost::this_thread::sleep_for(boost::chrono::milliseconds(static_cast<int>(1000*_data->update_time)));
+            boost::this_thread::sleep_for(boost::chrono::milliseconds(
+                        static_cast<int>(1000*_data->update_time)));
         }catch(boost::thread_interrupted){
             //if interrupt, stop and let the controller finish resources
             return;

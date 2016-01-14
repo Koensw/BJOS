@@ -41,7 +41,7 @@ void OSInit(){
         for(int i=0; i<3; ++i){
             SonarInterface *interface = new DevantechSonarInterface(address[i]);
             Pose pose;
-            pose.orientation.y = yaw[i];
+            pose.orientation = Eigen::Vector3d(0, 0, yaw[i]);
             sonar->registerInterface(interface, pose, (i == 0));
         }
         

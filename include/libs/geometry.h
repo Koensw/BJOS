@@ -9,225 +9,109 @@
 
 #include <stdexcept>
 
-//TODO: better use a tested geometry library (Eigen?)
-//TODO: make Point and Velocity inherited classes of Vector (for usage of [] operator and matrix-multiplications)
+#include <Eigen/Core>
+#include <Eigen/Geometry>
 
 /* 
- * Provides geometry interfaces
+ * Provides geometry interfaces (needs Eigen3)
+ * 
+ * WARNING: will be phased out (should be discussed)
  */
 
 #define M_PI 3.14159265358979323846
 #define M_EPS 1e-7
 
 /*
- * Point in a frame
- * x - forward/back
- * y - left/right
- * z - up/down
+ * Point/Vector in a frame
+ * x - forward/back (0)
+ * y - left/right   (1)
+ * z - up/down      (2)
  */
-class Vector;
+typedef Eigen::Vector3d Vector;
+typedef Eigen::Vector3d Point;
 
-class Point{
+/*
+ * RotationVector in a frame
+ * r - roll         (0)
+ * p - pitch        (1)
+ * y - yaw          (2)
+ */
+class RotationVector: public Vector{
 public:
-    Point(): x(0), y(0), z(0) {}
-    Point(const Vector &p);
-    Point(double x_, double y_, double z_): x(x_), y(y_), z(z_) {}
-    
-    //FIXME: correct name (conflicts a bit with typedef point to vector)
-    double distanceOrigin(){
-        return distanceFrom(0, 0, 0);
+    RotationVector() {}
+    RotationVector(const Vector vector): Vector(vector) {}
+    /* convenience methods just like x - y - z for normal vectors */
+    double &r(){
+        return (*this)[0];
     }
-    double distanceFrom(double x_, double y_, double z_){
-        double xd = x_-x;
-        double yd = y_-y;
-        double zd = z_-z;
-        return sqrt(xd*xd+yd*yd+zd*zd);
+    double &p(){
+        return (*this)[1];
     }
-    
-    double x;
-    double y;
-    double z;
-};
-
-/*
- * Velocity in a frame
- * vx - forward/back
- * vy - left/right
- * vz - up/down
- */
-class Velocity {
-public:
-	Velocity() : vx(0), vy(0), vz(0) {}
-	Velocity(double vx_, double vy_, double vz_) : vx(vx_), vy(vy_), vz(vz_) {}
-
-	double vx;
-	double vy;
-	double vz;
-};
-
-/*
- * Orientation in a frame
- * r - left right roll
- * p - up down 
- * y - left right turn
- */
-class Orientation{
-public:
-    Orientation(): r(0), p(0), y(0) {}
-    Orientation(double r_, double p_, double y_): r(r_), p(p_), y(y_) {}
-    double r;
-    double p;
-    double y;
-};
-
-/*
-* Angular velocity in a frame
-* vr - rollspeed
-* vp - pitchspeed
-* vy - yawspeed
-*/
-class AngularVelocity {
-public:
-	AngularVelocity() : vr(0), vp(0), vy(0) {}
-	AngularVelocity(double vr_, double vp_, double vy_) : vr(vr_), vp(vp_), vy(vy_) {}
-
-	double vr;
-	double vp;
-	double vy;
+    double &y(){
+        return (*this)[2];
+    }
 };
 
 /* 
- * Position and orientation in a frame 
+ * Position orientation in a frame 
  */
 class Pose{
 public:
-    Point position;
-    Orientation orientation;
+    Vector position;
+    RotationVector orientation;
 };
 
-/*
-* Velocity and angular velocity in a frame
-*/
-class Heading {
-public:
-    Velocity velocity;
-    AngularVelocity angular_velocity;
-};
-
-/* Translation vector */
-class Vector{
-public:
-    Vector(): x(0), y(0), z(0) {}
-    Vector(const Point &p) {
-        x = p.x; y = p.y; z = p.z;
-    }
-    Vector(const Point &e, const Point &b){
-        x = e.x-b.x; y = e.y-b.y; z = e.z-b.z;
-    }
-    Vector(double x_, double y_, double z_) { 
-        x = x_; y = y_; z = z_; 
-    }   
-    
-    double length(){
-        return sqrt(x*x+y*y+z*z);
-    }
-    void normalize(){
-        double len = length();
-        if(len < M_EPS) return;
-        x /= len;
-        y /= len;
-        z /= len;
-    }
-    void scale(double factor){
-        x *= factor;
-        y *= factor;
-        z *= factor;
-    }
-	
-	double& operator[](const int i) {
-		switch (i) {
-		case 0:
-			return x;
-		case 1:
-			return y;
-		case 2:
-			return z;
-		default:
-			throw std::out_of_range("Vector[] out of range");
-		}
-	}
-
-    double x;
-    double y;
-    double z;
+/* 
+ * Velocitity lineair and angular in a frame
+ */
+class Twist{
+    Vector lineair;
+    RotationVector angular;
 };
 
 /* Rotation matrix */
 class RotationMatrix{
+    friend RotationMatrix operator*(const RotationMatrix &rm1, const RotationMatrix &rm2);
 public:
-	RotationMatrix() { memset(elem, 0, sizeof(elem[0][0]) * 3 * 3); }
-	RotationMatrix(double angle, char type) {
-		switch (type) {
-			case 'x':
-				initRx(angle);
-				break;
-			case 'y':
-				initRy(angle);
-				break;
-			case 'z':
-				initRz(angle);
-				break;
-			default:
-				memset(elem, 0, sizeof(elem[0][0]) * 3 * 3);
-				break;
-		}
-	}
-
-	Point rotatePoint(Point point);
-	Velocity rotateVelocity(Velocity vel);
-	
-	RotationMatrix transpose();
-
-	void initRx(double r);
-	void initRy(double p);
-	void initRz(double y);
-
-    double elem[3][3];
-};
-
-/* Transformation matrix */
-class TransformationMatrix {
-public:
-	TransformationMatrix() { memset(elem, 0, sizeof(elem[0][0]) * 4 * 4); }
-	TransformationMatrix(double m[4][4]);
-	TransformationMatrix(RotationMatrix R, Vector v);
-
-	Point transformPoint(Point point);
-	Velocity transformVelocity(Velocity vel);
-
-	TransformationMatrix inverse();
-
-	double elem[4][4];
-
-	RotationMatrix _R;
-	Vector _v;
+    RotationMatrix() {}
+    RotationMatrix(Eigen::Affine3d matrix): _matrix(matrix) {}
+    RotationMatrix(double angle, char type) {
+        switch (type) {
+            case 'x':
+                _matrix = Eigen::AngleAxisd(angle, Eigen::Vector3d::UnitX());
+                break;
+            case 'y':
+                _matrix = Eigen::AngleAxisd(angle, Eigen::Vector3d::UnitY());
+                break;
+            case 'z':
+                _matrix = Eigen::AngleAxisd(angle, Eigen::Vector3d::UnitZ());
+                break;
+            default:
+                break;
+        }
+    }
+    
+    Vector operator*(Vector vec){
+        return _matrix*vec;
+    }
+    RotationMatrix transpose() {
+        return RotationMatrix(_matrix.inverse());
+    }
+    RotationMatrix operator*(const RotationMatrix &rm2) {
+        RotationMatrix rot;
+        rot._matrix = _matrix*rm2._matrix;
+        return rot;
+    }
+    
+    static RotationMatrix getTaitBryan(Vector vec){
+        Eigen::Affine3d rot;
+        rot = Eigen::AngleAxisd(vec[2], Eigen::Vector3d::UnitZ()) * Eigen::AngleAxisd(vec[1], Eigen::Vector3d::UnitY()) * Eigen::AngleAxisd(vec[0], Eigen::Vector3d::UnitX());
+        return RotationMatrix(rot);
+    }
 private:
-	void constructMatrix(RotationMatrix R, Vector v);
+    Eigen::Affine3d _matrix;
 };
 
-// TODO: use a combination of RotationMatrix to do this
-RotationMatrix getTaitBryanMatrix(Orientation o);
 
-/* Operators */
-Vector operator+(const Vector &v1, const Vector &v2);
-Vector operator-(const Vector &v1, const Vector &v2);
-
-Orientation operator-(const Orientation &o);
-RotationMatrix operator-(const RotationMatrix &rm);
-RotationMatrix operator*(const RotationMatrix &rm1, const RotationMatrix &rm2);
-
-/* matrix-vector multiplications */
-Vector operator*(const RotationMatrix &rm, Vector &v);
-Vector operator*(const TransformationMatrix &rm, Vector &v);
 
 #endif

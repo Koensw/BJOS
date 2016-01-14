@@ -9,18 +9,18 @@
 #include <boost/interprocess/allocators/allocator.hpp>
 #include <boost/interprocess/containers/vector.hpp>
 
-#include "../libs/geometry.h"
-
 #include "../bjos/bjos.h"
-#include "../bjos/controller/controller.h"
+#include "../bjos/controller.h"
 #include "../bjos/helpers/error.h"
 
 #include "sonar/SonarInterface.h"
 
+#include "../libs/geometry.h"
+
 namespace bjos{
     struct SonarData{
         int id;
-        
+
         Pose pose;
         
         double field_of_view;
@@ -34,7 +34,8 @@ namespace bjos{
         SharedSonarControllerData(): sonar_size(0), update_time(0.1) {}
         
         //SET MAXIMUM AMOUNT OF SONARS ON COMPILE TIME
-        //TODO: support custom amount of sonars, but this is tricky (either we should find a fix or break our bjos system) 
+        //TODO: support custom amount of sonars, but this is tricky
+        //(either we should find a fix or break our bjos system) 
         static const unsigned int SONAR_SIZE = 12;
         SonarData sonars[SONAR_SIZE];
         unsigned sonar_size;
@@ -45,7 +46,8 @@ namespace bjos{
     class SonarController : public Controller{
     public:
         /* Initialize the sonar controller (global variable only used by main instance) */
-        SonarController(bool global = false): _data(nullptr), _thrd_running(false), _global_read(global) {}
+        SonarController(bool global = false)
+            : _data(nullptr), _thrd_running(false), _global_read(global) {}
         
         /* Register a new sonar
         WARNING: all should be added before init
@@ -75,8 +77,11 @@ namespace bjos{
         }
         
         /* Finalize this controller */
-        ~SonarController(){
-            if(isMainInstance()){
+        virtual ~SonarController(){
+            //check if available
+            if(!Controller::isAvailable()) return;
+            
+            if(isMainInstance()){                
                 //stop thread, wait for finish
                 _thrd_running = false;
                 _thrd.interrupt();
