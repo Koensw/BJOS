@@ -135,7 +135,7 @@ void FlightController::read_thread() {
         try {
             read_messages();
             
-            boost::this_thread::sleep_for(boost::chrono::microseconds(500)); //2000 Hz
+            //boost::this_thread::sleep_for(boost::chrono::microseconds(500)); //2000 Hz
         }
         catch (boost::thread_interrupted) {
             //if interrupt, stop and let the controller finish resources

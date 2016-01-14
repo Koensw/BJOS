@@ -93,7 +93,7 @@ initialize_defaults()
 	status = SERIAL_PORT_CLOSED;
 
 	uart_name = (char*)"/dev/ttyAMA0";
-	baudrate  = 57600;
+	baudrate  = 921600;
 
 	// Start mutex
 	int result = pthread_mutex_init(&lock, NULL);
