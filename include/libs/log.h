@@ -62,6 +62,17 @@ public:
         _forward("info", origin, format);
     }
     
+    static void debug(const std::string origin, const std::string format, ... ) {
+        va_list args;
+        fprintf( stderr, "[DEBUG] " );
+        fprintf( stderr, "%s: ", origin.c_str());
+        va_start( args, format);
+        vfprintf( stderr, format.c_str(), args );
+        va_end( args );
+        fprintf( stderr, "\n" ); 
+        _forward("debug", origin, format);
+    }
+    
 private:
     static void _forward(const std::string type, const std::string origin, const std::string format, ...){
         static bjcomm::Publisher pub("debug");

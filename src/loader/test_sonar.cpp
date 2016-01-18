@@ -24,7 +24,7 @@ SonarController *sonar;
 /* Initialize the OS */
 void OSInit(){
     try{
-        Log::info("sonar_loader", "Starting loader %s", "test_sonar");
+        Log::info("SonarLoader", "Starting loader %s", "test_sonar");
         //if(BJOS::getState() != BJOS::UNINITIALIZED) Log::warn("BJOS already running... expecting incorrect shutdown so will continue.");
         
         //init the OS
@@ -61,7 +61,7 @@ void OSFinalize(){
     
     //wait for finalizing clients
     while(!sonar->canFinalize()){
-        Log::info("sonar_loader", "Waiting for %d clients to finish...", bjos->getControllerCount("sonar")-1);
+        Log::info("SonarLoader", "Waiting for %d clients to finish...", bjos->getControllerCount("sonar")-1);
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
     //delete pointers
@@ -72,7 +72,7 @@ void OSFinalize(){
     
     //stop os
     BJOS::finalize();
-    Log::info("sonar_loader", "Successfull shutdown!");
+    Log::info("SonarLoader", "Successfull shutdown!");
 }
 
 int main(){
@@ -81,10 +81,10 @@ int main(){
     
     // wait until finished
     while(Process::isActive()){            
-	Log::info("sonar_loader", "DISTANCES: ");
+	Log::info("SonarLoader", "DISTANCES: ");
 	std::vector<SonarData> data = sonar->getData();
 	for(size_t i=0; i<data.size(); ++i){
-		Log::info("sonar_loader", "%f", data[i].distance);
+		Log::info("SonarLoader", "%f", data[i].distance);
 	}
 
         std::this_thread::sleep_for(std::chrono::milliseconds(300));

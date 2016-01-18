@@ -20,6 +20,8 @@
 #include "../bjos/helpers/process.h"
 #include "../bjos/controller.h"
 
+#include "../libs/log.h"
+
 #include <stdio.h>    // Used for printf() statements
 #include <wiringPi.h> // Include WiringPi library!
 #include <wiringPiI2C.h>
