@@ -191,6 +191,7 @@ void FlightController::read_messages() {
                     sstr.clear();
                     sstr << wf[0] << " " << wf[1] << " " << wf[2];
                     msg.setData(sstr.str());
+                    //Log::info("flightcontroller::read_messages", sstr.str()+" - %f %f %f - %f", _data->visionPosOffset[0], _data->visionPosOffset[1], _data->visionPosOffset[2], _data->visionYawOffset);
                     send_state_message(msg);
 
                     msg = Message("velocity_estimate");
@@ -648,6 +649,8 @@ void FlightController::setTargetCF(uint16_t type_mask, Eigen::Vector3d position,
     
     sp.coordinate_frame = MAV_FRAME_BODY_NED;
     
+    Log::info("FlightController::setTargetCF", "%f %f %f - %f", sp.vx, sp.vy, sp.vz, sp.yaw_rate); 
+
     //Mutex already locked above
     _data->current_setpoint = sp;
 }
