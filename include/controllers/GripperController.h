@@ -65,6 +65,7 @@
 #define DEMO_CUP_PWM 1000   //PWM for the gripper that ensures the demo cup is gripped
 
 //FIXME: this should be a param that can be given to the loader of the controller!
+#define GRIPPER_PIN 26
 #define GRIPPER_CH7 3
 #define GRIPPER_CH8 4
 #define GRIPPER_PWM_FREQ 1000

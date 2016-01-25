@@ -151,11 +151,12 @@ int GripperController::pulse_in(int pin, int level)
 void GripperController::gripperClosePWM(int pwm)
 {
     Log::debug("GripperController", "ClosePWM");
-    if (pwm>4000)
-        pwm = 4000;
+    if (pwm>2047)   //4095 for pwm board 
+        pwm = 2047; //4095 fpr pwm board
     else if (pwm<0)
         pwm = 0;
-    set_pwm(0, pwm);
+    //set_pwm(0, pwm); //used for control via i2c pwm board
+	pwmWrite(GRIPPER_PIN, pwm); //used for direct control from raspberry
 }
 
 void GripperController::pickup()
@@ -214,7 +215,7 @@ bool GripperController::check_RC()//RC override
     Log::info("GripperController", "RC1: %i, RC2: %i", RC1, RC2);
     if (RC2>1500)
     {
-        gripperClosePWM(4095);
+        gripperClosePWM(2047);  //4095 for pwm board
         return(true);
     }
     else if (RC1>1500) {
