@@ -12,7 +12,7 @@
 struct flight_raw_estimate{
     uint8_t type;
     uint64_t time;
-    float data[3];  
+    float data[4];  
 } __attribute__((packed));
 
 #endif
