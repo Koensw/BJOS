@@ -82,13 +82,11 @@ std::tuple<Eigen::Vector3d, Eigen::Vector3d, uint16_t> handle_input(char c)
 
 	case 'l':
 		std::cout << "Landing" << std::endl;
-        setv[2] = -ZVEL;
         tm = SET_TARGET_LAND;
 		break;
 
     case 't':
 		std::cout << "Takeoff!" << std::endl;
-		setv[2] = TAKEOFF;
         tm = SET_TARGET_TAKEOFF;
 		break;
 
