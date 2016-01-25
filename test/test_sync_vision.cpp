@@ -36,6 +36,6 @@ int main(){
     std::cout << "gimme some: ";
     double x, y, z, yaw;
     std::cin >> x >> y >> z >> yaw;
-    flight.syncVision(Eigen::Vector3d(1, 2, 3), 0.5);
+    flight.syncVision(Eigen::Vector3d(x, y, z), yaw);
 
 }

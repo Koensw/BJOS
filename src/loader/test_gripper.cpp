@@ -23,7 +23,7 @@ GripperController *gripper;
 /* Initialize the OS */
 void OSInit(){
     try{
-        Log::info("gripper_loader", "Starting loader %s", "test_gripper");
+        Log::info("GripperLoader", "Starting loader %s", "test_gripper");
         //if(BJOS::getState() != BJOS::UNINITIALIZED) Log::warn("BJOS already running... expecting incorrect shutdown so will continue.");
         
         //init the OS
@@ -52,7 +52,7 @@ void OSFinalize(){
     
     //wait for finalizing clients
     while(!gripper->canFinalize()){
-        Log::info("gripper_loader", "Waiting for %d clients to finish...", bjos->getControllerCount("gripper")-1);
+        Log::info("GripperLoader", "Waiting for %d clients to finish...", bjos->getControllerCount("gripper")-1);
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
     //delete pointers
@@ -60,7 +60,7 @@ void OSFinalize(){
     
     //stop os
     BJOS::finalize();
-    Log::info("gripper_loader", "Successfull shutdown!");
+    Log::info("GripperLoader", "Successfull shutdown!");
 }
 
 int main(){
@@ -71,7 +71,7 @@ int main(){
     while(Process::isActive()){
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
-    std::cout << "pre OSFinalize()" << std::endl;
+
     //finalize
     OSFinalize();
 }

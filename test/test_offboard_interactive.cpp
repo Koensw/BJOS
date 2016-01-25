@@ -63,14 +63,14 @@ std::tuple<Eigen::Vector3d, Eigen::Vector3d, uint16_t> handle_input(char c)
 
 	case 'e':
 		std::cout << "Turning left" << std::endl;
-        setav[2] = -YAWR;
+        setav[2] = YAWR;
 		setv = setv_old;
         tm &= SET_TARGET_YAW_RATE;
 		break;
 
 	case 'r':
 		std::cout << "Turning right" << std::endl;
-        setav[2] = YAWR;
+        setav[2] = -YAWR;
 		setv = setv_old;
         tm &= SET_TARGET_YAW_RATE;
 		break;

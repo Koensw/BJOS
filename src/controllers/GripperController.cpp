@@ -65,13 +65,13 @@ void GripperController::load(BJOS *bjos){
 }
 
 void GripperController::reset() {
-    printf("reset\n");
+    Log::info("GripperController" , "reset");
     wiringPiI2CWriteReg8(_fd, MODE1, 0x00); //Normal mode
     wiringPiI2CWriteReg8(_fd, MODE2, 0x04); //totem pole
 }
 
 void GripperController::set_pwm_freq(int freq) {
-    printf("setPWMFreqn\n");
+    Log::info("GripperController", "set pwm frequency to %d", freq);
     uint8_t prescale_val = (CLOCK_FREQ / 4096 / freq) - 1;
     wiringPiI2CWriteReg8(_fd, MODE1, 0x10); //sleep
     wiringPiI2CWriteReg8(_fd, PRE_SCALE, prescale_val); // multiplyer for PWM frequency
@@ -88,7 +88,7 @@ void GripperController::set_pwm(uint8_t device, int off_value) {
 }
 
 int GripperController::get_pwm(uint8_t led) {
-    printf("getPWM\n");
+    Log::debug("GripperController", "getPWM");
     int ledval = 0;
     ledval = wiringPiI2CReadReg8(_fd, LED0_OFF_H + LED_MULTIPLYER * (led));
     ledval = ledval & 0xf;
@@ -102,13 +102,13 @@ int GripperController::get_pwm(uint8_t led) {
  */
 long GripperController::map(long x, long in_min, long in_max, long out_min, long out_max)
 {
-    printf("map\n");
+    Log::debug("GripperController", "map");
     return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
 int GripperController::pulse_in(int pin, int level)
 {
-    printf("pulseIn\n");
+    Log::debug("GripperController", "pulse_in");
     int timeout = 10000;
     struct timeval tn, t0, t1;
     long micros;
@@ -150,12 +150,13 @@ int GripperController::pulse_in(int pin, int level)
  */
 void GripperController::gripperClosePWM(int pwm)
 {
-    printf("gripperClosePWM\n");
-    if (pwm>4000)
-        pwm = 4000;
+    Log::debug("GripperController", "ClosePWM");
+    if (pwm>2047)   //4095 for pwm board 
+        pwm = 2047; //4095 fpr pwm board
     else if (pwm<0)
         pwm = 0;
-    set_pwm(0, pwm);
+    //set_pwm(0, pwm); //used for control via i2c pwm board
+	pwmWrite(GRIPPER_PIN, pwm); //used for direct control from raspberry
 }
 
 void GripperController::pickup()
@@ -170,7 +171,7 @@ void GripperController::release()
 
 void GripperController::gripperCloseForce(int limit)
 {
-    printf("gripper_close_force\n");
+    Log::debug("GripperController", "gripperCloseForce");
     int pwm = 800;
     int force = 100;
     //int force=(analogRead(forcePin))-614;
@@ -191,13 +192,13 @@ void GripperController::gripperCloseForce(int limit)
 
 void GripperController::gripperCloseObject(char* object)
 {
-    printf("gripper_close_object\n");
+    Log::debug("GripperController", "gripperCloseObject");
     if (strcmp("Apple", object))
         gripperCloseForce(35);
     else if (strcmp("Can", object))
         gripperCloseForce(50);
     else
-        printf("Object not recognized.\n");
+        Log::error("GripperController", "Object not recognized.");
     //Serial.println("Object not recognized");
 }
 
@@ -206,15 +207,15 @@ void GripperController::gripperCloseObject(char* object)
  */
 bool GripperController::check_RC()//RC override
 {
-    printf("check_RC\n");
+    Log::debug("GripperController", "check_RC");
     delay(100);
     int RC1 = pulse_in(GRIPPER_CH7, HIGH);
     delay(100);
     int RC2 = pulse_in(GRIPPER_CH8, HIGH);
-    printf("RC1: %i, RC2: %i\n", RC1, RC2);
+    Log::info("GripperController", "RC1: %i, RC2: %i", RC1, RC2);
     if (RC2>1500)
     {
-        gripperClosePWM(4095);
+        gripperClosePWM(2047);  //4095 for pwm board
         return(true);
     }
     else if (RC1>1500) {

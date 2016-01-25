@@ -24,7 +24,7 @@ FlightController *flight;
 /* Initialize the OS */
 void OSInit(){
     try{
-        Log::info("flight_loader", "Starting loader %s", "test_flight");
+        Log::info("FlightLoader", "Starting loader %s", "test_flight");
         //if(BJOS::getState() != BJOS::UNINITIALIZED) Log::warn("BJOS already running... expecting incorrect shutdown so will continue.");
         
         //init the OS
@@ -49,7 +49,7 @@ void OSFinalize(){
     
     //wait for finalizing clients
     while(!flight->canFinalize()){
-        Log::info("flight_loader", "Waiting for %d clients to finish...", bjos->getControllerCount("flight")-1);
+        Log::info("FlightLoader", "Waiting for %d clients to finish...", bjos->getControllerCount("flight")-1);
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
     //delete pointers
@@ -57,7 +57,7 @@ void OSFinalize(){
     
     //stop os
     BJOS::finalize();
-    Log::info("flight_loader", "Successfull shutdown!");
+    Log::info("FlightLoader", "Successfull shutdown!");
 }
 
 int main(){
@@ -68,7 +68,7 @@ int main(){
     while(Process::isActive()){
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
-    std::cout << "pre OSFinalize()" << std::endl;
+
     //finalize
     OSFinalize();
 }
