@@ -75,12 +75,7 @@ std::tuple<Eigen::Vector3d, Eigen::Vector3d, uint16_t> handle_input(char c)
         tm &= SET_TARGET_YAW_RATE;
 		break;
 
-	case 'o':
-		std::cout << "Going upward" << std::endl;
-		setv[2] = ZVEL;
-		break;
-
-	case 'l':
+	case 'g':
 		std::cout << "Landing" << std::endl;
         setv[2] = -ZVEL;
         tm = SET_TARGET_LAND;
@@ -90,6 +85,16 @@ std::tuple<Eigen::Vector3d, Eigen::Vector3d, uint16_t> handle_input(char c)
 		std::cout << "Takeoff!" << std::endl;
 		setv[2] = TAKEOFF;
         tm = SET_TARGET_TAKEOFF;
+		break;
+
+	case 'o':
+		std::cout << "Going upward" << std::endl;
+		setv[2] = ZVEL;
+		break;
+
+	case 'l':
+		std::cout << "Going downward" << std::endl;
+		setv[2] = -ZVEL;
 		break;
 
 	case 'q':
