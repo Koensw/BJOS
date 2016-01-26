@@ -27,7 +27,6 @@ uint64_t get_time_usec(clockid_t clk_id)
 FlightController::FlightController() : system_id(0), autopilot_id(0), _data(nullptr), _read_thrd_running(false), _write_thrd_running(false), _mavlink_received(false) {}
 
 FlightController::~FlightController() {
-     //check if available
     if(!Controller::isAvailable()) return;
     
     if (isMainInstance()) {
@@ -38,19 +37,21 @@ FlightController::~FlightController() {
         else if (result == 0)
             Log::warn("FlightController::init", "double (de-)activation of offboard mode [ignored]");
 
-        //stop threads, wait for finish
+        //stop threads
         _read_thrd_running = false;
         _write_thrd_running = false;
         _read_thrd.interrupt();
         _write_thrd.interrupt();
-        _read_thrd.join();
-        _write_thrd.join();
 
         //if the read_trhd is still waiting to receive an initial MAVLink message: close it and throw an ControllerInitializationError
         if (_mavlink_received == false) {
             _mavlink_received = true;
             Log::error("FlightController::init", "Did not receive any MAVLink messages, check physical connections and make sure it is running on the right port!");
         }
+
+        //wait till threads are finished
+        _read_thrd.join();
+        _write_thrd.join();
         
         //stop the raw stream
         close(_raw_sock);
@@ -64,33 +65,41 @@ FlightController::~FlightController() {
 }
 
 void FlightController::init(bjos::BJOS *bjos) {
+    // -------------------------------------------------------------------------------------------------
+    //   Initialize the controller in BJOS
+    // -------------------------------------------------------------------------------------------------
     bool ret = Controller::init(bjos, "flight", _data);
     if (!ret)
         throw ControllerInitializationError(this, "Controller::init failed");
     
-    //open a uart connection to the pixhawk
-    //NOTE: uses default uart="/dev/ttyAMA0", baudrate = "57600"
+    // -------------------------------------------------------------------------------------------------
+    //   UART to Pixhawk (NOTE: uses beefed up baudrate = "921600" on uart="/dev/ttyAMA0")
+    // -------------------------------------------------------------------------------------------------
     serial_port = new Serial_Port();
     serial_port->start();
     //give the serial port some time
     usleep(100000);
-    //check the status of the port
-    if (serial_port->status != 1) //SERIAL_PORT_OPEN
-        throw ControllerInitializationError(this, "Serial port not open");
-    
-    //open a raw unix domain socket (WARNING: this is needed for Philips, this should not be hardcoded here!!!)
+    //check the status
+    if (serial_port->status != 1) //1 == SERIAL_PORT_OPEN
+        throw ControllerInitializationError(this, "Serial port can't be opened");
+ 
+    // -------------------------------------------------------------------------------------------------
+    //   Raw unix domain socket (WARNING: this is needed for Philips, this should not be hardcoded here) 
+    // -------------------------------------------------------------------------------------------------
     _raw_sock = socket(AF_UNIX, SOCK_DGRAM, 0);
-    if (_raw_sock < 0) {
+    if (_raw_sock < 0)
         throw ControllerInitializationError(this, "Cannot open raw socket");
-    }
+    
     _raw_sock_name.sun_family = AF_UNIX;
     strcpy(_raw_sock_name.sun_path, "/tmp/bluejay/modules/philips-localization");
     
-    //start read thread
+    // -------------------------------------------------------------------------------------------------
+    //   Read thread
+    // -------------------------------------------------------------------------------------------------
     _read_thrd_running = true;
     _read_thrd = boost::thread(&FlightController::read_thread, this);
     
-    //read_thread checks if it can receive data from the Pixhawk, signals this with 'mavlink_received'
+    //If any MAVLink is received this is signaled with _mavlink_received
     unsigned int n = 0;
     unsigned int timeout = 20; //deciseconds
     while (_mavlink_received == false && n < timeout) {
@@ -100,18 +109,25 @@ void FlightController::init(bjos::BJOS *bjos) {
 	if (n == timeout)
 		throw ControllerInitializationError(this, "Did not receive any MAVLink messages");
     
-    //write_thread initialises 'current_setpoint': all velocities 0
+    // -------------------------------------------------------------------------------------------------
+    //   Write thread (initializes with all 0 velocity&yaw_rate setpoint)
+    // -------------------------------------------------------------------------------------------------
     _write_thrd = boost::thread(&FlightController::write_thread, this);
-     while (_write_thrd_running == false)
+    while (_write_thrd_running == false)
         usleep(100000); //10 Hz
+    //NOTE: no error check because this never fails if the serial_port is initialized correctly
         
-    //synchronize the time with pixhawk
+    // -------------------------------------------------------------------------------------------------
+    //   Syncronize time with Pixhawk
+    // -------------------------------------------------------------------------------------------------
     int result = synchronize_time();
     if(result == -1)
         throw ControllerInitializationError(this,
                 "Could not synchronize time with the Pixhawk: error with connection");
         
-    //in order for the drone to react to the streamed setpoints, offboard mode has to be enabled
+    // -------------------------------------------------------------------------------------------------
+    //   Enable offboard mode (this needs to be enabled manually as well in order for the drone to move)
+    // -------------------------------------------------------------------------------------------------
     result = toggle_offboard_control(true);
     if (result == -1)
         throw ControllerInitializationError(this,
@@ -123,13 +139,12 @@ void FlightController::init(bjos::BJOS *bjos) {
 }
 
 void FlightController::load(bjos::BJOS *bjos) {
-    Log::info("FC::load", "new instance loaded");
+    Log::info("FlightController::load", "New instance loaded");
     Controller::load(bjos, "flight", _data);
 }
 
 void FlightController::read_thread() {
-    while (_read_thrd_running)
-    {
+    while (_read_thrd_running) {
         try {
             read_messages();
             
@@ -162,7 +177,7 @@ void FlightController::read_messages() {
         uint64_t bootTime = _data->syncBootTime;
         shared_data_mutex->unlock();
         
-        // stringstream utility for sending bjcomm messages
+        //stringstream utility for sending bjcomm messages
         std::stringstream sstr;
 
         //Handle message per id
@@ -182,8 +197,8 @@ void FlightController::read_messages() {
                 _data->velocityNED[1] = local_position_ned.vy;
                 _data->velocityNED[2] = local_position_ned.vz;
 
+                //only send bjcomm messages when vision has been synced and therefor WF is enabled
                 if (_data->_vision_sync) {
-                    //bjcomm message handling            
                     Message msg("position_estimate");
                     Eigen::Vector3d wf = positionNEDtoWF(Eigen::Vector3d(local_position_ned.x, local_position_ned.y, local_position_ned.z), _data->visionPosOffset, _data->visionYawOffset);
                     sstr.clear();
@@ -329,7 +344,6 @@ void FlightController::read_messages() {
 
                 Message msg("engine_power");
                 sstr.clear();
-                //FIXME: are we sure this order is right?
                 sstr << servo_output_percentage[2] << " " << servo_output_percentage[0] << " " << servo_output_percentage[1] << " " << servo_output_percentage[3];
                 msg.setData(sstr.str());
                 send_state_message(msg);
@@ -341,19 +355,14 @@ void FlightController::read_messages() {
             }
         }
     }
-    else {
-        //                Log::warn("",".");
-    }
-    
-    return;
 }
 
 void FlightController::write_thread() {
-    //prepare an initial setpoint: all velocities 0
+    //prepare an initial setpoint: velocities&yaw_rate all 0
     mavlink_set_position_target_local_ned_t sp;
     sp.type_mask = SET_TARGET_VELOCITY &
     SET_TARGET_YAW_RATE;
-    sp.coordinate_frame = MAV_FRAME_BODY_OFFSET_NED;
+    sp.coordinate_frame = MAV_FRAME_BODY_NED;
     sp.vx = 0;
     sp.vy = 0;
     sp.vz = 0;
@@ -376,77 +385,66 @@ void FlightController::write_thread() {
         }
         catch (boost::thread_interrupted) {
             //if interrupt, stop and let the controller finish resources
-            ///Q: wha??
             return;
         }
     }
-    
-    return;
 }
 
 void FlightController::write_setpoint() {
-    // --------------------------------------------------------------------------
-    //   PACK PAYLOAD
-    // --------------------------------------------------------------------------
-    
-    // pull from position target
-    std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+    //pull from current setpoint
+    shared_data_mutex->lock();
     mavlink_set_position_target_local_ned_t sp = _data->current_setpoint;
+    shared_data_mutex->unlock();
+    
     //Log::info("FlightController::write_setpoint","current_setpoint: %.4f %.4f %.4f", sp.vx, sp.vy, sp.vz);
     
-    // double check some system parameters
+    //double check some system parameters
     if (not sp.time_boot_ms)
         sp.time_boot_ms = (uint32_t)(get_time_usec(CLOCK_MONOTONIC) / 1000);
     sp.target_system = system_id;
     sp.target_component = autopilot_id;
     
-    
-    // --------------------------------------------------------------------------
-    //   ENCODE
-    // --------------------------------------------------------------------------
-    
+    //encode
     mavlink_message_t message;
     mavlink_msg_set_position_target_local_ned_encode(system_id, autopilot_id, &message, &sp);
     
-    
-    // --------------------------------------------------------------------------
-    //   WRITE
-    // --------------------------------------------------------------------------
-    
-    // do the write
+    //do the write
     serial_port->write_message(message);
     
     //TODO: check if write is succesfull
-    
-    return;
 }
 
 void FlightController::write_estimate() {
-    // pull from estimate
-    std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+    //pull from current estimate
+    shared_data_mutex->lock();
     mavlink_vision_position_estimate_t est = _data->vision_position_estimate;
+    shared_data_mutex->unlock();
 
-    // double check estimate time
+    //double check estimate time
     if (not est.usec)
         est.usec = get_time_usec(CLOCK_MONOTONIC);
 
-    // encode message
+    //encode 
     mavlink_message_t message;
     mavlink_msg_vision_position_estimate_encode(system_id, autopilot_id, &message, &est);
 
-    // do the write
-    serial_port->write_message(message); //no error check
+    //do the write
+    serial_port->write_message(message);
 
-    return;
+    //TODO: check if write is succesfull
 }
 
 //TODO: check mode in order to handle outside mode switching (by a telemetry command for instance)
 int FlightController::toggle_offboard_control(bool flag) {
+    //keep track of which mode we're in
     static bool offboard = false;
+
     Log::info("FlightController::toggle_offboard_control", "entered toggle_offboard_control %i", flag);
+
+    //check for double (de-)activation
     if (offboard == flag) return 0;
     else {
-        // Prepare command for off-board mode
+        //prepare command for off-board mode
         mavlink_command_long_t com;
         com.target_system		= system_id;
         com.target_component	= autopilot_id;
@@ -454,19 +452,20 @@ int FlightController::toggle_offboard_control(bool flag) {
         com.confirmation		= true;
         com.param1				= (float)flag; // flag >0.5 => start, <0.5 => stop
         
-        // Encode
+        //encode
         mavlink_message_t message;
         mavlink_msg_command_long_encode(system_id, autopilot_id, &message, &com);
         
-        // Send
+        //do the write
         int success = serial_port->write_message(message);
+
+        //error check
         if (success) {
             Log::info("FlightController::toggle_offboard_control", "successful write on port");
             offboard = flag;
             return 1;
         }
         else {
-            //write error
             return -1;
         }
     }
@@ -475,25 +474,28 @@ int FlightController::toggle_offboard_control(bool flag) {
 bool FlightController::synchronize_time() {
     Log::info("FlightController::synchronize_time", "entered synchronize_time");
     
-    // prepare command for time synchronize
+    //prepare system_time message for sync
     mavlink_system_time_t sys_time;
     uint64_t cur_time;
     cur_time = sys_time.time_unix_usec = get_time_usec(CLOCK_REALTIME);
     sys_time.time_boot_ms = 0; //this is ignored
 
-    //encode and send
+    //encode
     mavlink_message_t message;
     mavlink_msg_system_time_encode(system_id, autopilot_id, &message, &sys_time);
     
+    //do the write
     int success = serial_port->write_message(message);
+
+    //error check
     if (success) {
-        Log::info("FlightController::synchronize_time", "successfull write on port");
-    }else{
+        Log::info("FlightController::synchronize_time", "successful write on port");
+    } else {
         Log::info("FlightController::synchronize_time", "failed to write on port");
         return false;
     }
     
-     //reset the synchronized time to wait for new set
+    //reset the synchronized time to wait for new set
     shared_data_mutex->lock();
     _data->sys_time.time_unix_usec = 0;
     _data->sys_time.time_unix_usec = 0;
@@ -511,7 +513,8 @@ bool FlightController::synchronize_time() {
         usleep(100000); //10 Hz
         ++cnt;
     }
-    
+
+    //timeout check    
     if(sys_time.time_unix_usec <= cur_time){
         Log::info("FlightController::synchronize_time", "failed to received system time within 5 seconds");
         return false;
