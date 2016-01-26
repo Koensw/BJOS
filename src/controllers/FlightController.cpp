@@ -3,9 +3,9 @@
  *
  * @brief Drone interface functions
  *
- * Functions for sending and receiving commands to a drone via MAVLink
+ * Functions for sending commands to and receiving information from a drone via MAVLink
  *
- * @author Joep Linssen,	<joep.linssen@bluejayeindhoven.nl>
+ * @author Joep Linssen 	    <joep.linssen@bluejayeindhoven.nl>
  * @author Wouter van der Stoel <wouter@bluejayeindhoven.nl>
  */
 
@@ -24,7 +24,7 @@ uint64_t get_time_usec(clockid_t clk_id)
     return _time_stamp.tv_sec * 1000000ULL + _time_stamp.tv_nsec / 1000ULL;
 }
 
-FlightController::FlightController() : system_id(0), autopilot_id(0), _data(nullptr), _read_thrd_running(false), _write_thrd_running(false), _init_set(false) {}
+FlightController::FlightController() : system_id(0), autopilot_id(0), _data(nullptr), _read_thrd_running(false), _write_thrd_running(false), _mavlink_received(false) {}
 
 FlightController::~FlightController() {
      //check if available
@@ -47,8 +47,8 @@ FlightController::~FlightController() {
         _write_thrd.join();
 
         //if the read_trhd is still waiting to receive an initial MAVLink message: close it and throw an ControllerInitializationError
-        if (_init_set == false) {
-            _init_set = true;
+        if (_mavlink_received == false) {
+            _mavlink_received = true;
             Log::error("FlightController::init", "Did not receive any MAVLink messages, check physical connections and make sure it is running on the right port!");
         }
         
@@ -90,17 +90,15 @@ void FlightController::init(bjos::BJOS *bjos) {
     _read_thrd_running = true;
     _read_thrd = boost::thread(&FlightController::read_thread, this);
     
-    //read_thread initialises 'initial_position' and signals this by setting _init_set
+    //read_thread checks if it can receive data from the Pixhawk, signals this with 'mavlink_received'
     unsigned int n = 0;
     unsigned int timeout = 20; //deciseconds
-    while (_init_set == false && n < timeout) {
+    while (_mavlink_received == false && n < timeout) {
 		n++;
         usleep(100000); //10 Hz
     }
 	if (n == timeout)
 		throw ControllerInitializationError(this, "Did not receive any MAVLink messages");
-
-    Log::info("FlightController::init", "Initial position: xyz=[%.4f %.4f %.4f] vxvyvz=[%.4f %.4f %.4f]", initial_position.x, initial_position.y, initial_position.z, initial_position.vx, initial_position.y, initial_position.z);
     
     //write_thread initialises 'current_setpoint': all velocities 0
     _write_thrd = boost::thread(&FlightController::write_thread, this);
@@ -153,7 +151,7 @@ void FlightController::read_messages() {
     bool success = serial_port->read_message(message);
     
     if (success) {
-        if (!_init_set) {
+        if (!_mavlink_received) {
             system_id = message.sysid;
             autopilot_id = message.compid;
         }
@@ -201,10 +199,7 @@ void FlightController::read_messages() {
                     send_state_message(msg);
                 }
                 
-                if (!_init_set) {
-                    mavlink_msg_local_position_ned_decode(&message, &initial_position);
-                    _init_set = true;
-                }
+                if (!_mavlink_received) _mavlink_received = true;
                 break;
             }
             case MAVLINK_MSG_ID_ATTITUDE:

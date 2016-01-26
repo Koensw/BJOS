@@ -210,10 +210,7 @@ namespace bjos {
         /* Used by messaging part to allow multiple drone streaming, and to just generally indicate which drone is being sent to */
         int system_id;
         int autopilot_id;
-        
-        /* Actually quite obsolete, will be discontinued in coming commits */
-        mavlink_local_position_ned_t initial_position;
-        
+                
         /* Initialize the main instance */
         void init(bjos::BJOS *bjos);
         /* Load node is called for all childeren */
@@ -253,9 +250,9 @@ namespace bjos {
         void write_estimate();
         void read_messages();
         
-        /* Initialiser check, quite obsolete. Will be discontinued in coming commits */
-        std::atomic_bool _init_set;
-    
+        /* Used to check if nothing is wrong with the MAVLink connection */
+        std::atomic_bool _mavlink_received;
+
         /* Raw socket used by Philips (WARNING: sends raw struct data, is not portable and not needed because of our own communication layer: need fix later) */
         int _raw_sock;
         struct sockaddr_un _raw_sock_name;
