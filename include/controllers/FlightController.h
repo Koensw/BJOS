@@ -5,7 +5,7 @@
  *
  * @brief Drone interface definitions
  *
- * Functions for sending and receiving commands to a drone via MAVLink
+ * Functions for sending commands to and receiving information from a drone via MAVLink
  *
  * @author Joep Linssen,	<joep.linssen@bluejayeindhoven.nl>
  */
@@ -55,9 +55,9 @@
 #include <mavlink/v1.0/common/mavlink.h>
 #endif
 
-// ------------------------------------------------------------------------------
-//   MAVLink info
-// ------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------
+//   MAVLink info - latest documentation for reference: https://pixhawk.ethz.ch/mavlink/
+// -------------------------------------------------------------------------------------
 /*
  * MAVLink messages used per implemented function:
  *	setTargetCF		        --- SET_POSITION_TARGET_LOCAL_NED
@@ -68,9 +68,9 @@
  *                                      ATTITUDE, LOCAL_POSITION_NED, STATUSTEXT, SYSTEM_TIME, HIGHRES_IMU, EXTENDED_SYS_STATE
  */
 
-// ------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------
 //   Defines
-// ------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------
 
 // These typemasks are 'ignore-masks': 1 means ignore, while 0 means use
 // They, thus, have to be combined with &
@@ -99,7 +99,8 @@ namespace bjos {
     };
     
     struct SharedFlightControllerData {
-        //NOTE: class variables are double's not floats
+        //As a general rule: every pose information vector has its corresponding frame appended to its name (even in function arguments)
+        /* Latest pose information from drone */
         Eigen::Vector3d positionNED;
         Eigen::Vector3d orientationNED;
         Eigen::Vector3d velocityNED;
@@ -113,23 +114,23 @@ namespace bjos {
         Eigen::Vector3d visionPosOffset;
         double visionYawOffset;
 
-        //Used to constantly send setpoints to the drone
+        /* Latest setpoint sent to the drone */
         //TODO: make an array-form message, in order to meet the need for sending a path of ~20 setpoints
         mavlink_set_position_target_local_ned_t current_setpoint;
         
-        //Used to stream position and velocity estimates to the drone
+        /* Latest estimate sent to the drone */
         mavlink_vision_position_estimate_t vision_position_estimate;
 
-        //used to retrieve last system time from Pixhawk (normally should not be directly used, instead the synchronized time should be used)
+        /* Stores last system time from the Pixhawk (normally should not be directly used, instead the synchronized time should be used) */
         mavlink_system_time_t sys_time;
 
-        //Tracks if the drone is landed or not
+        /* Current drone landed state */
         bool landed;
 
-        // syncVision check
+        /* Current vision syned state */
         bool _vision_sync;
 
-        //raw sensors data
+        /* Raw IMU sensor data */
         IMUSensorData imuNED;
     };
     
@@ -138,6 +139,7 @@ namespace bjos {
         FlightController();
         virtual ~FlightController();
 
+        /* Equal to getPositionWF and getOrientationWF combined, held for backwards compatability. See typedef in geometry.h */
         Pose getPoseWF();
         
         Eigen::Vector3d getPositionNED();
@@ -156,9 +158,9 @@ namespace bjos {
         //Eigen::Vector3d getAngularVelocityCF();
 
         /**
-         * setTargetCF updates private variable current_setpoint
-         * its first argument is a type_mask that specifies which of its other arguments should be used and which should be ignored
+         * setTargetCF updates the shared variable current_setpoint (which is streamed to the Pixhawk)
          *
+         * The first argument is a type_mask that specifies which of its other arguments should be used and which should be ignored
          * With this header comes a set of bitmasks which should be used with this function: SET_TARGET_*		 
          * These can be combined with bitwise &
          *
@@ -167,16 +169,20 @@ namespace bjos {
          */
         void setTargetCF(uint16_t type_mask, Eigen::Vector3d position, Eigen::Vector3d orientation, Eigen::Vector3d velocity,
                 Eigen::Vector3d angularVelocity);
+
+        /* Directly calls setTargetCF dependend on the yawspeed argument */
         void setTargetVelocityCF(Eigen::Vector3d vel, double yawspeed = 0);
 
+        /* Getters for current target */
         Eigen::Vector3d getTargetOrientationCF();
         Eigen::Vector3d getTargetVelocityCF();
         
-        //FIXME: reference frame is missing (and name is not fully compliant)
-        std::tuple<Eigen::Vector3d, Eigen::Vector3d, Eigen::Vector3d, Eigen::Vector3d> getCurrentSetpoint();
+        /* MAVLink struct to tuple of Vector3d converter for the current setpoint */
+        std::tuple<Eigen::Vector3d, Eigen::Vector3d, Eigen::Vector3d, Eigen::Vector3d> getCurrentSetpointNED();
+        std::tuple<Eigen::Vector3d, Eigen::Vector3d, Eigen::Vector3d, Eigen::Vector3d> getCurrentSetpointWF();
 
 		/* At a given moment, the Kinect module calls this function with its current estimate of the drone position and its own rotation w.r.t. the magnetic north
-		 * The drone then uses this information as a constant base for the set*EstimateWF functions */
+		 * This module then uses this information as a constant base for the WF conversions */
 		void syncVision(Eigen::Vector3d visionPosOffset, double visionYawOffset);
 
         /* set*EstimateWF functions are to be used by a computer vision algorithm supplying the drone with external absolute measurements of its states 
@@ -184,12 +190,13 @@ namespace bjos {
         void setPositionEstimateWF(Eigen::Vector3d posEst);	
         void setAttitudeEstimateWF(double yawEst);
         
-        // Return if landed
+        /* Returns current landed state */
         bool isLanded();
 
-        /* Return raw sensor data */
+        /* Returns IMU sensor data */
         IMUSensorData getIMUDataCF();
     private:
+        /* Instance of the MAVLink serial communication handling class (uses UART) */
         Serial_Port *serial_port;
         
         /* Set offboard mode - has to be done in order to send setpoints */
@@ -200,23 +207,25 @@ namespace bjos {
         //NOTE: returns false on error, returns true on success;
         bool synchronize_time();
         
-        //Used by messaging part
+        /* Used by messaging part to allow multiple drone streaming, and to just generally indicate which drone is being sent to */
         int system_id;
         int autopilot_id;
         
-        //Used as reference for every setpoint (init_pos is considered [0, 0, 0] @ higher level, this is the abstractor)
+        /* Actually quite obsolete, will be discontinued in coming commits */
         mavlink_local_position_ned_t initial_position;
         
         /* Initialize the main instance */
         void init(bjos::BJOS *bjos);
-        /* load node is called for all childeren */
+        /* Load node is called for all childeren */
         void load(bjos::BJOS *bjos);
         
+        /* An instance of the data that the main instance shares with its children */
         SharedFlightControllerData *_data;
         
         /* Frame conversion functions
-         * These functions do not access shared data!
-         * 
+         * ALERT: These functions do not access shared data on their own!
+         * Please obey this rule when adding/changing any of the functions to prevent deadlocks
+         *
          * The frames used in this program are defined in the Frame Specification.pdf file
          */
         //Eigen::Vector3d positionCFtoBodyNED(Eigen::Vector3d positionCF);
@@ -231,22 +240,23 @@ namespace bjos {
         Eigen::Vector3d orientationNEDtoWF(Eigen::Vector3d positionNED, double visionYawOffset);
         Eigen::Vector3d NEDtoWF(Eigen::Vector3d vectorNED, Eigen::Vector3d visionPosOffset);
       
-        //NOTE: only used by main instance
+        /* Thread handlers, only used by the main instance */
         boost::thread _read_thrd;
         boost::thread _write_thrd;
         std::atomic_bool _read_thrd_running;
         std::atomic_bool _write_thrd_running;
-        /* threaded functions: */
+        /* Threaded functions */
         void read_thread();
         void write_thread();
-        /* utility functions used by threads */
+        /* Utility functions used by threads */
         void write_setpoint();
         void write_estimate();
         void read_messages();
-        /* initialiser check */
+        
+        /* Initialiser check, quite obsolete. Will be discontinued in coming commits */
         std::atomic_bool _init_set;
     
-        //raw socket used by Philips (WARNING: sends raw struct data, is not portable and not needed because of our own communication layer: need fix later)
+        /* Raw socket used by Philips (WARNING: sends raw struct data, is not portable and not needed because of our own communication layer: need fix later) */
         int _raw_sock;
         struct sockaddr_un _raw_sock_name;
     };
