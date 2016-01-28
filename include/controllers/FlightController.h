@@ -178,8 +178,8 @@ namespace bjos {
         Eigen::Vector3d getTargetVelocityCF();
         
         /* MAVLink struct to tuple of Vector3d converter for the current setpoint */
-        std::tuple<Eigen::Vector3d, Eigen::Vector3d, Eigen::Vector3d, Eigen::Vector3d> getCurrentSetpointNED();
-        std::tuple<Eigen::Vector3d, Eigen::Vector3d, Eigen::Vector3d, Eigen::Vector3d> getCurrentSetpointWF();
+        std::tuple<Eigen::Vector3d, double, Eigen::Vector3d, double> getCurrentSetpointNED();
+        std::tuple<Eigen::Vector3d, double, Eigen::Vector3d, double> getCurrentSetpointWF();
 
 		/* At a given moment, the Kinect module calls this function with its current estimate of the drone position and its own rotation w.r.t. the magnetic north
 		 * This module then uses this information as a constant base for the WF conversions */

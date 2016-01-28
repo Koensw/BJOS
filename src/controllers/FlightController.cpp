@@ -606,6 +606,22 @@ Eigen::Vector3d FlightController::getTargetVelocityCF() {
         _data->current_setpoint.vx, _data->current_setpoint.vy, _data->current_setpoint.vz));
 }
 
+std::tuple<Eigen::Vector3d, double, Eigen::Vector3d, double> FlightController::getCurrentSetpointNED() {
+    std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+    return std::make_tuple(Eigen::Vector3d(_data->current_setpoint.x, _data->current_setpoint.y, _data->current_setpoint.z),
+                           _data->current_setpoint.yaw,
+                           Eigen::Vector3d(_data->current_setpoint.vx, _data->current_setpoint.vy, _data->current_setpoint.vz),
+                           _data->current_setpoint.yaw_rate);
+}
+
+/*std::tuple<Eigen::Vector3d, double, Eigen::Vector3d, double> FlightController::getCurrentSetpointWF() {
+    std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+    return std::make_tuple(positionWFtoNED(Eigen::Vector3d(_data->current_setpoint.x, _data->current_setpoint.y, _data->current_setpoint.z)),
+                           ýawWFtoNED(_data->current_setpoint.yaw, _data->visionYawOffset),
+                           velocityWFtoNED(Eigen::Vector3d(_data->current_setpoint.vx, _data->current_setpoint.vy, _data->current_setpoint.vz)),
+                           yawWFtoNED(_data->current_setpoint.yaw_rate));
+}*/
+
 void FlightController::syncVision(Eigen::Vector3d visionPosEstimate, double visionYawToNorth) {
     double visionYawOffset = -visionYawToNorth;
 
@@ -718,8 +734,8 @@ Eigen::Vector3d FlightController::BodyNEDtoCF(Eigen::Vector3d vectorNED) {
 } */
 
 Eigen::Vector3d FlightController::positionWFtoNED(Eigen::Vector3d positionWF, Eigen::Vector3d visionPosOffset, double visionYawOffset) {
-    Eigen::Affine3d t = Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX())*Eigen::Translation3d(visionPosOffset)*Eigen::AngleAxisd(visionYawOffset, Eigen::Vector3d::UnitZ());
-    return t*positionWF;
+    Eigen::Affine3d t = Eigen::AngleAxisd(visionYawOffset, Eigen::Vector3d::UnitZ())*Eigen::Translation3d(-visionPosOffset)*Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX());
+    return t.inverse()*positionWF;
 }
 
 Eigen::Vector3d FlightController::orientationWFtoNED(Eigen::Vector3d orientationWF, double visionYawOffset) {
