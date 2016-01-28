@@ -627,7 +627,7 @@ std::tuple<Eigen::Vector3d, double, Eigen::Vector3d, double> FlightController::g
 }*/
 
 void FlightController::syncVision(Eigen::Vector3d visionPosEstimate, double visionYawToNorth) {
-    double visionYawOffset = -visionYawToNorth;
+    double visionYawOffset = visionYawToNorth; // visionYawToNorth from world to drone and visionYawOffset defined from NED (double inverted)
 
     Eigen::AngleAxisd Rz(-visionYawOffset, Eigen::Vector3d::UnitZ());
     Eigen::AngleAxisd Rx(M_PI, Eigen::Vector3d::UnitX());
@@ -747,7 +747,7 @@ Eigen::Vector3d FlightController::orientationWFtoNED(Eigen::Vector3d orientation
     Eigen::Vector3d out;
     out[0] = orientationWF[0];
     out[1] = -orientationWF[1];
-    out[2] = orientationWF[2] + visionYawOffset;
+    out[2] = -orientationWF[2] + visionYawOffset;
     return out;
 }
 
@@ -761,7 +761,7 @@ Eigen::Vector3d FlightController::orientationNEDtoWF(Eigen::Vector3d orientation
     Eigen::Vector3d out;
     out[0] = orientationNED[0];
     out[1] = -orientationNED[1];
-    out[2] = orientationNED[2] - visionYawOffset;
+    out[2] = -orientationNED[2] + visionYawOffset;
     return out;
 }
 
