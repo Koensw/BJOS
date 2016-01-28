@@ -221,20 +221,24 @@ void FlightController::read_messages() {
             {                
                 //decode
                 mavlink_attitude_t attitude;
-                mavlink_msg_attitude_decode(&message, &attitude);
-                
+                mavlink_msg_attitude_decode(&message, &attitude);     
+
                 //bjcomm message handling
-                Message msg("attitude_estimate");
-                sstr.clear();
-                sstr << attitude.roll << " " << attitude.pitch << " " << attitude.yaw;
-                msg.setData(sstr.str());
-                send_state_message(msg);
+                if (_data->_vision_sync) {
+                    Message msg("attitude_estimate");
+                    Eigen::Vector3d wf = orientationNEDtoWF(Eigen::Vector3d(attitude.roll, attitude.pitch, attitude.yaw), _data->visionYawOffset);
+                    sstr.clear();
+                    sstr << wf[0] << " " << wf[1] << " " << wf[2];
+                    msg.setData(sstr.str());
+                    send_state_message(msg);
+                }
+
                 
-                msg = Message("attitude_rate_estimate");
+                /*msg = Message("attitude_rate_estimate");
                 sstr.clear();
                 sstr << attitude.rollspeed << " " << attitude.pitchspeed << " " << attitude.yawspeed;
                 msg.setData(sstr.str());
-                send_state_message(msg);
+                send_state_message(msg);    */
                 
                 //send the attitude to raw stream
                 flight_raw_estimate raw_estimate;
