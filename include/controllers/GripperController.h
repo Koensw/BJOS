@@ -23,6 +23,7 @@
 #include "../libs/log.h"
 
 #include <stdio.h>    // Used for printf() statements
+#include <softPwm.h>
 #include <wiringPi.h> // Include WiringPi library!
 #include <wiringPiI2C.h>
 #include <sys/time.h>
@@ -65,7 +66,7 @@
 #define DEMO_CUP_PWM 1000   //PWM for the gripper that ensures the demo cup is gripped
 
 //FIXME: this should be a param that can be given to the loader of the controller!
-#define GRIPPER_PIN 26
+#define GRIPPER_PIN 23
 #define GRIPPER_CH7 3
 #define GRIPPER_CH8 4
 #define GRIPPER_PWM_FREQ 1000

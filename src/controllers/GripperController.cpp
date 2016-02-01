@@ -37,8 +37,9 @@ void GripperController::init(BJOS *bjos){
         throw ControllerInitializationError(this, "Address not given to controller");
     }
     _fd = wiringPiI2CSetup(_address);
-    
+    //wiringPiSetupSys();
     //set pin modes and config
+    //pinMode(GRIPPER_PIN, PWM_OUTPUT);
     pinMode(GRIPPER_CH7, INPUT);     // Set regular as INPUT
     pinMode(GRIPPER_CH8, INPUT);      // Set regular as INPUT
     pullUpDnControl(GRIPPER_CH7, PUD_UP); // Enable pull-up resistor -. weet niet zeker of dit nodig is !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
@@ -151,12 +152,12 @@ int GripperController::pulse_in(int pin, int level)
 void GripperController::gripperClosePWM(int pwm)
 {
     Log::debug("GripperController", "ClosePWM");
-    if (pwm>2047)   //4095 for pwm board 
-        pwm = 2047; //4095 fpr pwm board
+    if (pwm>4095)   //2047 for pwm board 
+        pwm = 4095; //2047 fpr pwm board
     else if (pwm<0)
         pwm = 0;
-    //set_pwm(0, pwm); //used for control via i2c pwm board
-	pwmWrite(GRIPPER_PIN, pwm); //used for direct control from raspberry
+    set_pwm(0, pwm); //used for control via i2c pwm board
+	//pwmWrite(GRIPPER_PIN, pwm); //used for direct control from raspberry
 }
 
 void GripperController::pickup()
