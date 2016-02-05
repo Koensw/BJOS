@@ -170,9 +170,6 @@ namespace bjos {
         void setTargetCF(uint16_t type_mask, Eigen::Vector3d position, Eigen::Vector3d orientation, Eigen::Vector3d velocity,
                 Eigen::Vector3d angularVelocity);
 
-        /* Directly calls setTargetCF dependend on the yawspeed argument */
-        void setTargetVelocityCF(Eigen::Vector3d vel, double yawspeed = 0);
-
         /* Getters for current target */
         Eigen::Vector3d getTargetOrientationCF();
         Eigen::Vector3d getTargetVelocityCF();
