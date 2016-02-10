@@ -128,12 +128,13 @@ void FlightController::init(bjos::BJOS *bjos) {
     // -------------------------------------------------------------------------------------------------
     //   Enable offboard mode (this needs to be enabled manually as well in order for the drone to move)
     // -------------------------------------------------------------------------------------------------
-    result = toggle_offboard_control(true);
+    //WARNING: this is currently done by the RC!
+    /*result = toggle_offboard_control(true);
     if (result == -1)
         throw ControllerInitializationError(this,
                 "Could not set offboard mode: unable to write message on serial port");
     else if (result == 0)
-        Log::warn("FlightController::init", "double (de-)activation of offboard mode [ignored]");
+        Log::warn("FlightController::init", "double (de-)activation of offboard mode [ignored]");*/
 
     // Done!
 }
@@ -173,8 +174,8 @@ void FlightController::read_messages() {
         
         //get current time
         shared_data_mutex->lock();
-        uint64_t unixTime = _data->syncUnixTime;
-        uint64_t bootTime = _data->syncBootTime;
+        uint64_t pixBootTime = _data->syncBootTime;
+        uint64_t rpiBootTime = _data->ourBootTime;
         shared_data_mutex->unlock();
         
         //stringstream utility for sending bjcomm messages
@@ -240,15 +241,6 @@ void FlightController::read_messages() {
                 msg.setData(sstr.str());
                 send_state_message(msg);    */
                 
-                //send the attitude to raw stream
-                flight_raw_estimate raw_estimate;
-                raw_estimate.type = FLIGHT_RAW_ORIENTATION;
-                raw_estimate.time = attitude.time_boot_ms - bootTime + unixTime;
-                raw_estimate.data[0] = -attitude.roll; 
-                raw_estimate.data[1] = attitude.pitch; 
-                raw_estimate.data[2] = -attitude.yaw; 
-                sendto(_raw_sock, &raw_estimate, sizeof(raw_estimate), 0, (const sockaddr *) &_raw_sock_name, SUN_LEN(&_raw_sock_name));
-                
                 //put attitude data into _data
                 std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
 
@@ -259,6 +251,23 @@ void FlightController::read_messages() {
                 _data->angularVelocityNED[1] = attitude.pitchspeed;
                 _data->angularVelocityNED[2] = attitude.yawspeed;
 
+                break;
+            }
+            case MAVLINK_MSG_ID_ATTITUDE_QUATERNION:
+            {
+                //decode
+                mavlink_attitude_quaternion_t attitude;
+                mavlink_msg_attitude_quaternion_decode(&message, &attitude);
+                
+                //send the attitude to raw stream
+                flight_raw_estimate raw_estimate;
+                raw_estimate.type = FLIGHT_RAW_ORIENTATION;
+                raw_estimate.time = attitude.time_boot_ms - pixBootTime + rpiBootTime;
+                raw_estimate.data[0] = attitude.q1;
+                raw_estimate.data[1] = attitude.q3;
+                raw_estimate.data[2] = attitude.q2;
+                raw_estimate.data[3] = -attitude.q4;
+                sendto(_raw_sock, &raw_estimate, sizeof(raw_estimate), 0, (struct sockaddr *) &_raw_sock_name, SUN_LEN(&_raw_sock_name));
                 break;
             }
             case MAVLINK_MSG_ID_STATUSTEXT:
@@ -287,7 +296,7 @@ void FlightController::read_messages() {
                 //send the acc to raw stream
                 flight_raw_estimate raw_estimate;
                 raw_estimate.type = FLIGHT_RAW_ACC;
-                raw_estimate.time = highres_imu.time_usec/1000ULL - bootTime + unixTime;
+                raw_estimate.time = highres_imu.time_usec/1000ULL - pixBootTime + rpiBootTime;
                 raw_estimate.data[0] = highres_imu.xacc; 
                 raw_estimate.data[1] = highres_imu.yacc; 
                 raw_estimate.data[2] = highres_imu.zacc; 
@@ -295,7 +304,7 @@ void FlightController::read_messages() {
                 
                 //send the acc to raw stream
                 raw_estimate.type = FLIGHT_RAW_GYRO;
-                raw_estimate.time = highres_imu.time_usec/1000ULL - bootTime + unixTime;
+                raw_estimate.time = highres_imu.time_usec/1000ULL - pixBootTime + rpiBootTime;
                 raw_estimate.data[0] = highres_imu.xgyro; 
                 raw_estimate.data[1] = highres_imu.ygyro; 
                 raw_estimate.data[2] = highres_imu.zgyro; 
@@ -410,7 +419,7 @@ void FlightController::write_setpoint() {
     
     //encode
     mavlink_message_t message;
-    mavlink_msg_set_position_target_local_ned_encode(system_id, autopilot_id, &message, &sp);
+    mavlink_msg_set_position_target_local_ned_encode(SYS_ID, COMP_ID, &message, &sp);
     
     //do the write
     serial_port->write_message(message);
@@ -430,7 +439,7 @@ void FlightController::write_estimate() {
 
     //encode 
     mavlink_message_t message;
-    mavlink_msg_vision_position_estimate_encode(system_id, autopilot_id, &message, &est);
+    mavlink_msg_vision_position_estimate_encode(SYS_ID, COMP_ID, &message, &est);
 
     //do the write
     serial_port->write_message(message);
@@ -458,7 +467,7 @@ int FlightController::toggle_offboard_control(bool flag) {
         
         //encode
         mavlink_message_t message;
-        mavlink_msg_command_long_encode(system_id, autopilot_id, &message, &com);
+        mavlink_msg_command_long_encode(SYS_ID, COMP_ID, &message, &com);
         
         //do the write
         int success = serial_port->write_message(message);
@@ -486,10 +495,11 @@ bool FlightController::synchronize_time() {
 
     //encode
     mavlink_message_t message;
-    mavlink_msg_system_time_encode(system_id, autopilot_id, &message, &sys_time);
+    mavlink_msg_system_time_encode(SYS_ID, COMP_ID, &message, &sys_time);
     
     //do the write
     int success = serial_port->write_message(message);
+    uint64_t boot_time = get_time_usec(CLOCK_MONOTONIC)/1000ULL;
 
     //error check
     if (success) {
@@ -528,6 +538,7 @@ bool FlightController::synchronize_time() {
     shared_data_mutex->lock();
     _data->syncUnixTime = _data->sys_time.time_unix_usec/1000;
     _data->syncBootTime = _data->sys_time.time_boot_ms;
+    _data->ourBootTime = boot_time;
     shared_data_mutex->unlock();
     
     Log::info("FlightController::synchronize_time", "successfully synchronized, Unix time is %" PRIu64 " and boot time is %" PRIu64, _data->syncUnixTime, _data->syncBootTime);

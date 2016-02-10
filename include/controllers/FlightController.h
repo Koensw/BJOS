@@ -68,6 +68,9 @@
  *                                      ATTITUDE, LOCAL_POSITION_NED, STATUSTEXT, SYSTEM_TIME, HIGHRES_IMU, EXTENDED_SYS_STATE
  */
 
+#define SYS_ID 255
+#define COMP_ID 255
+
 // -------------------------------------------------------------------------------------
 //   Defines
 // -------------------------------------------------------------------------------------
@@ -109,6 +112,7 @@ namespace bjos {
         /* The synchronized time of the Pixhawk */
         uint64_t syncBootTime; //ms
         uint64_t syncUnixTime; //ms
+        uint64_t ourBootTime; //ms
         
 		/* Offset between vision WF and drone WF (frame configuration flipped from drone NED) */
         Eigen::Vector3d visionPosOffset;
