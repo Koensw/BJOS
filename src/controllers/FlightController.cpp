@@ -657,10 +657,10 @@ void FlightController::syncVision(Eigen::Vector3d visionPosEstimate, double visi
 void FlightController::setTargetCF(uint16_t type_mask, Eigen::Vector3d position,
         Eigen::Vector3d orientation, Eigen::Vector3d velocity, Eigen::Vector3d angularVelocity) {
 
-    if (type_mask == SET_TARGET_TAKEOFF)
+    /*if (type_mask == SET_TARGET_TAKEOFF)
         velocity = Eigen::Vector3d(0.0f, 0.0f, 2.0f);
     if (type_mask == SET_TARGET_LAND)
-        velocity = Eigen::Vector3d(0.0f, 0.0f, -0.5f);
+        velocity = Eigen::Vector3d(0.0f, 0.0f, -0.5f);*/
     
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
     /* Tranform given position, velocity and yaw from CF frame to NED Body frame */
