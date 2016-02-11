@@ -97,7 +97,6 @@ std::tuple<Eigen::Vector3d, Eigen::Vector3d, uint16_t> handle_input(char c)
 
 	case 'q':
 		std::cout << "Quitting... :(" << std::endl;
-        setv[2] = -ZVEL;
 		break;
 
 	case '\n':
