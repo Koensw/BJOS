@@ -128,14 +128,15 @@ void FlightController::init(bjos::BJOS *bjos) {
     // -------------------------------------------------------------------------------------------------
     //   Enable offboard mode (this needs to be enabled manually as well in order for the drone to move)
     // -------------------------------------------------------------------------------------------------
-    //WARNING: this is currently done by the RC!
-    /*result = toggle_offboard_control(true);
+    //WARNING: this is currently done by the RC, unless we are in posix simulation mode
+#ifndef __arm__
+    result = toggle_offboard_control(true);
     if (result == -1)
         throw ControllerInitializationError(this,
                 "Could not set offboard mode: unable to write message on serial port");
     else if (result == 0)
-        Log::warn("FlightController::init", "double (de-)activation of offboard mode [ignored]");*/
-
+        Log::warn("FlightController::init", "double (de-)activation of offboard mode [ignored]");
+#endif
     // Done!
 }
 
