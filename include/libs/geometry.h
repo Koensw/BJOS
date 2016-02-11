@@ -41,13 +41,13 @@ public:
     RotationVector() {}
     RotationVector(const Vector vector): Vector(vector) {}
     /* convenience methods just like x - y - z for normal vectors */
-    double &r(){
+    double &roll(){
         return (*this)[0];
     }
-    double &p(){
+    double &pitch(){
         return (*this)[1];
     }
-    double &y(){
+    double &yaw(){
         return (*this)[2];
     }
 };
