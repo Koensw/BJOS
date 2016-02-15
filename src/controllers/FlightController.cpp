@@ -71,6 +71,11 @@ void FlightController::init(bjos::BJOS *bjos) {
     bool ret = Controller::init(bjos, "flight", _data);
     if (!ret)
         throw ControllerInitializationError(this, "Controller::init failed");
+
+    // -------------------------------------------------------------------------------------------------
+    //   Shared data initialisation
+    // -------------------------------------------------------------------------------------------------
+    _data->landed = false;
     
     // -------------------------------------------------------------------------------------------------
     //   UART to Pixhawk (NOTE: uses beefed up baudrate = "921600" on uart="/dev/ttyAMA0")
