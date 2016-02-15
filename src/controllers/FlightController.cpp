@@ -372,10 +372,17 @@ void FlightController::read_messages() {
 }
 
 void FlightController::write_thread() {
-    //prepare an initial setpoint: velocities&yaw_rate all 0
+    //prepare an initial setpoint: land if landed, hold if in air
     mavlink_set_position_target_local_ned_t sp;
-    sp.type_mask = SET_TARGET_VELOCITY &
-    SET_TARGET_YAW_RATE;
+    
+    if (isLanded()) {
+        sp.type_mask = SET_TARGET_LAND;
+    }
+    else {
+        sp.type_mask = SET_TARGET_VELOCITY &
+            SET_TARGET_YAW_RATE;      
+    }
+
     sp.coordinate_frame = MAV_FRAME_BODY_NED;
     sp.vx = 0;
     sp.vy = 0;
