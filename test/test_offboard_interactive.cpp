@@ -34,7 +34,7 @@ float YAWR = 0.2;
 
 std::tuple<Eigen::Vector3d, Eigen::Vector3d, uint16_t, bool, int> handle_input(char c)
 {
-    static int gripPWM;
+    static int gripPWM_old;
     
     static Eigen::Vector3d setv_old;
     static Eigen::Vector3d setav_old;
@@ -115,7 +115,7 @@ std::tuple<Eigen::Vector3d, Eigen::Vector3d, uint16_t, bool, int> handle_input(c
     case ',':
         std::cout << "Gripper tightening" << std::endl;
         gripActivate = true;
-        gripPWM -= -200;
+        gripPWM -= 200;
         break;
 
     case '.':
