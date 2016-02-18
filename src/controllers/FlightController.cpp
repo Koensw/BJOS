@@ -651,11 +651,13 @@ std::tuple<Eigen::Vector3d, double, Eigen::Vector3d, double> FlightController::g
 }*/
 
 void FlightController::syncVision(Eigen::Vector3d visionPosEstimate, double visionYawOffset) {
-    Log::info("FlightController", "Syncing vision at %f %f %f %f", visionPosEstimate.x(), visionPosEstimate.y(), visionPosEstimate.z(), visionYawOffset);
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+    Log::info("FlightController", "Syncing vision at %f %f %f (%f, %f)", visionPosEstimate.x(), visionPosEstimate.y(), visionPosEstimate.z(), visionYawOffset, _data->orientationNED[2]);
+    
     // Convert yaw rotation WF to NED
-    visionYawOffset -= _data->orientationNED[2];
-    // Z value should not be from vision
+    //visionYawOffset -= _data->orientationNED[2];
+    
+    // Z value should not be from vision (FIXME: at least not for now)
     visionPosEstimate.z() = -_data->positionNED.z();
 
     Eigen::AngleAxisd Rz(-visionYawOffset, Eigen::Vector3d::UnitZ());
