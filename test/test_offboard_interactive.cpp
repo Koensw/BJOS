@@ -34,7 +34,7 @@ float YAWR = 0.2;
 
 std::tuple<Eigen::Vector3d, Eigen::Vector3d, uint16_t, bool, int> handle_input(char c)
 {
-    static int gripPWM_old;
+    static int gripPWM = 600;
     
     static Eigen::Vector3d setv_old;
     static Eigen::Vector3d setav_old;
