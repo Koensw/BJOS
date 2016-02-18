@@ -63,7 +63,7 @@
 #define PRE_SCALE 0xFE      //prescaler for output frequency
 #define CLOCK_FREQ 25000000.0 //25MHz default osc clock
 
-#define DEMO_CUP_PWM 700   //PWM for the gripper that ensures the demo cup is gripped
+#define DEMO_CUP_PWM 600   //PWM for the gripper that ensures the demo cup is gripped
 
 //FIXME: this should be a param that can be given to the loader of the controller!
 #define GRIPPER_PIN 23
