@@ -710,7 +710,7 @@ void FlightController::setPositionEstimateWF(Eigen::Vector3d posEst) {
     auto own_estimate = getPositionWF();
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
     Eigen::Vector3d posEstNED = positionWFtoNED(posEst, _data->visionPosOffset, _data->visionYawOffset);
-    Log::info("FlightController::setPositionEstimateWF", "Own estimate: (%f, %f, %f), philips: (%f, %f, %f)", own_estimate.x(), own_estimate.y(), own_estimate.z(), posEstNED.x(), posEstNED.y(), posEstNED.z());
+    Log::info("FlightController::setPositionEstimateWF", "Own estimate: (%f, %f, %f), philips: (%f, %f, %f), philips NED (%f, %f, %f)", own_estimate.x(), own_estimate.y(), own_estimate.z(), posEst.x(), posEst.y(), posEst.z(), posEstNED.x(), posEstNED.y(), posEstNED.z());
 
     //_data->vision_position_estimate.x = posEstNED[0];
     //_data->vision_position_estimate.y = posEstNED[1];
