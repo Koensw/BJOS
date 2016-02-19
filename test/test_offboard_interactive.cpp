@@ -17,6 +17,7 @@
 #include "bjos/helpers/process.h"
 
 #include "controllers/FlightController.h"
+#include "controllers/GripperController.h"
 
 /*
  *  Test offboard
@@ -31,14 +32,18 @@ float YAWR = 0.2;
 
 #define M_EPS 1e-7
 
-std::tuple<Eigen::Vector3d, Eigen::Vector3d, uint16_t> handle_input(char c)
+std::tuple<Eigen::Vector3d, Eigen::Vector3d, uint16_t, bool, int> handle_input(char c)
 {
-	static Eigen::Vector3d setv_old;
+    static int gripPWM = 600;
+    
+    static Eigen::Vector3d setv_old;
     static Eigen::Vector3d setav_old;
     static uint16_t tm_old;
+    static bool gripActivate_old;
     Eigen::Vector3d setv(0,0,0);
     Eigen::Vector3d setav(0,0,0);
     uint16_t tm = SET_TARGET_VELOCITY;
+    bool gripActivate = false;
 
 	switch (c) {
 	case 'w':
@@ -95,6 +100,30 @@ std::tuple<Eigen::Vector3d, Eigen::Vector3d, uint16_t> handle_input(char c)
 		setv[2] = -ZVEL;
 		break;
 
+    case 'n':
+        std::cout << "Gripper closing" << std::endl;
+        gripActivate = true;
+        gripPWM = 600;
+        break;
+
+    case 'm':
+        std::cout << "Gripper opening" << std::endl;
+        gripActivate = true;
+        gripPWM = 4095;
+        break;
+
+    case ',':
+        std::cout << "Gripper tightening" << std::endl;
+        gripActivate = true;
+        gripPWM -= 200;
+        break;
+
+    case '.':
+        std::cout << "Gripper loosening" << std::endl;
+        gripActivate = true;
+        gripPWM += 200;
+        break;
+
 	case 'q':
 		std::cout << "Quitting... :(" << std::endl;
 		break;
@@ -103,6 +132,7 @@ std::tuple<Eigen::Vector3d, Eigen::Vector3d, uint16_t> handle_input(char c)
 		setv = setv_old;
         setav = setav_old;
         tm = tm_old;
+        gripActivate = gripActivate_old;
 		break;
 
 	case 'h':
@@ -113,7 +143,9 @@ std::tuple<Eigen::Vector3d, Eigen::Vector3d, uint16_t> handle_input(char c)
     setv_old = setv;
     setav_old = setav;
     tm_old = tm;
-    return std::make_tuple(setv, setav, tm);
+    gripActivate_old = gripActivate;
+
+    return std::make_tuple(setv, setav, tm, gripActivate, gripPWM);
 }
 
 int main(){
@@ -132,6 +164,13 @@ int main(){
         return 0;
     }
 
+    GripperController gripper;
+    bjos->getController("gripper", &gripper);
+    if (!gripper.isAvailable()) {
+        std::cout << "Failed to retrieve gripper controller" << std::endl;
+        return 0;
+    }
+
 	char ret;
 	std::cout << "Interactive Offboard Tester!\n----------------------------" << std::endl;
 	do {
@@ -140,6 +179,10 @@ int main(){
 
         auto action = handle_input(ret);
         flight.setTargetCF(std::get<2>(action), Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(0, 0, 0), std::get<0>(action), std::get<1>(action));
+
+        if(std::get<3>(action)) {
+            gripper.gripperClosePWM(std::get<4>(action));
+        }
 
 	} while (ret != 'q');
 

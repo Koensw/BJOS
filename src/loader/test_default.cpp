@@ -66,7 +66,7 @@ void OSInit(){
         bjos->initController(gripper);        
         
         //reset gripper
-        gripper->gripperClosePWM(0);
+        gripper->gripperClosePWM(4095);
     }catch(ControllerInitializationError &init_err){
         Log::fatal(init_err.getControllerName(), init_err.what());
         std::exit(0);
