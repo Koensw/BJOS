@@ -444,9 +444,17 @@ void FlightController::write_estimate() {
     //pull from current estimate
     shared_data_mutex->lock();
     mavlink_vision_position_estimate_t est = _data->vision_position_estimate;
+    //reset the current estimate to ignore values
+    _data->vision_position_estimate.usec = 0;
+    _data->vision_position_estimate.x = NAN;
+    _data->vision_position_estimate.y = NAN;
+    _data->vision_position_estimate.z = NAN;
+    _data->vision_position_estimate.roll = NAN;
+    _data->vision_position_estimate.pitch = NAN;
+    _data->vision_position_estimate.yaw = NAN;
     shared_data_mutex->unlock();
 
-    //double check estimate time
+    //set estimate time if not yet set
     if (not est.usec)
         est.usec = get_time_usec(CLOCK_MONOTONIC);
 
@@ -456,7 +464,7 @@ void FlightController::write_estimate() {
 
     //do the write
     serial_port->write_message(message);
-
+    
     //TODO: check if write is succesfull
 }
 
@@ -652,7 +660,7 @@ std::tuple<Eigen::Vector3d, double, Eigen::Vector3d, double> FlightController::g
 
 void FlightController::syncVision(Eigen::Vector3d visionPosEstimate, double visionYawOffset) {
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
-    Log::info("FlightController", "Syncing vision at %f %f %f (%f, %f)", visionPosEstimate.x(), visionPosEstimate.y(), visionPosEstimate.z(), visionYawOffset, _data->orientationNED[2]);
+    Log::info("FlightController::syncVision", "Sync at %f %f %f %f -- z is ignored!", visionPosEstimate.x(), visionPosEstimate.y(), visionPosEstimate.z(), visionYawOffset, _data->orientationNED[2]);
     
     // Convert yaw rotation WF to NED
     //visionYawOffset -= _data->orientationNED[2];
@@ -705,7 +713,6 @@ void FlightController::setTargetCF(uint16_t type_mask, Eigen::Vector3d position,
     
     Log::info("FlightController::setTargetCF", "%f %f %f - %f", sp.vx, sp.vy, sp.vz, sp.yaw_rate); 
 
-    //Mutex already locked above
     _data->current_setpoint = sp;
 }
 
@@ -713,11 +720,12 @@ void FlightController::setPositionEstimateWF(Eigen::Vector3d posEst) {
     auto own_estimate = getPositionWF();
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
     Eigen::Vector3d posEstNED = positionWFtoNED(posEst, _data->visionPosOffset, _data->visionYawOffset);
-    Log::info("FlightController::setPositionEstimateWF", "Own estimate: (%f, %f, %f), philips: (%f, %f, %f), philips NED (%f, %f, %f)", own_estimate.x(), own_estimate.y(), own_estimate.z(), posEst.x(), posEst.y(), posEst.z(), posEstNED.x(), posEstNED.y(), posEstNED.z());
-
-    //_data->vision_position_estimate.x = posEstNED[0];
-    //_data->vision_position_estimate.y = posEstNED[1];
-    //_data->vision_position_estimate.z = posEstNED[2];
+    
+    Log::info("FlightController::setPositionEstimateWF", "own: (%f, %f, %f), philips: (%f, %f, %f)", own_estimate.x(), own_estimate.y(), own_estimate.z(), posEst.x(), posEst.y(), posEst.z());
+    
+    _data->vision_position_estimate.x = posEstNED[0];
+    _data->vision_position_estimate.y = posEstNED[1];
+    _data->vision_position_estimate.z = posEstNED[2];
 }
 
 void FlightController::setAttitudeEstimateWF(double yawEst) {
