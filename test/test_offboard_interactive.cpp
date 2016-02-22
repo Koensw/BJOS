@@ -177,6 +177,12 @@ int main(){
 		ret = std::cin.get();
 		if (!Process::isActive()) ret = 'q';
 
+        if (ret == '\\') {
+            std::cout << "TERMINATING FLIGHT" << std::endl;
+            flight.terminateFlight();
+            ret = 'q';
+        }
+
         auto action = handle_input(ret);
         flight.setTargetCF(std::get<2>(action), Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(0, 0, 0), std::get<0>(action), std::get<1>(action));
 
