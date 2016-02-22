@@ -205,6 +205,7 @@ namespace bjos {
         bool isLanded();
 
         /* Returns IMU sensor data */
+        //TODO: can be removed probably
         //IMUSensorData getIMUDataCF();
     private:
         /* Instance of the MAVLink serial communication handling class (uses UART) */
