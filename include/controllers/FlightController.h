@@ -136,6 +136,13 @@ namespace bjos {
         
         /* Current vision syned state */
         bool _vision_sync;
+
+        /* Flag for motor kill */
+        bool kill_motors;
+
+        /* Raw IMU sensor data */
+        //TODO: can be removed probably
+        IMUSensorData imuNED;
     };
     
     class FlightController : public Controller {
@@ -204,6 +211,9 @@ namespace bjos {
         /* Returns current landed state */
         bool isLanded();
 
+        /* Terminate flight immediately */
+        void killMotors();
+
         /* Returns IMU sensor data */
         //TODO: can be removed probably
         //IMUSensorData getIMUDataCF();
@@ -219,6 +229,9 @@ namespace bjos {
         //NOTE: returns false on error, returns true on success;
         bool synchronize_time();
         
+        /* Motor kill utility method */
+        bool motor_killer();
+
         /* Used by messaging part to allow multiple drone streaming, and to just generally indicate which drone is being sent to */
         int system_id;
         int autopilot_id;

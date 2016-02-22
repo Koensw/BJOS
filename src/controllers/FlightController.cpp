@@ -415,9 +415,22 @@ void FlightController::write_thread() {
     while (_write_thrd_running) {
         try {
             boost::this_thread::sleep_for(boost::chrono::milliseconds(100)); //Stream at 10 Hz
+
+            shared_data_mutex->lock();
+            bool write_estimate = _data->write_estimate;
+            bool kill_motors = _data->kill_motors;
+            shared_data_mutex->unlock();
             
-            write_setpoint();
-            if(_data->write_estimate) write_estimate();
+            //write setpoint and estimate
+            if(write_estimate) write_setpoint();
+
+            //kill motors
+            if (kill_motors) {
+                if (motor_killer()) {
+                    //If we succesfully kill the motors of the drone, try to shut down BJOS
+                    bjos::BJOS::getOS()->shutdown();
+                }
+            }
         }
         catch (boost::thread_interrupted) {
             //if interrupt, stop and let the controller finish resources
@@ -579,6 +592,32 @@ bool FlightController::synchronize_time() {
     
     Log::info("FlightController::synchronize_time", "successfully synchronized, Unix time is %" PRIu64 " and boot time is %" PRIu64, _data->syncUnixTime, _data->syncBootTime);
     return true;
+}
+
+bool FlightController::motor_killer() {
+    //prepare command
+    mavlink_command_long_t com;
+    com.target_system = system_id;
+    com.target_component = autopilot_id;
+    com.command = 223; //MAV_CMD_DO_LOCKDOWN TODO implement
+    com.confirmation = true;
+    com.param1 = 1.0f;
+
+    //encode
+    mavlink_message_t message;
+    mavlink_msg_command_long_encode(SYS_ID, COMP_ID, &message, &com);
+
+    //do the write
+    int success = serial_port->write_message(message);
+
+    //error check
+    if (success) {
+        Log::info("FlightController::motor_killer", "IMMEDIATE MOTOR KILL");
+        return true;
+    }
+    else {
+        return false;
+    }
 }
 
 Pose FlightController::getPoseWF(){
@@ -852,6 +891,11 @@ Eigen::Vector3d FlightController::orientationNEDtoWF(Eigen::Vector3d orientation
 bool FlightController::isLanded() {
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
     return _data->landed;
+}
+
+void FlightController::killMotors() {
+    std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+    _data->kill_motors = true;
 }
 
 //get raw imu data

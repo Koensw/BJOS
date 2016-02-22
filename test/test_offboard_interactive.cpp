@@ -167,8 +167,8 @@ int main(){
     GripperController gripper;
     bjos->getController("gripper", &gripper);
     if (!gripper.isAvailable()) {
-        std::cout << "Failed to retrieve gripper controller" << std::endl;
-        return 0;
+        std::cout << "Failed to retrieve gripper controller!" << std::endl;
+        //return 0;
     }
 
 	char ret;
@@ -177,10 +177,16 @@ int main(){
 		ret = std::cin.get();
 		if (!Process::isActive()) ret = 'q';
 
+        if (ret == '\\') {
+            std::cout << "KILLING MOTORS" << std::endl;
+            flight.killMotors();
+            ret = 'q';
+        }
+
         auto action = handle_input(ret);
         flight.setTargetCF(std::get<2>(action), Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(0, 0, 0), std::get<0>(action), std::get<1>(action));
 
-        if(std::get<3>(action)) {
+        if(gripper.isAvailable() && std::get<3>(action)) {
             gripper.gripperClosePWM(std::get<4>(action));
         }
 
