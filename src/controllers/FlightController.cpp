@@ -408,6 +408,15 @@ void FlightController::write_thread() {
             
             write_setpoint();
             write_estimate();
+
+            shared_data_mutex->lock();
+            if (_data->terminateFlight) {
+                if (terminator()) {
+                    //If we succesfully terminate the flight of the Pixhawk, try to shut down BJOS
+                    bjos::BJOS::getOS()->shutdown();
+                }
+            }
+            shared_data_mutex->unlock();
         }
         catch (boost::thread_interrupted) {
             //if interrupt, stop and let the controller finish resources
@@ -556,6 +565,32 @@ bool FlightController::synchronize_time() {
     
     Log::info("FlightController::synchronize_time", "successfully synchronized, Unix time is %" PRIu64 " and boot time is %" PRIu64, _data->syncUnixTime, _data->syncBootTime);
     return true;
+}
+
+bool FlightController::terminator() {
+    //prepare command
+    mavlink_command_long_t com;
+    com.target_system = system_id;
+    com.target_component = autopilot_id;
+    com.command = MAV_CMD_DO_FLIGHTTERMINATION;
+    com.confirmation = true;
+    com.param1 = 1.0f;
+
+    //encode
+    mavlink_message_t message;
+    mavlink_msg_command_long_encode(SYS_ID, COMP_ID, &message, &com);
+
+    //do the write
+    int success = serial_port->write_message(message);
+
+    //error check
+    if (success) {
+        Log::info("FlightController::terminateFlight", "IMMEDIATE FLIGHT TERMINATION");
+        return true;
+    }
+    else {
+        return false;
+    }
 }
 
 Pose FlightController::getPoseWF(){
@@ -794,30 +829,9 @@ bool FlightController::isLanded() {
     return _data->landed;
 }
 
-int FlightController::terminateFlight() {
-    //prepare command
-    mavlink_command_long_t com;
-    com.target_system = system_id;
-    com.target_component = autopilot_id;
-    com.command = MAV_CMD_DO_FLIGHTTERMINATION;
-    com.confirmation = true;
-    com.param1 = 1.0f;
-
-    //encode
-    mavlink_message_t message;
-    mavlink_msg_command_long_encode(SYS_ID, COMP_ID, &message, &com);
-
-    //do the write
-    int success = serial_port->write_message(message);
-
-    //error check
-    if (success) {
-        Log::info("FlightController::terminateFlight", "IMMEDIATE FLIGHT TERMINATION");
-        return 1;
-    }
-    else {
-        return 0;
-    }
+void FlightController::terminateFlight() {
+    std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+    _data->terminateFlight = true;
 }
 
 //get raw imu data

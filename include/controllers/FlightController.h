@@ -134,6 +134,9 @@ namespace bjos {
         /* Current vision syned state */
         bool _vision_sync;
 
+        /* Flag for flight termination */
+        bool terminateFlight;
+
         /* Raw IMU sensor data */
         IMUSensorData imuNED;
     };
@@ -195,7 +198,7 @@ namespace bjos {
         bool isLanded();
 
         /* Terminate flight immediately */
-        int terminateFlight();
+        void terminateFlight();
 
         /* Returns IMU sensor data */
         IMUSensorData getIMUDataCF();
@@ -211,6 +214,9 @@ namespace bjos {
         //NOTE: returns false on error, returns true on success;
         bool synchronize_time();
         
+        /* Termination utility method */
+        bool terminator();
+
         /* Used by messaging part to allow multiple drone streaming, and to just generally indicate which drone is being sent to */
         int system_id;
         int autopilot_id;
