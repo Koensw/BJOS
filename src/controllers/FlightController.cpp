@@ -794,6 +794,32 @@ bool FlightController::isLanded() {
     return _data->landed;
 }
 
+int FlightController::terminateFlight() {
+    //prepare command
+    mavlink_command_long_t com;
+    com.target_system = system_id;
+    com.target_component = autopilot_id;
+    com.command = MAV_CMD_DO_FLIGHTTERMINATION;
+    com.confirmation = true;
+    com.param1 = 1.0f;
+
+    //encode
+    mavlink_message_t message;
+    mavlink_msg_command_long_encode(SYS_ID, COMP_ID, &message, &com);
+
+    //do the write
+    int success = serial_port->write_message(message);
+
+    //error check
+    if (success) {
+        Log::info("FlightController::terminateFlight", "IMMEDIATE FLIGHT TERMINATION");
+        return 1;
+    }
+    else {
+        return 0;
+    }
+}
+
 //get raw imu data
 IMUSensorData FlightController::getIMUDataCF(){
     //get data (FIXME: ensure proper frame)

@@ -194,6 +194,9 @@ namespace bjos {
         /* Returns current landed state */
         bool isLanded();
 
+        /* Terminate flight immediately */
+        int terminateFlight();
+
         /* Returns IMU sensor data */
         IMUSensorData getIMUDataCF();
     private:
