@@ -85,6 +85,12 @@ add_executable(test_gripper
 )
 target_link_libraries(test_gripper bjos)
 
+# align
+add_executable(align_frames
+    test/align_frames.cpp
+)
+target_link_libraries(align_frames bjos)
+
 # example controller
 add_executable(bjos_example
     docs/ExampleController.cpp

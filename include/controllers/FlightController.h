@@ -131,11 +131,11 @@ namespace bjos {
         /* Current drone landed state */
         bool landed;
 
+        /* Write estimate to Pixhawk */
+        bool write_estimate;
+        
         /* Current vision syned state */
         bool _vision_sync;
-
-        /* Raw IMU sensor data */
-        IMUSensorData imuNED;
     };
     
     class FlightController : public Controller {
@@ -182,20 +182,30 @@ namespace bjos {
         std::tuple<Eigen::Vector3d, double, Eigen::Vector3d, double> getCurrentSetpointNED();
         std::tuple<Eigen::Vector3d, double, Eigen::Vector3d, double> getCurrentSetpointWF();
 
-		/* At a given moment, the Kinect module calls this function with its current estimate of the drone position and its own rotation w.r.t. the magnetic north
-		 * This module then uses this information as a constant base for the WF conversions */
-		void syncVision(Eigen::Vector3d visionPosOffset, double visionYawOffset);
+        /* At a given moment this function syncsits current estimate of the drone position and its own rotation w.r.t. the magnetic north
+            * This module then uses this information as a constant base for the WF conversions */
+        //FIXME: need a rename, because it is not necessary a vision algorithm that does this?
+        void syncVision(Eigen::Vector3d visionPosOffset, double visionYawOffset);
+        
+        /* Check if the WF is synchronized using sync vision and therefore properly defined */
+        bool isWFDefined();
 
-        /* set*EstimateWF functions are to be used by a computer vision algorithm supplying the drone with external absolute measurements of its states 
+        /* Enable external estimate to read */
+        void toggleWriteEstimate(bool);
+        bool writeEstimateEnabled();
+        
+        /* set*EstimateWF functions are to be used by a external algorithm supplying the drone with external absolute measurements of its states 
 		 * These functions assume 'syncVision' is called beforehand */
         void setPositionEstimateWF(Eigen::Vector3d posEst);	
-        void setAttitudeEstimateWF(double yawEst);
+        Eigen::Vector3d getPositionEstimateWF();
+        void setYawEstimateWF(double yawEst);
+        double getYawEstimateWF();
         
         /* Returns current landed state */
         bool isLanded();
 
         /* Returns IMU sensor data */
-        IMUSensorData getIMUDataCF();
+        //IMUSensorData getIMUDataCF();
     private:
         /* Instance of the MAVLink serial communication handling class (uses UART) */
         Serial_Port *serial_port;

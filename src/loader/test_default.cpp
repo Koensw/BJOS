@@ -67,6 +67,9 @@ void OSInit(){
         
         //reset gripper
         gripper->gripperClosePWM(4095);
+        
+        //enable writing estimates to the pixhawk by default
+        flight->toggleWriteEstimate(true);
     }catch(ControllerInitializationError &init_err){
         Log::fatal(init_err.getControllerName(), init_err.what());
         std::exit(0);
