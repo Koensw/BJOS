@@ -410,9 +410,9 @@ void FlightController::write_thread() {
             write_estimate();
 
             shared_data_mutex->lock();
-            if (_data->terminateFlight) {
-                if (terminator()) {
-                    //If we succesfully terminate the flight of the Pixhawk, try to shut down BJOS
+            if (_data->kill_motors) {
+                if (motor_killer()) {
+                    //If we succesfully kill the motors of the drone, try to shut down BJOS
                     bjos::BJOS::getOS()->shutdown();
                 }
             }
@@ -567,12 +567,12 @@ bool FlightController::synchronize_time() {
     return true;
 }
 
-bool FlightController::terminator() {
+bool FlightController::motor_killer() {
     //prepare command
     mavlink_command_long_t com;
     com.target_system = system_id;
     com.target_component = autopilot_id;
-    com.command = MAV_CMD_DO_FLIGHTTERMINATION;
+    com.command = 223; //MAV_CMD_DO_LOCKDOWN TODO implement
     com.confirmation = true;
     com.param1 = 1.0f;
 
@@ -585,7 +585,7 @@ bool FlightController::terminator() {
 
     //error check
     if (success) {
-        Log::info("FlightController::terminateFlight", "IMMEDIATE FLIGHT TERMINATION");
+        Log::info("FlightController::motor_killer", "IMMEDIATE MOTOR KILL");
         return true;
     }
     else {
@@ -829,9 +829,9 @@ bool FlightController::isLanded() {
     return _data->landed;
 }
 
-void FlightController::terminateFlight() {
+void FlightController::killMotors() {
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
-    _data->terminateFlight = true;
+    _data->kill_motors = true;
 }
 
 //get raw imu data
