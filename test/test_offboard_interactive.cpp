@@ -178,8 +178,8 @@ int main(){
 		if (!Process::isActive()) ret = 'q';
 
         if (ret == '\\') {
-            std::cout << "TERMINATING FLIGHT" << std::endl;
-            flight.terminateFlight();
+            std::cout << "KILLING MOTORS" << std::endl;
+            flight.killMotors();
             ret = 'q';
         }
 
