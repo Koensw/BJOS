@@ -77,6 +77,14 @@ void FlightController::init(bjos::BJOS *bjos) {
     // -------------------------------------------------------------------------------------------------
     _data->landed = false;
     _data->write_estimate = false; //disable writing estimate by default (should be explicitly enabled!)
+    //set vision_position_estimate to non-valid
+    _data->vision_position_estimate.usec = 0;
+    _data->vision_position_estimate.x = NAN;
+    _data->vision_position_estimate.y = NAN;
+    _data->vision_position_estimate.z = NAN;
+    _data->vision_position_estimate.roll = NAN;
+    _data->vision_position_estimate.pitch = NAN;
+    _data->vision_position_estimate.yaw = NAN;
     
     // -------------------------------------------------------------------------------------------------
     //   UART to Pixhawk (NOTE: uses beefed up baudrate = "921600" on uart="/dev/ttyAMA0")
