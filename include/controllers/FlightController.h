@@ -215,7 +215,7 @@ namespace bjos {
         bool synchronize_time();
         
         /* Motor kill utility method */
-        bool motor_killer();
+        bool motor_killer(bool flag);
 
         /* Used by messaging part to allow multiple drone streaming, and to just generally indicate which drone is being sent to */
         int system_id;
