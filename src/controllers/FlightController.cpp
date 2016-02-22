@@ -410,6 +410,9 @@ void FlightController::write_thread() {
     // write a message and signal writing
     write_setpoint();
     _write_thrd_running = true;
+    
+    // initialise motors as not killed
+    motor_killer(false);
                                                                                    
     // Pixhawk needs to see off-board commands at minimum 2Hz, otherwise it'll go into failsafe
     while (_write_thrd_running) {
@@ -426,7 +429,7 @@ void FlightController::write_thread() {
 
             //kill motors
             if (kill_motors) {
-                if (motor_killer()) {
+                if (motor_killer(true)) {
                     //If we succesfully kill the motors of the drone, try to shut down BJOS
                     bjos::BJOS::getOS()->shutdown();
                 }
@@ -594,14 +597,14 @@ bool FlightController::synchronize_time() {
     return true;
 }
 
-bool FlightController::motor_killer() {
+bool FlightController::motor_killer(bool flag) {
     //prepare command
     mavlink_command_long_t com;
     com.target_system = system_id;
     com.target_component = autopilot_id;
     com.command = 223; //MAV_CMD_DO_LOCKDOWN TODO implement
     com.confirmation = true;
-    com.param1 = 1.0f;
+    com.param1 = (float)flag;
 
     //encode
     mavlink_message_t message;
