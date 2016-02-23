@@ -171,11 +171,15 @@ void FlightController::read_thread() {
 }
 
 void FlightController::read_messages() {
+    static int errors = 0;
+
     mavlink_message_t message;
     
     bool success = serial_port->read_message(message);
     
     if (success) {
+        errors = 0;
+        
         if (!_mavlink_received) {
             system_id = message.sysid;
             autopilot_id = message.compid;
@@ -376,6 +380,12 @@ void FlightController::read_messages() {
             {
                 //Log::info("FlightController::read_messages", "Not handling this message: %" PRIu8, message.msgid);
             }
+        }
+    } else {
+        Log::warn("FlightController::read_messages", "Could not read from serial port! %i", errors++);
+        if (errors > 10) { //The physical connection is broken by now probably
+            Log::error("FlightController:read_messages", "MAVLink connection timed out");
+            bjos::BJOS::getOS()->shutdown(); //Shut down BJOS
         }
     }
 }
