@@ -181,6 +181,10 @@ int main(){
             std::cout << "KILLING MOTORS" << std::endl;
             flight.killMotors();
             ret = 'q';
+        }else if (ret == '!'){
+            std::cout << "FORCING FAILSAFE" << std::endl;
+            flight.forceFailsafe();
+            ret = 'q';
         }
 
         auto action = handle_input(ret);

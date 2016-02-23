@@ -405,6 +405,9 @@ void FlightController::read_messages() {
         Log::warn("FlightController:read_messages", "Serial port error %i!", errors);
         if (errors > 5) { 
             Log::error("FlightController:read_messages", "MAVLink connection timed out");
+            
+            //force failsafe mode and request shutdown
+            forceFailsafe();
             bjos::BJOS::getOS()->shutdown(); 
         }
     }
