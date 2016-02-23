@@ -41,7 +41,7 @@ FlightController::~FlightController() {
         _read_thrd_running = false;
         _write_thrd_running = false;
         _read_thrd.interrupt();
-        _write_thrd.interrupt();\
+        _write_thrd.interrupt();
 
         //wait till threads are finished
         _read_thrd.join();
