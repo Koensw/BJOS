@@ -41,13 +41,7 @@ FlightController::~FlightController() {
         _read_thrd_running = false;
         _write_thrd_running = false;
         _read_thrd.interrupt();
-        _write_thrd.interrupt();
-
-        //if the read_trhd is still waiting to receive an initial MAVLink message: close it and throw an ControllerInitializationError
-        if (_mavlink_received == false) {
-            _mavlink_received = true;
-            Log::error("FlightController::init", "Did not receive any MAVLink messages, check physical connections and make sure it is running on the right port!");
-        }
+        _write_thrd.interrupt();\
 
         //wait till threads are finished
         _read_thrd.join();
@@ -420,19 +414,25 @@ void FlightController::write_thread() {
             boost::this_thread::sleep_for(boost::chrono::milliseconds(100)); //Stream at 10 Hz
 
             shared_data_mutex->lock();
-            bool write_estimate = _data->write_estimate;
+            bool do_write_estimate = _data->write_estimate;
             bool kill_motors = _data->kill_motors;
             shared_data_mutex->unlock();
             
+            write_setpoint();
+            
             //write setpoint and estimate
-            if(write_estimate) write_setpoint();
+            if(do_write_estimate) write_estimate();
 
             //kill motors
             if (kill_motors) {
                 if (motor_killer(true)) {
+                    //wait some time before finalizing
+                    usleep(100000);
                     //If we succesfully kill the motors of the drone, try to shut down BJOS
                     bjos::BJOS::getOS()->shutdown();
                 }
+                //wait some time to try again
+                usleep(100000);
             }
         }
         catch (boost::thread_interrupted) {
@@ -615,7 +615,7 @@ bool FlightController::motor_killer(bool flag) {
 
     //error check
     if (success) {
-        Log::info("FlightController::motor_killer", "IMMEDIATE MOTOR KILL");
+        if(flag) Log::info("FlightController::motor_killer", "MOTORS ARE KILLED");
         return true;
     }
     else {
