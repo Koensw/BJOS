@@ -41,13 +41,7 @@ FlightController::~FlightController() {
         _read_thrd_running = false;
         _write_thrd_running = false;
         _read_thrd.interrupt();
-        _write_thrd.interrupt();
-
-        //if the read_trhd is still waiting to receive an initial MAVLink message: close it and throw an ControllerInitializationError
-        if (_mavlink_received == false) {
-            _mavlink_received = true;
-            Log::error("FlightController::init", "Did not receive any MAVLink messages, check physical connections and make sure it is running on the right port!");
-        }
+        _write_thrd.interrupt();\
 
         //wait till threads are finished
         _read_thrd.join();
@@ -76,6 +70,15 @@ void FlightController::init(bjos::BJOS *bjos) {
     //   Shared data initialisation
     // -------------------------------------------------------------------------------------------------
     _data->landed = false;
+    _data->write_estimate = false; //disable writing estimate by default (should be explicitly enabled!)
+    //set vision_position_estimate to non-valid
+    _data->vision_position_estimate.usec = 0;
+    _data->vision_position_estimate.x = NAN;
+    _data->vision_position_estimate.y = NAN;
+    _data->vision_position_estimate.z = NAN;
+    _data->vision_position_estimate.roll = NAN;
+    _data->vision_position_estimate.pitch = NAN;
+    _data->vision_position_estimate.yaw = NAN;
     
     // -------------------------------------------------------------------------------------------------
     //   UART to Pixhawk (NOTE: uses beefed up baudrate = "921600" on uart="/dev/ttyAMA0")
@@ -168,15 +171,11 @@ void FlightController::read_thread() {
 }
 
 void FlightController::read_messages() {
-    static int errors = 0;
-
     mavlink_message_t message;
     
     bool success = serial_port->read_message(message);
     
     if (success) {
-        errors = 0;
-
         if (!_mavlink_received) {
             system_id = message.sysid;
             autopilot_id = message.compid;
@@ -219,6 +218,7 @@ void FlightController::read_messages() {
                     send_state_message(msg);
 
                     msg = Message("velocity_estimate");
+                    //FIXME: missing conversion here...
                     sstr.clear();
                     sstr << local_position_ned.vx << " " << local_position_ned.vy << " " << local_position_ned.vz;
                     msg.setData(sstr.str());
@@ -320,14 +320,14 @@ void FlightController::read_messages() {
                 raw_estimate.data[2] = highres_imu.zgyro; 
                 sendto(_raw_sock, &raw_estimate, sizeof(raw_estimate), 0, (const sockaddr *) &_raw_sock_name, SUN_LEN(&_raw_sock_name));
                 
-                std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+                /*std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
                 _data->imuNED.time = highres_imu.time_usec/1000ULL;
                 _data->imuNED.ax = highres_imu.xacc;
                 _data->imuNED.ay = highres_imu.yacc;
                 _data->imuNED.az = highres_imu.zacc;
                 _data->imuNED.gx = highres_imu.xgyro;
                 _data->imuNED.gy = highres_imu.ygyro;
-                _data->imuNED.gz = highres_imu.zgyro;
+                _data->imuNED.gz = highres_imu.zgyro;*/
                 break;
             }
             case MAVLINK_MSG_ID_EXTENDED_SYS_STATE:
@@ -377,12 +377,6 @@ void FlightController::read_messages() {
                 //Log::info("FlightController::read_messages", "Not handling this message: %" PRIu8, message.msgid);
             }
         }
-    } else {
-        Log::warn("FlightController::read_messages", "Could not read from serial port! %i", errors++);
-        if (errors > 10) { //The physical connection is broken by now probably
-            Log::error("FlightController:read_messages", "MAVLink connection timed out");
-            bjos::BJOS::getOS()->shutdown(); //Shut down BJOS
-        }
     }
 }
 
@@ -418,18 +412,28 @@ void FlightController::write_thread() {
     while (_write_thrd_running) {
         try {
             boost::this_thread::sleep_for(boost::chrono::milliseconds(100)); //Stream at 10 Hz
-            
-            write_setpoint();
-            write_estimate();
 
             shared_data_mutex->lock();
-            if (_data->kill_motors) {
+            bool do_write_estimate = _data->write_estimate;
+            bool kill_motors = _data->kill_motors;
+            shared_data_mutex->unlock();
+            
+            write_setpoint();
+            
+            //write setpoint and estimate
+            if(do_write_estimate) write_estimate();
+
+            //kill motors
+            if (kill_motors) {
                 if (motor_killer(true)) {
+                    //wait some time before finalizing
+                    usleep(100000);
                     //If we succesfully kill the motors of the drone, try to shut down BJOS
                     bjos::BJOS::getOS()->shutdown();
                 }
+                //wait some time to try again
+                usleep(100000);
             }
-            shared_data_mutex->unlock();
         }
         catch (boost::thread_interrupted) {
             //if interrupt, stop and let the controller finish resources
@@ -465,20 +469,33 @@ void FlightController::write_setpoint() {
 void FlightController::write_estimate() {
     //pull from current estimate
     shared_data_mutex->lock();
+    
+    Eigen::Vector3d cur = _data->positionNED;
+    double yaw = _data->orientationNED[2];
     mavlink_vision_position_estimate_t est = _data->vision_position_estimate;
+    //reset the current estimate to ignore values
+    _data->vision_position_estimate.usec = 0;
+    _data->vision_position_estimate.x = NAN;
+    _data->vision_position_estimate.y = NAN;
+    _data->vision_position_estimate.z = NAN;
+    _data->vision_position_estimate.roll = NAN;
+    _data->vision_position_estimate.pitch = NAN;
+    _data->vision_position_estimate.yaw = NAN;
     shared_data_mutex->unlock();
 
-    //double check estimate time
+    //set estimate time if not yet set
     if (not est.usec)
         est.usec = get_time_usec(CLOCK_MONOTONIC);
 
+    Log::info("FlightController::write_estimate", "estimate %f %f %f %f %f %f %f", est.x, est.y, est.z, est.yaw, cur.x(), cur.y(), cur.z(), yaw);
+    
     //encode 
     mavlink_message_t message;
     mavlink_msg_vision_position_estimate_encode(SYS_ID, COMP_ID, &message, &est);
 
     //do the write
     serial_port->write_message(message);
-
+    
     //TODO: check if write is succesfull
 }
 
@@ -598,7 +615,7 @@ bool FlightController::motor_killer(bool flag) {
 
     //error check
     if (success) {
-        Log::info("FlightController::motor_killer", "IMMEDIATE MOTOR KILL");
+        if(flag) Log::info("FlightController::motor_killer", "MOTORS ARE KILLED");
         return true;
     }
     else {
@@ -698,18 +715,35 @@ std::tuple<Eigen::Vector3d, double, Eigen::Vector3d, double> FlightController::g
                            yawWFtoNED(_data->current_setpoint.yaw_rate));
 }*/
 
-void FlightController::syncVision(Eigen::Vector3d visionPosEstimate, double visionYawToNorth) {
-    double visionYawOffset = visionYawToNorth; // visionYawToNorth from world to drone and visionYawOffset defined from NED (double inverted)
+void FlightController::toggleWriteEstimate(bool write_estimate){
+    std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+    _data->write_estimate = write_estimate;
+}
+bool FlightController::writeEstimateEnabled(){
+    std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+    return _data->write_estimate;
+}
+
+void FlightController::syncVision(Eigen::Vector3d visionPosEstimate, double visionYawOffset) {
+    std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+    Log::info("FlightController::syncVision", "Sync at %f %f %f %f -- z is ignored!", visionPosEstimate.x(), visionPosEstimate.y(), visionPosEstimate.z(), visionYawOffset, _data->orientationNED[2]);
+    
+    // Z value should not be from vision (FIXME: at least not for now)
+    visionPosEstimate.z() = -_data->positionNED.z();
 
     Eigen::AngleAxisd Rz(-visionYawOffset, Eigen::Vector3d::UnitZ());
     Eigen::AngleAxisd Rx(M_PI, Eigen::Vector3d::UnitX());
 
-    Eigen::Vector3d visionPosOffset = Rx*getPositionNED() - Rz*visionPosEstimate;
+    Eigen::Vector3d visionPosOffset = Rx*_data->positionNED - Rz*visionPosEstimate;
 
-    std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
     _data->visionPosOffset = visionPosOffset;
     _data->visionYawOffset = visionYawOffset;
     _data->_vision_sync = true;
+}
+
+bool FlightController::isWFDefined(){
+    std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+    return _data->_vision_sync;
 }
 
 //ALERT: can NOT be used to set roll, pitch, rollspeed or pitchspeed
@@ -747,26 +781,46 @@ void FlightController::setTargetCF(uint16_t type_mask, Eigen::Vector3d position,
     
     Log::info("FlightController::setTargetCF", "%f %f %f - %f", sp.vx, sp.vy, sp.vz, sp.yaw_rate); 
 
-    //Mutex already locked above
     _data->current_setpoint = sp;
 }
 
 void FlightController::setPositionEstimateWF(Eigen::Vector3d posEst) {
+    auto own_estimate = getPositionWF();
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
     Eigen::Vector3d posEstNED = positionWFtoNED(posEst, _data->visionPosOffset, _data->visionYawOffset);
-
+    
+    Log::info("FlightController::setPositionEstimateWF", "own: (%f, %f, %f), philips: (%f, %f, %f)", own_estimate.x(), own_estimate.y(), own_estimate.z(), posEst.x(), posEst.y(), posEst.z());
+    
     _data->vision_position_estimate.x = posEstNED[0];
     _data->vision_position_estimate.y = posEstNED[1];
     _data->vision_position_estimate.z = posEstNED[2];
 }
 
-void FlightController::setAttitudeEstimateWF(double yawEst) {
+Eigen::Vector3d FlightController::getPositionEstimateWF(){
+    Eigen::Vector3d posEstNED;
+    posEstNED[0] = _data->vision_position_estimate.x;
+    posEstNED[1] = _data->vision_position_estimate.y;
+    posEstNED[2] = _data->vision_position_estimate.z;
+    
+    return positionNEDtoWF(posEstNED, _data->visionPosOffset, _data->visionYawOffset);
+}
+
+void FlightController::setYawEstimateWF(double yawEst) {
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
     Eigen::Vector3d attEstNED = orientationWFtoNED(Eigen::Vector3d(_data->orientationNED[0], -_data->orientationNED[1], yawEst), _data->visionYawOffset);
 
     _data->vision_position_estimate.roll = attEstNED[0];
     _data->vision_position_estimate.pitch = attEstNED[1];
     _data->vision_position_estimate.yaw = attEstNED[2];
+}
+
+double FlightController::getYawEstimateWF(){
+    Eigen::Vector3d attEstNED;
+    attEstNED[0] = _data->vision_position_estimate.roll;
+    attEstNED[1] = _data->vision_position_estimate.pitch;
+    attEstNED[2] = _data->vision_position_estimate.yaw;
+    
+    return orientationNEDtoWF(attEstNED, _data->visionYawOffset)[2];
 }
 
 //TODO: fix yaw rotation on Raspberry Pi side in order to send position setpoints
@@ -848,7 +902,7 @@ void FlightController::killMotors() {
 }
 
 //get raw imu data
-IMUSensorData FlightController::getIMUDataCF(){
+/*IMUSensorData FlightController::getIMUDataCF(){
     //get data (FIXME: ensure proper frame)
     shared_data_mutex->lock();
     IMUSensorData imuCF = _data->imuNED;
@@ -861,4 +915,4 @@ IMUSensorData FlightController::getIMUDataCF(){
     imuCF.time = imuCF.time - bootTime + unixTime;
     
     return imuCF;
-}
+}*/
