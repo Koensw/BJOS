@@ -34,7 +34,7 @@ FlightController::~FlightController() {
         bool toggle_offboard = !_data->kill_motors;
         shared_data_mutex->unlock();
         
-        //disable offboard control mode if not already and it should not hang on the pixhawk side to trigger auto land
+        //disable offboard control mode if not already and we should not force a hang
         if(toggle_offboard){
             int result = toggle_offboard_control(false);
             if (result == -1)
@@ -920,6 +920,11 @@ bool FlightController::isLanded() {
 void FlightController::killMotors() {
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
     _data->kill_motors = true;
+}
+
+void FlightController::forceShutdown(){
+    std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+    _data->force_land = true;
 }
 
 //get raw imu data

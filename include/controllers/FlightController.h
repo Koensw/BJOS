@@ -211,6 +211,8 @@ namespace bjos {
         /* Returns current landed state */
         bool isLanded();
 
+        /* Terminate the flight controller */
+        void forceShutdown();
         /* Terminate flight immediately */
         void killMotors();
 
