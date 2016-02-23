@@ -381,11 +381,13 @@ void FlightController::read_messages() {
                 //Log::info("FlightController::read_messages", "Not handling this message: %" PRIu8, message.msgid);
             }
         }
-    } else {
-        Log::warn("FlightController::read_messages", "Could not read from serial port! %i", errors++);
-        if (errors > 10) { //The physical connection is broken by now probably
+    } else if(_mavlink_received) { 
+        //Mid-execution MAVLink loss check (so we already received MAVLink at least once)
+        //On timeout: shutdown
+        Log::warn("FlightController::read_messages", "Could not read from serial port anymore! %i", errors++);
+        if (errors > 10) { 
             Log::error("FlightController:read_messages", "MAVLink connection timed out");
-            bjos::BJOS::getOS()->shutdown(); //Shut down BJOS
+            bjos::BJOS::getOS()->shutdown(); 
         }
     }
 }
