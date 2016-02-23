@@ -384,8 +384,7 @@ void FlightController::read_messages() {
     } else if(_mavlink_received) { 
         //Mid-execution MAVLink loss check (so we already received MAVLink at least once)
         //On timeout: shutdown
-        Log::warn("FlightController::read_messages", "Could not read from serial port anymore! %i", errors++);
-        if (errors > 10) { 
+        if (++errors > 100) { 
             Log::error("FlightController:read_messages", "MAVLink connection timed out");
             bjos::BJOS::getOS()->shutdown(); 
         }
