@@ -508,9 +508,9 @@ _read_port(uint8_t &cp)
 
 	// Lock
 	pthread_mutex_lock(&lock);
-
+	printf("\n begin read");
 	int result = read(fd, &cp, 1);
-
+	printf("\n read complete");
 	// Unlock
 	pthread_mutex_unlock(&lock);
 
@@ -528,10 +528,10 @@ _write_port(char *buf, unsigned &len)
 
 	// Lock
 	pthread_mutex_lock(&lock);
-
+	printf("\n begin write");
 	// Write packet via serial link
 	write(fd, buf, len);
-
+	printf("\n write complete");
 	// Wait until all data has been written
 	tcdrain(fd);
 
