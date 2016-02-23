@@ -176,7 +176,7 @@ void FlightController::read_messages() {
     mavlink_message_t message;
     
     bool success = serial_port->read_message(message);
-    
+
     if (success) {
         errors = 0;
         
@@ -390,6 +390,8 @@ void FlightController::read_messages() {
             Log::error("FlightController:read_messages", "MAVLink connection timed out");
             bjos::BJOS::getOS()->shutdown(); 
         }
+    } else {
+        Log::info("FlightController::read_messages", "Serial port fail, _mavlink_received %i, errors %i", (int)_mavlink_received, errors);
     }
 }
 
