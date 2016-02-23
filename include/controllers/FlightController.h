@@ -130,6 +130,9 @@ namespace bjos {
 
         /* Current drone landed state */
         bool landed;
+        
+        /* Battery percentage */
+        double battery_percentage;
 
         /* Write estimate to Pixhawk */
         bool write_estimate;
@@ -169,7 +172,7 @@ namespace bjos {
         Eigen::Vector3d getAngularVelocityNED();
         //Eigen::Vector3d getAngularVelocityWF();
         //Eigen::Vector3d getAngularVelocityCF();
-
+        
         /**
          * setTargetCF updates the shared variable current_setpoint (which is streamed to the Pixhawk)
          *
@@ -210,13 +213,16 @@ namespace bjos {
         void setYawEstimateWF(double yawEst);
         double getYawEstimateWF();
         
-        /* Returns current landed state */
-        bool isLanded();
-
         /* Force failsafe mode which will try to land safely - overriding any other command given and tries shutting down */
         void forceFailsafe();
+        bool inFailsafe();
         /* Terminate flight immediately - overriding any other command and tries shutting down */
         void killMotors();
+            
+        /* INFO */
+        /* Returns current landed state */
+        bool isLanded();
+        double getBatteryPercentage();
 
         /* Returns IMU sensor data */
         //TODO: can be removed probably

@@ -81,6 +81,7 @@ void FlightController::init(bjos::BJOS *bjos) {
     _data->write_estimate = false; //disable writing estimate by default (should be explicitly enabled!)
     _data->kill_motors = false;
     _data->force_failsafe = false;
+    _data->battery_percentage = 1; //assume full battery when not known...
     //set vision_position_estimate to non-valid
     _data->vision_position_estimate.usec = 0;
     _data->vision_position_estimate.x = NAN;
@@ -308,6 +309,13 @@ void FlightController::read_messages() {
                 
                 Log::info("FlightController::read_messages", "[status]\t%s", statustext.text);
                 break;
+            }
+            case MAVLINK_MSG_ID_SYS_STATUS:
+            {
+                std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+                mavlink_sys_status_t sys_state;
+                mavlink_msg_sys_status_decode(&message, &sys_state);
+                if(static_cast<int>(sys_state.battery_remaining) > 0) _data->battery_percentage = static_cast<double>(sys_state.battery_remaining)/100.0;
             }
             case MAVLINK_MSG_ID_SYSTEM_TIME:
             {
@@ -931,11 +939,6 @@ Eigen::Vector3d FlightController::orientationNEDtoWF(Eigen::Vector3d orientation
     return out;
 }
 
-bool FlightController::isLanded() {
-    std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
-    return _data->landed;
-}
-
 void FlightController::killMotors() {
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
     _data->kill_motors = true;
@@ -944,6 +947,20 @@ void FlightController::killMotors() {
 void FlightController::forceFailsafe(){
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
     _data->force_failsafe = true;
+}
+
+bool FlightController::inFailsafe(){
+    std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+    return _data->force_failsafe;
+}
+
+bool FlightController::isLanded() {
+    std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+    return _data->landed;
+}
+double FlightController::getBatteryPercentage(){
+    std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+    return _data->battery_percentage;
 }
 
 //get raw imu data
