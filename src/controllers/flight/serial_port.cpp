@@ -526,12 +526,12 @@ _write_port(char *buf, unsigned &len)
 
 	// Lock
 	pthread_mutex_lock(&lock);
-	printf("\n begin write");
+
 	// Write packet via serial link
 	write(fd, buf, len);
+	
 	// Wait until all data has been written
 	tcdrain(fd);
-    printf("\n write complete");
 
 	// Unlock
 	pthread_mutex_unlock(&lock);
