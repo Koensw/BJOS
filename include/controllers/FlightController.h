@@ -139,6 +139,8 @@ namespace bjos {
 
         /* Flag for motor kill */
         bool kill_motors;
+        /* Flag for failsafe mode */
+        bool force_failsafe;
 
         /* Raw IMU sensor data */
         //TODO: can be removed probably
@@ -211,9 +213,9 @@ namespace bjos {
         /* Returns current landed state */
         bool isLanded();
 
-        /* Terminate the flight controller */
-        void forceShutdown();
-        /* Terminate flight immediately */
+        /* Force failsafe mode which will try to land safely - overriding any other command given and tries shutting down */
+        void forceFailsafe();
+        /* Terminate flight immediately - overriding any other command and tries shutting down */
         void killMotors();
 
         /* Returns IMU sensor data */

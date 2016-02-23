@@ -31,18 +31,18 @@ FlightController::~FlightController() {
     
     if (isMainInstance()) {
         shared_data_mutex->lock();
-        bool toggle_offboard = !_data->kill_motors;
+        bool force_failsafe = _data->force_failsafe;
         shared_data_mutex->unlock();
         
-        //disable offboard control mode if not already and we should not force a hang
-        if(toggle_offboard){
+        //disable offboard control mode if not already and we should not force a failsafe hang
+        if(!force_failsafe){
             int result = toggle_offboard_control(false);
             if (result == -1)
                 Log::error("FlightController::init", "Could not set offboard mode: unable to write message on serial port");
             else if (result == 0)
                 Log::warn("FlightController::init", "double (de-)activation of offboard mode [ignored]");
         }else{
-            Log::error("FlightController::init", "Not toggling offboard, because we do a failsafe shutdown and we want the Pixhawk to auto land!");
+            Log::error("FlightController::init", "Not toggling offboard, because we do a failsafe shutdown and we want the Pixhawk to try and figure this out!");
         }
 
         //stop threads
@@ -79,6 +79,8 @@ void FlightController::init(bjos::BJOS *bjos) {
     // -------------------------------------------------------------------------------------------------
     _data->landed = false;
     _data->write_estimate = false; //disable writing estimate by default (should be explicitly enabled!)
+    _data->kill_motors = false;
+    _data->force_failsafe = false;
     //set vision_position_estimate to non-valid
     _data->vision_position_estimate.usec = 0;
     _data->vision_position_estimate.x = NAN;
@@ -164,8 +166,14 @@ void FlightController::load(bjos::BJOS *bjos) {
 
 void FlightController::read_thread() {
     while (_read_thrd_running) {
+        shared_data_mutex->lock();
+        bool force_failsafe = _data->force_failsafe;
+        shared_data_mutex->unlock();
+        
         try {
-            read_messages();
+            //stop trying to read info from pixhawk in failsafe, because we cannot trust this anymore 
+            if(force_failsafe) usleep(100000);
+            else read_messages();
             
             //boost::this_thread::sleep_for(boost::chrono::microseconds(500)); //2000 Hz
         }
@@ -438,15 +446,23 @@ void FlightController::write_thread() {
             shared_data_mutex->lock();
             bool do_write_estimate = _data->write_estimate;
             bool kill_motors = _data->kill_motors;
+            bool force_failsafe = _data->force_failsafe;
             shared_data_mutex->unlock();
 
             //check state
             if (kill_motors) {
                 //try to kill motors when requested
+                force_failsafe = true; //this implies forcing failsafe but then request higher emergency state!
+                
                 if (motor_killer(true)) {
                     //If we succesfully kill the motors of the drone, try to shut down BJOS
                     bjos::BJOS::getOS()->shutdown();
                 }
+                //wait some time to try again
+                usleep(100000);
+            }else if(force_failsafe){
+                //If we succesfully kill the motors of the drone, try to shut down BJOS
+                bjos::BJOS::getOS()->shutdown();
                 //wait some time to try again
                 usleep(100000);
             }else{
@@ -922,9 +938,9 @@ void FlightController::killMotors() {
     _data->kill_motors = true;
 }
 
-void FlightController::forceShutdown(){
+void FlightController::forceFailsafe(){
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
-    _data->force_land = true;
+    _data->force_failsafe = true;
 }
 
 //get raw imu data
