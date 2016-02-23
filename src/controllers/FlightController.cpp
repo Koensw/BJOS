@@ -184,9 +184,9 @@ void FlightController::read_messages() {
 
     mavlink_message_t message;
     
-    bool success = serial_port->read_message(message);
+    int success = serial_port->read_message(message);
 
-    if (success) {
+    if (success > 0) {
         errors = 0;
         
         if (!_mavlink_received) {
@@ -390,12 +390,12 @@ void FlightController::read_messages() {
                 //Log::info("FlightController::read_messages", "Not handling this message: %" PRIu8, message.msgid);
             }
         }
-    } else if(_mavlink_received) { 
+    } else if(success == -1 &&_mavlink_received) { 
         //Mid-execution MAVLink loss check (so we already received MAVLink at least once)
         //On timeout: shutdown
         errors++;
-        if((errors % 5) == 0) Log::warn("FlightController:read_messages", "Serial port error %i!", errors);
-        if (errors > 100) { 
+        Log::warn("FlightController:read_messages", "Serial port error %i!", errors);
+        if (errors > 5) { 
             Log::error("FlightController:read_messages", "MAVLink connection timed out");
             bjos::BJOS::getOS()->shutdown(); 
         }
