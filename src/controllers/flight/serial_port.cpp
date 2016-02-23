@@ -114,7 +114,7 @@ read_message(mavlink_message_t &message)
 {
 	uint8_t          cp;
 	mavlink_status_t status;
-	uint8_t          msgReceived = false;
+	int8_t           msgReceived = 0;
 
 	// --------------------------------------------------------------------------
 	//   READ FROM PORT
@@ -144,12 +144,13 @@ read_message(mavlink_message_t &message)
 	else
 	{
 		fprintf(stderr, "ERROR: Could not read from fd %d\n", fd);
+		msgReceived = -1;
 	}
 
 	// --------------------------------------------------------------------------
 	//   DEBUGGING REPORTS
 	// --------------------------------------------------------------------------
-	if(msgReceived && debug)//&& debug
+	if(msgReceived > 0 && debug)//&& debug
 	{
 		// Report info
 		printf("Received message from serial with ID #%d (sys:%d|comp:%d):\n", message.msgid, message.sysid, message.compid);
