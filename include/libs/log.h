@@ -6,6 +6,8 @@
 #include <cstdio>
 #include <cstdarg>
 
+#include <mutex>
+
 #include <bjcomm/message.h>
 #include <bjcomm/publisher.h>
 
@@ -75,6 +77,9 @@ public:
     
 private:
     static void _forward(const std::string type, const std::string origin, const std::string format, ...){
+        //FIXME: mutex locking should be done by bjcomm
+        std::lock_guard<std::mutex> lock(bjcomm_mutex);
+        
         static bjcomm::Publisher pub("debug");
         if(!pub.isRunning()) pub.start();
         bjcomm::Message msg(type);
@@ -85,6 +90,8 @@ private:
         
         pub.send(msg);
     }
+    
+    static std::mutex bjcomm_mutex;
 };
 
 #endif

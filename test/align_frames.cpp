@@ -35,13 +35,16 @@ int main(){
         return 0;
     }
     
+    char c = 'n';
     if(flight.isWFDefined()){
-        Log::info("AlignFrame", "Script should be run before sync is done");
-        return 0;
+        std::cout << "Script should normally run before sync is done. Continue without toggling estimate off? (y/n)" << std::endl;
+        c = std::cin.get();
+        
+        if(c != 'y') return 0;
     }
     
     //disable writing estimate so we can estimate both things apart
-    flight.toggleWriteEstimate(false);
+    if(c != 'y') flight.toggleWriteEstimate(false);
     
     Log::info("AlignFrame", "Waiting for sync...");
     while(!flight.isWFDefined() && Process::isActive()){

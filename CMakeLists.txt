@@ -30,6 +30,7 @@ add_library(bjos SHARED
     src/controllers/GripperController.cpp
     src/controllers/flight/serial_port.cpp
     src/libs/i2c.cpp
+    src/libs/log.cpp
 )
 target_link_libraries(bjos ${Boost_LIBRARIES} pthread rt wiringPi ${BJCOMM_LIBRARY} zmq) #FIXME: zmq should not need an explicit specification
 
