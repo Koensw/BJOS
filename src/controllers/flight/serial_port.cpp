@@ -122,8 +122,7 @@ read_message(mavlink_message_t &message)
 
 	// this function locks the port during read
 	int result = _read_port(cp);
-    //printf("TEST");
-    //fflush(stdout);
+    
 	// --------------------------------------------------------------------------
 	//   PARSE MESSAGE
 	// --------------------------------------------------------------------------
@@ -179,8 +178,7 @@ read_message(mavlink_message_t &message)
 			fprintf(stderr,"\n");
 		}
 	}
-
-        std::cout.flush();
+	
 	// Done!
 	return msgReceived;
 }
@@ -411,7 +409,7 @@ _setup_port(int baud, int data_bits, int stop_bits, bool parity, bool hardware_c
 
 	// One input byte is enough to return from read()
 	// Inter-character timer off
-	config.c_cc[VMIN]  = 1;
+	config.c_cc[VMIN]  = 0;
 	config.c_cc[VTIME] = 10; // was 0
 
 	// Get the current options for the port
@@ -508,10 +506,10 @@ _read_port(uint8_t &cp)
 
 	// Lock
 	pthread_mutex_lock(&lock);
-	printf("\n begin read");
+
 	int result = read(fd, &cp, 1);
-	printf("\n read complete");
-	// Unlock
+
+    // Unlock
 	pthread_mutex_unlock(&lock);
 
 	return result;
@@ -531,9 +529,9 @@ _write_port(char *buf, unsigned &len)
 	printf("\n begin write");
 	// Write packet via serial link
 	write(fd, buf, len);
-	printf("\n write complete");
 	// Wait until all data has been written
 	tcdrain(fd);
+    printf("\n write complete");
 
 	// Unlock
 	pthread_mutex_unlock(&lock);

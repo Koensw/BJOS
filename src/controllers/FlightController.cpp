@@ -30,12 +30,20 @@ FlightController::~FlightController() {
     if(!Controller::isAvailable()) return;
     
     if (isMainInstance()) {
-        //disable offboard control mode if not already
-        int result = toggle_offboard_control(false);
-        if (result == -1)
-            Log::error("FlightController::init", "Could not set offboard mode: unable to write message on serial port");
-        else if (result == 0)
-            Log::warn("FlightController::init", "double (de-)activation of offboard mode [ignored]");
+        shared_data_mutex->lock();
+        bool toggle_offboard = !_data->kill_motors;
+        shared_data_mutex->unlock();
+        
+        //disable offboard control mode if not already and it should not hang on the pixhawk side to trigger auto land
+        if(toggle_offboard){
+            int result = toggle_offboard_control(false);
+            if (result == -1)
+                Log::error("FlightController::init", "Could not set offboard mode: unable to write message on serial port");
+            else if (result == 0)
+                Log::warn("FlightController::init", "double (de-)activation of offboard mode [ignored]");
+        }else{
+            Log::error("FlightController::init", "Not toggling offboard, because we do a failsafe shutdown and we want the Pixhawk to auto land!");
+        }
 
         //stop threads
         _read_thrd_running = false;
@@ -123,6 +131,7 @@ void FlightController::init(bjos::BJOS *bjos) {
     _write_thrd = boost::thread(&FlightController::write_thread, this);
     while (_write_thrd_running == false)
         usleep(100000); //10 Hz
+    
     //NOTE: no error check because this never fails if the serial_port is initialized correctly
         
     // -------------------------------------------------------------------------------------------------
@@ -430,22 +439,21 @@ void FlightController::write_thread() {
             bool do_write_estimate = _data->write_estimate;
             bool kill_motors = _data->kill_motors;
             shared_data_mutex->unlock();
-            
-            write_setpoint();
-            
-            //write setpoint and estimate
-            if(do_write_estimate) write_estimate();
 
-            //kill motors
+            //check state
             if (kill_motors) {
+                //try to kill motors when requested
                 if (motor_killer(true)) {
-                    //wait some time before finalizing
-                    usleep(100000);
                     //If we succesfully kill the motors of the drone, try to shut down BJOS
                     bjos::BJOS::getOS()->shutdown();
                 }
                 //wait some time to try again
                 usleep(100000);
+            }else{
+                 write_setpoint();
+            
+                //write setpoint and estimate
+                if(do_write_estimate) write_estimate();
             }
         }
         catch (boost::thread_interrupted) {
