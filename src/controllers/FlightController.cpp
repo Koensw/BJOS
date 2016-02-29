@@ -90,6 +90,8 @@ void FlightController::init(bjos::BJOS *bjos) {
     _data->vision_position_estimate.roll = NAN;
     _data->vision_position_estimate.pitch = NAN;
     _data->vision_position_estimate.yaw = NAN;
+    _data->visionYawOffset = 0;
+    _data->visionPosOffset = {0, 0, 0};
     
     // -------------------------------------------------------------------------------------------------
     //   UART to Pixhawk (NOTE: uses beefed up baudrate = "921600" on uart="/dev/ttyAMA0")
@@ -529,13 +531,15 @@ void FlightController::write_estimate() {
     _data->vision_position_estimate.roll = NAN;
     _data->vision_position_estimate.pitch = NAN;
     _data->vision_position_estimate.yaw = NAN;
+    
+    //bool do_write_estimate = _data->write_estimate;
     shared_data_mutex->unlock();
 
     //set estimate time if not yet set
     if (not est.usec)
         est.usec = get_time_usec(CLOCK_MONOTONIC);
 
-    Log::info("FlightController::write_estimate", "estimate %f %f %f %f %f %f %f", est.x, est.y, est.z, est.yaw, cur.x(), cur.y(), cur.z(), yaw);
+    Log::info("FlightController::write_estimate", "estimate %f %f %f %f %f %f %f %f", est.x, est.y, est.z, est.yaw, cur.x(), cur.y(), cur.z(), yaw);
     
     //encode 
     mavlink_message_t message;
@@ -922,6 +926,8 @@ Eigen::Vector3d FlightController::orientationWFtoNED(Eigen::Vector3d orientation
     out[0] = orientationWF[0];
     out[1] = -orientationWF[1];
     out[2] = -orientationWF[2] + visionYawOffset;
+    if(out[2] < M_PI) out[2] += 2*M_PI;
+    if(out[2] > M_PI) out[2] -= 2*M_PI;
     return out;
 }
 
@@ -936,6 +942,8 @@ Eigen::Vector3d FlightController::orientationNEDtoWF(Eigen::Vector3d orientation
     out[0] = orientationNED[0];
     out[1] = -orientationNED[1];
     out[2] = -orientationNED[2] + visionYawOffset;
+    if(out[2] < M_PI) out[2] += 2*M_PI;
+    if(out[2] > M_PI) out[2] -= 2*M_PI;
     return out;
 }
 

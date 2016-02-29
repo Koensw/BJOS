@@ -92,6 +92,12 @@ add_executable(align_frames
 )
 target_link_libraries(align_frames bjos)
 
+# test estimate
+add_executable(estimate_simulator
+    test/estimate_simulator.cpp
+)
+target_link_libraries(estimate_simulator bjos)
+
 # example controller
 add_executable(bjos_example
     docs/ExampleController.cpp
