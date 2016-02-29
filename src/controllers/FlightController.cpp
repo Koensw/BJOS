@@ -302,6 +302,31 @@ void FlightController::read_messages() {
                 sendto(_raw_sock, &raw_estimate, sizeof(raw_estimate), 0, (struct sockaddr *) &_raw_sock_name, SUN_LEN(&_raw_sock_name));
                 break;
             }
+            case MAVLINK_MSG_ID_POSITION_TARGET_LOCAL_NED:
+            {
+                //decode
+                mavlink_position_target_local_ned_t setpoint;
+                mavlink_msg_position_target_local_ned_decode(&message, &setpoint);
+
+                //send over bjcomm
+                std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+                if (_data->_vision_sync) {
+                    Message msg("position_setpoint");
+                    Eigen::Vector3d wf = positionNEDtoWF(Eigen::Vector3d(setpoint.x, setpoint.y, setpoint.z), _data->visionPosOffset, _data->visionYawOffset);
+                    sstr.clear();
+                    sstr << wf[0] << " " << wf[1] << " " << wf[2];
+                    msg.setData(sstr.str());
+                    send_state_message(msg);
+
+                    msg = Message("velocity_setpoint");
+                    //FIXME: missing conversion here...
+                    sstr.clear();
+                    sstr << setpoint.vx << " " << setpoint.vy << " " << setpoint.vz;
+                    msg.setData(sstr.str());
+                    send_state_message(msg);
+                }
+            }
+
             case MAVLINK_MSG_ID_STATUSTEXT:
             {
                 mavlink_statustext_t statustext;
