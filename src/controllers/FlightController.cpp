@@ -256,6 +256,8 @@ void FlightController::read_messages() {
                 mavlink_attitude_t attitude;
                 mavlink_msg_attitude_decode(&message, &attitude);     
 
+                Log::info("FlightController::read_messages", "attitude: %.2f %.2f %.2f", attitude.roll, attitude.pitch, attitude.yaw);
+
                 //bjcomm message handling
                 if (_data->_vision_sync) {
                     Message msg("attitude_estimate");
@@ -300,6 +302,13 @@ void FlightController::read_messages() {
                 raw_estimate.data[2] = attitude.q2;
                 raw_estimate.data[3] = -attitude.q4;
                 sendto(_raw_sock, &raw_estimate, sizeof(raw_estimate), 0, (struct sockaddr *) &_raw_sock_name, SUN_LEN(&_raw_sock_name));
+
+                //Convert quaternions to euler angles
+                Eigen::Quaternionf q(attitude.q1, attitude.q2, attitude.q3, attitude.q4);
+                Eigen::Vector3f euler = q.toRotationMatrix().eulerAngles(0, 1, 2);
+
+                Log::info("FlightController::read_messages", "QtoEuler: %.2f %.2f %.2f", euler[0], euler[1], euler[2]);
+
                 break;
             }
             case MAVLINK_MSG_ID_POSITION_TARGET_LOCAL_NED:
