@@ -13,7 +13,7 @@
 
 #include "bjos/bjos.h"
 #include "bjos/helpers/process.h"
-#include "bjos/libs/log.h"
+#include "libs/log.h"
 
 #include "controllers/FlightController.h"
 #include "controllers/GripperController.h"
