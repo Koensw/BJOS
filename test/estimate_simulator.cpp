@@ -44,6 +44,15 @@ int main(){
         while(Process::isActive() && cnt < 1000){ 
             flight.setYawEstimateWF(yaw);
             flight.setPositionEstimateWF(Eigen::Vector3d(x,y,z));
+            
+            Eigen::Vector3d est = flight.getPositionEstimateWF();
+            double eyaw = flight.getYawEstimateWF();
+            
+            Eigen::Vector3d pos = flight.getPositionWF();
+            double pyaw = flight.getOrientationWF().z();
+            
+            std::cout << "estimate (" << est.x() << "," << est.y() << "," << est.z() << "," << eyaw << ") - pos(" << pos.x() << "," << pos.y() << "," << pos.z() << "," << pyaw << std::endl;
+            
             usleep(10000);
             ++cnt;
         }
