@@ -821,10 +821,7 @@ bool FlightController::writeEstimateEnabled(){
 
 void FlightController::syncVision(Eigen::Vector3d visionPosEstimate, double visionYawOffset) {
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
-    Log::info("FlightController::syncVision", "Sync at %f %f %f %f -- z is ignored!", visionPosEstimate.x(), visionPosEstimate.y(), visionPosEstimate.z(), visionYawOffset, _data->orientationNED[2]);
-    
-    // Z value should not be from vision (FIXME: at least not for now)
-    visionPosEstimate.z() = -_data->positionNED.z();
+    Log::info("FlightController::syncVision", "Sync at %f %f %f %f!", visionPosEstimate.x(), visionPosEstimate.y(), visionPosEstimate.z(), visionYawOffset);
 
     Eigen::AngleAxisd Rz(-visionYawOffset, Eigen::Vector3d::UnitZ());
     Eigen::AngleAxisd Rx(M_PI, Eigen::Vector3d::UnitX());
