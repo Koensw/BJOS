@@ -841,20 +841,17 @@ bool FlightController::isWFDefined(){
     return _data->_vision_sync;
 }
 
-//ALERT: can NOT be used to set roll, pitch, rollspeed or pitchspeed
-//WARNING: cannot set position at the moment (maybe rework this to use Pose / Twist?)
-void FlightController::setTargetCF(uint16_t type_mask, Eigen::Vector3d position,
-        Eigen::Vector3d orientation, Eigen::Vector3d velocity, Eigen::Vector3d angularVelocity) {
+//NOTE: this function is a rework of setTargetCF
+void FlightController::setTargetCF(uint16_t type_mask, Eigen::Vector3d velocity, double yaw, double yaw_speed) {
+    setTargetCF(type_mask, Eigen::Vector3d(), Eigen::Vector3d(0, 0, yaw), velocity, Eigen::Vector3d(0, 0, yaw_speed));
+}
 
-    /*if (type_mask == SET_TARGET_TAKEOFF)
-        velocity = Eigen::Vector3d(0.0f, 0.0f, 2.0f);
-    if (type_mask == SET_TARGET_LAND)
-        velocity = Eigen::Vector3d(0.0f, 0.0f, -0.5f);*/
-    
+//WARNING: can NOT be used to set position, roll, pitch, rollspeed or pitchspeed
+void FlightController::setTargetCF(uint16_t type_mask, Eigen::Vector3d,
+        Eigen::Vector3d orientation, Eigen::Vector3d velocity, Eigen::Vector3d angularVelocity) {
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
-    /* Tranform given position, velocity and yaw from CF frame to NED Body frame */
-    //Eigen::Vector3d positionNED = positionCFtoNED(position);
-    //Eigen::Vector3d orientationNED = CFtoNED(orientation);
+    
+    /* Tranform CF to NED Body frame */
     Eigen::Vector3d velocityNED = CFtoBodyNED(velocity);
     
     mavlink_set_position_target_local_ned_t sp;
@@ -875,6 +872,35 @@ void FlightController::setTargetCF(uint16_t type_mask, Eigen::Vector3d position,
     sp.coordinate_frame = MAV_FRAME_BODY_NED;
     
     Log::info("FlightController::setTargetCF", "%f %f %f - %f", sp.vx, sp.vy, sp.vz, sp.yaw_rate); 
+
+    _data->current_setpoint = sp;
+}
+
+//WARNING: cannot be used to set velocity
+void FlightController::setTargetWF(uint16_t type_mask, Eigen::Vector3d position, double yaw, double yaw_speed) {
+    std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+    
+    /* Tranform WF to NED frame */
+    Eigen::Vector3d positionNED = positionWFtoNED(position,  _data->visionPosOffset, _data->visionYawOffset);
+    
+    mavlink_set_position_target_local_ned_t sp;
+    
+    sp.type_mask = type_mask;
+    
+    sp.x = positionNED.x();
+    sp.y = positionNED.y();
+    sp.z = positionNED.z();
+
+    sp.vx = 0;
+    sp.vy = 0;
+    sp.vz = 0;
+    
+    sp.yaw = -yaw;
+    sp.yaw_rate = -yaw_speed;
+    
+    sp.coordinate_frame = MAV_FRAME_LOCAL_NED;
+    
+    Log::info("FlightController::setTargetWF", "%f %f %f - %f", sp.vx, sp.vy, sp.vz, sp.yaw_rate); 
 
     _data->current_setpoint = sp;
 }

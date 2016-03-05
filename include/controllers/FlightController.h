@@ -163,7 +163,6 @@ namespace bjos {
 
         Eigen::Vector3d getOrientationNED();
         Eigen::Vector3d getOrientationWF();
-        //Eigen::Vector3d getOrientationCF();
 
         Eigen::Vector3d getVelocityNED();
         //Eigen::Vector3d getVelocityWF();
@@ -174,7 +173,7 @@ namespace bjos {
         //Eigen::Vector3d getAngularVelocityCF();
         
         /**
-         * setTargetCF updates the shared variable current_setpoint (which is streamed to the Pixhawk)
+         * setTarget* updates the shared variable current_setpoint (which is streamed to the Pixhawk)
          *
          * The first argument is a type_mask that specifies which of its other arguments should be used and which should be ignored
          * With this header comes a set of bitmasks which should be used with this function: SET_TARGET_*		 
@@ -185,6 +184,8 @@ namespace bjos {
          */
         void setTargetCF(uint16_t type_mask, Eigen::Vector3d position, Eigen::Vector3d orientation, Eigen::Vector3d velocity,
                 Eigen::Vector3d angularVelocity);
+        void setTargetCF(uint16_t type_mask, Eigen::Vector3d velocity, double yaw, double yaw_speed);
+        void setTargetWF(uint16_t type_mask, Eigen::Vector3d velocity, double yaw, double yaw_speed);
 
         /* Getters for current target */
         Eigen::Vector3d getTargetOrientationCF();
