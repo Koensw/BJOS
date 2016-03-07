@@ -101,6 +101,7 @@ void OSFinalize(){
     }
     
     //delete pointers
+    delete eyes;
     delete flight;
     delete gripper;
     
