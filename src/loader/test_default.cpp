@@ -13,6 +13,7 @@
 #include "controllers/SonarController.h"
 #include "controllers/FlightController.h"
 #include "controllers/GripperController.h"
+#include "controllers/EyesController.h"
 
 #include "controllers/sonar/DevantechSonarInterface.h"
 
@@ -25,12 +26,13 @@ using namespace bjos;
 SonarController *sonar;
 FlightController *flight;
 GripperController *gripper;
+EyesController *eyes;
 
 /* Initialize the OS */
 void OSInit(){
     try{
         Log::info("DefaultLoader", "Starting loader %s", "test_default");
-        //if(BJOS::getState() != BJOS::UNINITIALIZED) Log::warn("BJOS already running... expecting incorrect shutdown so will continue.");
+        if(BJOS::getState() != BJOS::UNINITIALIZED) Log::warn("DefaultLoader", "BJOS already running! Expecting invalid shutdown so continuing...");
         
         //init the OS
         BJOS::init();
@@ -57,10 +59,14 @@ void OSInit(){
         bjos->initController(sonar);
         sonar->setUpdateTime(0.1);
         */
+        
         //load the flight controller
         flight = new FlightController();
         bjos->initController(flight);
 
+        //enable writing estimates to the pixhawk by default
+        flight->toggleWriteEstimate(true);
+        
         //load the gripper controller
         gripper = new GripperController(0x40);
         bjos->initController(gripper);        
@@ -68,8 +74,12 @@ void OSInit(){
         //reset gripper
         gripper->gripperClosePWM(4095);
         
-        //enable writing estimates to the pixhawk by default
-        flight->toggleWriteEstimate(true);
+        //load eyes
+        eyes = new EyesController();
+        bjos->initController(eyes);
+        
+        //set the eyes default on
+        eyes->setEnabled(true);
     }catch(ControllerInitializationError &init_err){
         Log::fatal(init_err.getControllerName(), init_err.what());
         std::exit(0);
@@ -84,7 +94,8 @@ void OSFinalize(){
     
     //wait for finalizing clients (or 5 seconds past)
     int time = 0;
-    while(/*!sonar->canFinalize() ||*/ (!gripper->canFinalize() || !flight->canFinalize()) || ++time >= 50){
+    while(/*!sonar->canFinalize() ||*/ (!gripper->canFinalize() || !flight->canFinalize())){
+        if(++time >= 50) break;
         Log::info("DefaultLoader", "Waiting for %d clients to finish...", /*bjos->getControllerCount("sonar")-1*/ + bjos->getControllerCount("gripper")-1 + bjos->getControllerCount("flight")-1);
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }

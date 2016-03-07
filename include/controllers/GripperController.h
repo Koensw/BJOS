@@ -115,7 +115,6 @@ namespace bjos {
         long map(long x, long in_min, long in_max, long out_min, long out_max);
         int pulse_in(int pin, int level);
 
-        
         /* Initialize the main instance */ 
         void init(BJOS *bjos);
         /* load node is called for all childeren */
