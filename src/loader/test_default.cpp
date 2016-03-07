@@ -75,7 +75,7 @@ void OSInit(){
         gripper->gripperClosePWM(4095);
         
         //load eyes
-        eyes = new EyesController();
+        eyes = new EyesController(0x40, 2);
         bjos->initController(eyes);
         
         //set the eyes default on
