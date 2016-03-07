@@ -49,7 +49,7 @@ void OSFinalize(){
     
     //wait for finalizing clients (or 5 seconds past)
     int time = 0;
-    while(!flight->canFinalize() && time++ < 50){
+    while(!flight->canFinalize() || time++ >= 25){
         Log::info("FlightLoader", "Waiting for %d clients to finish...", bjos->getControllerCount("flight")-1);
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
