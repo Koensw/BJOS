@@ -84,7 +84,7 @@ void OSFinalize(){
     
     //wait for finalizing clients (or 5 seconds past)
     int time = 0;
-    while(/*!sonar->canFinalize() ||*/ (!gripper->canFinalize() || !flight->canFinalize()) || ++time >= 25){
+    while(/*!sonar->canFinalize() ||*/ (!gripper->canFinalize() || !flight->canFinalize()) || ++time >= 50){
         Log::info("DefaultLoader", "Waiting for %d clients to finish...", /*bjos->getControllerCount("sonar")-1*/ + bjos->getControllerCount("gripper")-1 + bjos->getControllerCount("flight")-1);
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
