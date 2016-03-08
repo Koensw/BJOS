@@ -563,8 +563,6 @@ void FlightController::write_estimate() {
     //pull from current estimate
     shared_data_mutex->lock();
     
-    Eigen::Vector3d cur = _data->positionNED;
-    double yaw = _data->orientationNED[2];
     mavlink_vision_position_estimate_t est = _data->vision_position_estimate;
     //reset the current estimate to ignore values
     _data->vision_position_estimate.usec = 0;
@@ -903,7 +901,6 @@ void FlightController::setTargetWF(uint16_t type_mask, Eigen::Vector3d position,
 }
 
 void FlightController::setPositionEstimateWF(Eigen::Vector3d posEst) {
-    auto own_estimate = getPositionWF();
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
     Eigen::Vector3d posEstNED = positionWFtoNED(posEst, _data->visionPosOffset, _data->visionYawOffset);
     

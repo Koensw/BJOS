@@ -36,7 +36,7 @@ float YAWR = 0.2;
 std::tuple<Eigen::Vector3d, Eigen::Vector3d, uint16_t, bool, int, bool, int> handle_input(char c)
 {
     static int gripPWM = 600;
-    static int eyesPWM = 0;
+    static int eyesEnabled = false;
     
     static Eigen::Vector3d setv_old;
     static Eigen::Vector3d setav_old;
@@ -131,13 +131,13 @@ std::tuple<Eigen::Vector3d, Eigen::Vector3d, uint16_t, bool, int, bool, int> han
         case '+':
             std::cout << "Eyes are on" << std::endl;
             eyesActivate = true;
-            eyesPWM = 3000;
+            eyesEnabled = true;
             break;
             
         case '-':
             std::cout << "Eyes are off" << std::endl;
             eyesActivate = true;
-            eyesPWM = 0;
+            eyesEnabled = false;
             break;
         
         case 'q':
@@ -163,7 +163,7 @@ std::tuple<Eigen::Vector3d, Eigen::Vector3d, uint16_t, bool, int, bool, int> han
     gripActivate_old = gripActivate;
     eyesActivate_old = eyesActivate;
     
-    return std::make_tuple(setv, setav, tm, gripActivate, gripPWM, eyesActivate, eyesPWM);
+    return std::make_tuple(setv, setav, tm, gripActivate, gripPWM, eyesActivate, eyesEnabled);
 }
 
 int main(){
@@ -218,8 +218,8 @@ int main(){
         if(gripper.isAvailable() && std::get<3>(action)) {
             gripper.gripperClosePWM(std::get<4>(action));
         }
-        if(eyes.isAvailable() && std::get<3>(action)){
-            gripper.gripperClosePWM(std::get<4>(action));
+        if(eyes.isAvailable() && std::get<5>(action)){
+            eyes.setEnabled(std::get<6>(action));
         }
         
     } while (ret != 'q');
