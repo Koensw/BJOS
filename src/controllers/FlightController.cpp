@@ -582,7 +582,7 @@ void FlightController::write_estimate() {
     if (not est.usec)
         est.usec = get_time_usec(CLOCK_MONOTONIC);
 
-    Log::info("FlightController::write_estimate", "estimate %f %f %f %f %f %f %f %f", est.x, est.y, est.z, est.yaw, cur.x(), cur.y(), cur.z(), yaw);
+    //Log::info("FlightController::write_estimate", "estimate %f %f %f %f %f %f %f %f", est.x, est.y, est.z, est.yaw, cur.x(), cur.y(), cur.z(), yaw);
     
     //encode 
     mavlink_message_t message;

@@ -68,7 +68,7 @@ void OSInit(){
         flight->toggleWriteEstimate(true);
         
         //load the gripper controller
-        gripper = new GripperController(0x40);
+        gripper = new GripperController(0x40, 1);
         bjos->initController(gripper);        
         
         //reset gripper

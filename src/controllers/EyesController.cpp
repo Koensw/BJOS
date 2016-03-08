@@ -71,10 +71,8 @@ bool EyesController::areEnabled(){
 }
 
 void EyesController::setEnabled(bool eyes){
-    Log::info("EyesController", "%d %d %d", _channel, eyes, areEnabled());
     if(eyes) set_pwm(_channel, EYES_PWM_ON);
     else set_pwm(_channel, EYES_PWM_OFF);
-    Log::info("EyesController", "%d %d %d", _channel, eyes, areEnabled());
 }
 
 void EyesController::reset() {

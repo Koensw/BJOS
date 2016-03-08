@@ -15,8 +15,8 @@
 
 using namespace bjos;
 
-GripperController::GripperController(): _address(-1), _fd(-1), _data(0) {}
-GripperController::GripperController(int addr): _address(addr), _fd(-1), _data(0) {}
+GripperController::GripperController(): _address(-1), _channel(-1), _fd(-1), _data(0) {}
+GripperController::GripperController(int addr, int chan): _address(addr), _channel(chan), _fd(-1), _data(0) {}
 GripperController::~GripperController(){
     if(!Controller::isAvailable()) return;
     
@@ -51,6 +51,7 @@ void GripperController::init(BJOS *bjos){
     
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
     _data->address = _address;
+    _data->channel = _channel;
 }
 
 void GripperController::load(BJOS *bjos){    
@@ -59,6 +60,7 @@ void GripperController::load(BJOS *bjos){
     int addr = 0;
     shared_data_mutex->lock();
     addr = _data->address;
+    _channel = _data->channel;
     shared_data_mutex->unlock();
         
     //load i2c (TODO: all I2C operations should take only place in loader and only in main thread?)
@@ -156,7 +158,7 @@ void GripperController::gripperClosePWM(int pwm)
         pwm = 4095; //2047 fpr pwm board
     else if (pwm<0)
         pwm = 0;
-    set_pwm(0, pwm); //used for control via i2c pwm board
+    set_pwm(_channel, pwm); //used for control via i2c pwm board
 	//pwmWrite(GRIPPER_PIN, pwm); //used for direct control from raspberry
 }
 

@@ -34,7 +34,7 @@ void OSInit(){
         //start the wiring pi library
         wiringPiSetupSys();
         
-        gripper = new GripperController(0x40);
+        gripper = new GripperController(0x40, 1);
         bjos->initController(gripper);
         
         gripper->gripperClosePWM(0);
