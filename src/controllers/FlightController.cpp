@@ -868,7 +868,7 @@ void FlightController::setTargetCF(uint16_t type_mask, Eigen::Vector3d,
     
     sp.coordinate_frame = MAV_FRAME_BODY_NED;
     
-    Log::info("FlightController::setTargetCF", "%f %f %f - %f", sp.vx, sp.vy, sp.vz, sp.yaw_rate); 
+    //Log::info("FlightController::setTargetCF", "%f %f %f - %f", sp.vx, sp.vy, sp.vz, sp.yaw_rate); 
 
     _data->current_setpoint = sp;
 }
@@ -897,7 +897,7 @@ void FlightController::setTargetWF(uint16_t type_mask, Eigen::Vector3d position,
     
     sp.coordinate_frame = MAV_FRAME_LOCAL_NED;
     
-    Log::info("FlightController::setTargetWF", "%f %f %f - %f", sp.x, sp.y, sp.z, sp.yaw_rate); 
+    //Log::info("FlightController::setTargetWF", "%f %f %f - %f", sp.x, sp.y, sp.z, sp.yaw_rate); 
 
     _data->current_setpoint = sp;
 }
@@ -907,7 +907,7 @@ void FlightController::setPositionEstimateWF(Eigen::Vector3d posEst) {
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
     Eigen::Vector3d posEstNED = positionWFtoNED(posEst, _data->visionPosOffset, _data->visionYawOffset);
     
-    Log::info("FlightController::setPositionEstimateWF", "own: (%f, %f, %f), estimate: (%f, %f, %f)", own_estimate.x(), own_estimate.y(), own_estimate.z(), posEst.x(), posEst.y(), posEst.z());
+    //Log::info("FlightController::setPositionEstimateWF", "own: (%f, %f, %f), estimate: (%f, %f, %f)", own_estimate.x(), own_estimate.y(), own_estimate.z(), posEst.x(), posEst.y(), posEst.z());
     
     _data->vision_position_estimate.x = posEstNED[0];
     _data->vision_position_estimate.y = posEstNED[1];
