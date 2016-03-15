@@ -80,6 +80,7 @@ void FlightController::init(bjos::BJOS *bjos) {
     _data->landed = false;
     _data->write_estimate = false; //disable writing estimate by default (should be explicitly enabled!)
     _data->write_thrust_setpoint = false; //disable writing thrust setpoint by default (should be explicitly enabled!)                                      
+    _data->end_thrust_setpoint = false;
     _data->kill_motors = false;
     _data->force_failsafe = false;
     _data->battery_percentage = 1; //assume full battery when not known...
@@ -503,6 +504,7 @@ void FlightController::write_thread() {
             shared_data_mutex->lock();
             bool do_write_estimate = _data->write_estimate;
             bool do_write_thrust_setpoint = _data->write_thrust_setpoint; 
+            bool do_end_thrust_setpoint = _data->end_thrust_setpoint;
             bool kill_motors = _data->kill_motors;
             bool force_failsafe = _data->force_failsafe;
             shared_data_mutex->unlock();
@@ -525,9 +527,10 @@ void FlightController::write_thread() {
                 //wait some time to try again
                 usleep(100000);
             }else if (do_write_thrust_setpoint) {
-                write_thrust_setpoint();
+                write_thrust_setpoint(false);
             }else{
-                 write_setpoint();
+                if (do_end_thrust_setpoint) write_thrust_setpoint(true);
+                write_setpoint();
             
                 //write setpoint and estimate
                 if(do_write_estimate) write_estimate();
@@ -597,7 +600,7 @@ void FlightController::write_estimate() {
     //TODO: check if write is succesfull
 }
 
-void FlightController::write_thrust_setpoint() {
+void FlightController::write_thrust_setpoint(bool end) {
     //pull from current setpoint
     shared_data_mutex->lock();
     mavlink_set_attitude_target_t sp = _data->thrust_setpoint;
@@ -610,6 +613,9 @@ void FlightController::write_thrust_setpoint() {
         sp.time_boot_ms = (uint32_t)(get_time_usec(CLOCK_MONOTONIC) / 1000);
     sp.target_system = system_id;
     sp.target_component = autopilot_id;
+
+    //if we need to end sending thrust setpoints, set all flags on false and do one last write
+    if (end) sp.type_mask = END_THRUST_SETPOINT;
 
     //encode
     mavlink_message_t message;
@@ -849,6 +855,7 @@ bool FlightController::writeEstimateEnabled(){
 void FlightController::toggleWriteThrustSetpoint(bool write_thrust_setpoint) {
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
     _data->write_thrust_setpoint = write_thrust_setpoint;
+    if (!write_thrust_setpoint) _data->end_thrust_setpoint = true;
 }
 bool FlightController::writeThrustSetpointEnabled() {
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);

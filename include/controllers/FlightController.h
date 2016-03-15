@@ -86,7 +86,7 @@
 #define SET_TARGET_LAND         11719 //0b0010110111000111
 #define SET_TARGET_TAKEOFF      7623  //0b0001110111000111
 #define SET_THRUST_SETPOINT     191   //0b0000000010111111
-
+#define END_THRUST_SETPOINT     255   //0b0000000011111111
 /* helper function */
 uint64_t get_time_usec();
 
@@ -143,7 +143,10 @@ namespace bjos {
 
         /* Write thrust setpoint to Pixhawk */
         bool write_thrust_setpoint;
-        
+
+        /* End thrust setpoint transition flag */
+        bool end_thrust_setpoint;
+
         /* Current vision syned state */
         bool _vision_sync;
 
@@ -298,7 +301,7 @@ namespace bjos {
         /* Utility functions used by threads */
         void write_setpoint();
         void write_estimate();
-        void write_thrust_setpoint();
+        void write_thrust_setpoint(bool end);
 
         void read_messages();
         
