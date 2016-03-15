@@ -85,6 +85,7 @@
 #define SET_TARGET_YAW_RATE		13823 //0b0011010111111111
 #define SET_TARGET_LAND         11719 //0b0010110111000111
 #define SET_TARGET_TAKEOFF      7623  //0b0001110111000111
+#define SET_THRUST_SETPOINT     191   //0b0000000010111111
 
 /* helper function */
 uint64_t get_time_usec();
@@ -125,6 +126,9 @@ namespace bjos {
         /* Latest estimate sent to the drone */
         mavlink_vision_position_estimate_t vision_position_estimate;
 
+        /* Latest thrust setpoint sent to the drone */
+        mavlink_set_attitude_target_t thrust_setpoint;
+
         /* Stores last system time from the Pixhawk (normally should not be directly used, instead the synchronized time should be used) */
         mavlink_system_time_t sys_time;
 
@@ -136,6 +140,9 @@ namespace bjos {
 
         /* Write estimate to Pixhawk */
         bool write_estimate;
+
+        /* Write thrust setpoint to Pixhawk */
+        bool write_thrust_setpoint;
         
         /* Current vision syned state */
         bool _vision_sync;
@@ -213,6 +220,13 @@ namespace bjos {
         Eigen::Vector3d getPositionEstimateWF();
         void setYawEstimateWF(double yawEst);
         double getYawEstimateWF();
+
+        /* Enable external estimate to read */
+        void toggleWriteThrustSetpoint(bool);
+        bool writeThrustSetpointEnabled();
+
+        /* Set thrust setpoint (only written on enable) */
+        void setThrustSetpoint(float thrust);
         
         /* Force failsafe mode which will try to land safely - overriding any other command given and tries shutting down */
         void forceFailsafe();
@@ -284,6 +298,8 @@ namespace bjos {
         /* Utility functions used by threads */
         void write_setpoint();
         void write_estimate();
+        void write_thrust_setpoint();
+
         void read_messages();
         
         /* Used to check if nothing is wrong with the MAVLink connection */
