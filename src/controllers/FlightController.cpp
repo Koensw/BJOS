@@ -363,6 +363,12 @@ void FlightController::read_messages() {
                 mavlink_sys_status_t sys_state;
                 mavlink_msg_sys_status_decode(&message, &sys_state);
                 if(static_cast<int>(sys_state.battery_remaining) > 0) _data->battery_percentage = static_cast<double>(sys_state.battery_remaining)/100.0;
+
+                Message msg("battery_remaining");
+                sstr.clear();
+                sstr << sys_state.battery_remaining;
+                msg.setData(sstr.str());
+                send_state_message(msg);
             }
             case MAVLINK_MSG_ID_SYSTEM_TIME:
             {
