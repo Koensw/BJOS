@@ -366,7 +366,7 @@ void FlightController::read_messages() {
 
                 Message msg("battery_remaining");
                 sstr.clear();
-                sstr << sys_state.battery_remaining;
+                sstr << static_cast<double>(sys_state.battery_remaining) / 100.0;
                 msg.setData(sstr.str());
                 send_state_message(msg);
             }
