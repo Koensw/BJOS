@@ -68,7 +68,7 @@ void OSInit(){
         flight->toggleWriteEstimate(true);
         
         //load the gripper controller
-        gripper = new GripperController(0x40, 1);
+        gripper = new GripperController(0x40, 0);
         bjos->initController(gripper);        
         
         //reset gripper
@@ -78,8 +78,8 @@ void OSInit(){
         eyes = new EyesController(0x40, 2);
         bjos->initController(eyes);
         
-        //set the eyes default on
-        eyes->setEnabled(true);
+        //set the eyes default off
+        eyes->setEnabled(false);
     }catch(ControllerInitializationError &init_err){
         Log::fatal(init_err.getControllerName(), init_err.what());
         std::exit(0);

@@ -847,6 +847,7 @@ void FlightController::setTargetCF(uint16_t type_mask, Eigen::Vector3d,
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
     
     /* Tranform CF to NED Body frame */
+    Eigen::Vector3d orientationNED = orientationWFtoNED(orientation, _data->visionYawOffset);
     Eigen::Vector3d velocityNED = CFtoBodyNED(velocity);
     
     mavlink_set_position_target_local_ned_t sp;
@@ -861,7 +862,7 @@ void FlightController::setTargetCF(uint16_t type_mask, Eigen::Vector3d,
     sp.vy = velocityNED.y();
     sp.vz = velocityNED.z();
     
-    sp.yaw = -orientation.z();
+    sp.yaw = orientationNED.z();
     sp.yaw_rate = -angularVelocity.z();
     
     sp.coordinate_frame = MAV_FRAME_BODY_NED;
@@ -876,6 +877,9 @@ void FlightController::setTargetWF(uint16_t type_mask, Eigen::Vector3d position,
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
     
     /* Tranform WF to NED frame */
+    double yawNED = -yaw + _data->visionYawOffset;
+    if(yaw < M_PI) yaw += 2*M_PI;
+    if(yaw > M_PI) yaw -= 2*M_PI;
     Eigen::Vector3d positionNED = positionWFtoNED(position,  _data->visionPosOffset, _data->visionYawOffset);
     
     mavlink_set_position_target_local_ned_t sp;
@@ -890,7 +894,7 @@ void FlightController::setTargetWF(uint16_t type_mask, Eigen::Vector3d position,
     sp.vy = 0;
     sp.vz = 0;
     
-    sp.yaw = -yaw;
+    sp.yaw = yawNED;
     sp.yaw_rate = -yaw_speed;
     
     sp.coordinate_frame = MAV_FRAME_LOCAL_NED;
