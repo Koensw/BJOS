@@ -79,6 +79,8 @@ void FlightController::init(bjos::BJOS *bjos) {
     // -------------------------------------------------------------------------------------------------
     _data->landed = false;
     _data->write_estimate = false; //disable writing estimate by default (should be explicitly enabled!)
+    _data->write_thrust_setpoint = false; //disable writing thrust setpoint by default (should be explicitly enabled!)                                      
+    _data->end_thrust_setpoint = false;
     _data->kill_motors = false;
     _data->force_failsafe = false;
     _data->battery_percentage = 1; //assume full battery when not known...
@@ -361,6 +363,12 @@ void FlightController::read_messages() {
                 mavlink_sys_status_t sys_state;
                 mavlink_msg_sys_status_decode(&message, &sys_state);
                 if(static_cast<int>(sys_state.battery_remaining) > 0) _data->battery_percentage = static_cast<double>(sys_state.battery_remaining)/100.0;
+
+                Message msg("battery_remaining");
+                sstr.clear();
+                sstr << static_cast<double>(sys_state.battery_remaining) / 100.0;
+                msg.setData(sstr.str());
+                send_state_message(msg);
             }
             case MAVLINK_MSG_ID_SYSTEM_TIME:
             {
@@ -501,6 +509,8 @@ void FlightController::write_thread() {
 
             shared_data_mutex->lock();
             bool do_write_estimate = _data->write_estimate;
+            bool do_write_thrust_setpoint = _data->write_thrust_setpoint; 
+            bool do_end_thrust_setpoint = _data->end_thrust_setpoint;
             bool kill_motors = _data->kill_motors;
             bool force_failsafe = _data->force_failsafe;
             shared_data_mutex->unlock();
@@ -516,13 +526,17 @@ void FlightController::write_thread() {
                 }
                 //wait some time to try again
                 usleep(100000);
-            }else if(force_failsafe){
+            }
+            else if (force_failsafe) {
                 //If we succesfully kill the motors of the drone, try to shut down BJOS
                 bjos::BJOS::getOS()->shutdown();
                 //wait some time to try again
                 usleep(100000);
+            }else if (do_write_thrust_setpoint) {
+                write_thrust_setpoint(false);
             }else{
-                 write_setpoint();
+                if (do_end_thrust_setpoint) write_thrust_setpoint(true);
+                write_setpoint();
             
                 //write setpoint and estimate
                 if(do_write_estimate) write_estimate();
@@ -589,6 +603,33 @@ void FlightController::write_estimate() {
     //do the write
     serial_port->write_message(message);
     
+    //TODO: check if write is succesfull
+}
+
+void FlightController::write_thrust_setpoint(bool end) {
+    //pull from current setpoint
+    shared_data_mutex->lock();
+    mavlink_set_attitude_target_t sp = _data->thrust_setpoint;
+    shared_data_mutex->unlock();
+
+    //Log::info("FlightController::write_thrust_setpoint","current_setpoint: %.4f", sp.thrust);
+
+    //double check some system parameters
+    if (not sp.time_boot_ms)
+        sp.time_boot_ms = (uint32_t)(get_time_usec(CLOCK_MONOTONIC) / 1000);
+    sp.target_system = system_id;
+    sp.target_component = autopilot_id;
+
+    //if we need to end sending thrust setpoints, set all flags on false and do one last write
+    if (end) sp.type_mask = END_THRUST_SETPOINT;
+
+    //encode
+    mavlink_message_t message;
+    mavlink_msg_set_attitude_target_encode(SYS_ID, COMP_ID, &message, &sp);
+
+    //do the write
+    serial_port->write_message(message);
+
     //TODO: check if write is succesfull
 }
 
@@ -817,6 +858,16 @@ bool FlightController::writeEstimateEnabled(){
     return _data->write_estimate;
 }
 
+void FlightController::toggleWriteThrustSetpoint(bool write_thrust_setpoint) {
+    std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+    _data->write_thrust_setpoint = write_thrust_setpoint;
+    if (!write_thrust_setpoint) _data->end_thrust_setpoint = true;
+}
+bool FlightController::writeThrustSetpointEnabled() {
+    std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+    return _data->write_thrust_setpoint;
+}
+
 void FlightController::syncVision(Eigen::Vector3d visionPosEstimate, double visionYawOffset) {
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
     Log::info("FlightController::syncVision", "Sync at %f %f %f %f!", visionPosEstimate.x(), visionPosEstimate.y(), visionPosEstimate.z(), visionYawOffset);
@@ -940,6 +991,20 @@ double FlightController::getYawEstimateWF(){
     attEstNED[2] = _data->vision_position_estimate.yaw;
     
     return orientationNEDtoWF(attEstNED, _data->visionYawOffset)[2];
+}
+
+void FlightController::setThrustSetpoint(float thrust) {
+    std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+
+    mavlink_set_attitude_target_t sp;
+
+    sp.type_mask = SET_THRUST_SETPOINT;
+    
+    sp.thrust = thrust;
+    
+    //Log::info("FlightController::setThrustSetpoint", "%f", sp.thrust); 
+
+    _data->thrust_setpoint = sp;
 }
 
 //TODO: fix yaw rotation on Raspberry Pi side in order to send position setpoints
