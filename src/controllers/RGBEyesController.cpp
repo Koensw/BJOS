@@ -14,7 +14,7 @@
 
 using namespace bjos;
 
-RGBEyesController::RGBEyesController(): _ledstring(-1), _matrix(-1), _dotspos(-1), _dotcolors(-1), _data(0) {
+RGBEyesController::RGBEyesController():  _data(0) {
 
 		_ledstring.freq = TARGET_FREQ,
 		_ledstring.dmanum = DMA,
@@ -29,23 +29,19 @@ RGBEyesController::RGBEyesController(): _ledstring(-1), _matrix(-1), _dotspos(-1
 		_ledstring.channel[1].invert = 0,
 		_ledstring.channel[1].brightness = 0,
 
-	ws2811_led_t temp[] =
-	{
-		0x200000,  // red
-		0x201000,  // orange
-		0x202000,  // yellow
-		0x002000,  // green
-		0x002020,  // lightblue
-		0x000020,  // blue
-		0x100010,  // purple
-		0x200010,  // pink
-	};
-	
+
+		_dotcolors[0] = 0x200000;
+		_dotcolors[1] = 0x201000;
+		_dotcolors[2] = 0x202000;
+		_dotcolors[3] = 0x002000;
+		_dotcolors[4] = 0x002020;
+		_dotcolors[5] = 0x000020;
+		_dotcolors[6] = 0x100010;
+		_dotcolors[7] = 0x200010;
 	
 	for (int i = 0; i < 8; i++)
 	{
 		_dotspos[i] = i;
-		_dotcolors[i] = temp[i];
 	}
 
 	
