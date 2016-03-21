@@ -34,7 +34,7 @@
 #include <stdlib.h>
 #include <errno.h>
 
-#include "rpihw.h"
+#include "libs/rpihw.h"
 
 
 #define LINE_WIDTH_MAX                           80

@@ -40,7 +40,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include "mailbox.h"
+#include "libs/mailbox.h"
 
 
 void *mapmem(uint32_t base, uint32_t size) {

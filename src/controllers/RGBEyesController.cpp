@@ -61,37 +61,10 @@ void RGBEyesController::init(BJOS *bjos){
         throw ControllerInitializationError(this, "Cannot initialize controller"); 
     }
         
-    //load i2c (TODO: all I2C operations should take only place in loader and only in main thread?)
-    if(_address < 0){
-        //controller cannot be initialized...
-        throw ControllerInitializationError(this, "Address not given to controller");
-    }
-    
-    //initialize I2C
-    _fd = wiringPiI2CSetup(_address);
-    
-    //reset device
-    reset();
-    set_pwm_freq(EYES_PWM_FREQ);
-    
-    
-    //save the address
-    std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
-    _data->address = _address;
-    _data->channel = _channel;
 }
 
 void RGBEyesController::load(BJOS *bjos){    
     Controller::load(bjos, "eyes", _data);
-        
-    int addr = 0;
-    shared_data_mutex->lock();
-    addr = _data->address;
-    _channel = _data->channel;
-    shared_data_mutex->unlock();
-        
-    //load i2c (TODO: all I2C operations should take only place in loader and only in main thread?)
-    _fd = wiringPiI2CSetup(addr);
 }
 
 
@@ -102,7 +75,7 @@ void RGBEyesController::matrix_render(void) {
 	{
 		for (y = 0; y < HEIGHT; y++)
 		{
-			ledstring.channel[0].leds[(y * WIDTH) + x] = matrix[x][y];
+			_ledstring.channel[0].leds[(y * WIDTH) + x] = _matrix[x][y];
 		}
 	}    
 }
@@ -114,7 +87,7 @@ void RGBEyesController::matrix_raise(void) {
 	{
 		for (x = 0; x < WIDTH; x++)
 		{
-			matrix[x][y] = matrix[x][y + 1];
+			_matrix[x][y] = _matrix[x][y + 1];
 		}
 	}
 }
@@ -122,38 +95,23 @@ void RGBEyesController::matrix_raise(void) {
 void RGBEyesController::matrix_bottom(void) {
 	int i;
 
-	for (i = 0; i < ARRAY_SIZE(dotspos); i++)
+	for (i = 0; i < ARRAY_SIZE(_dotspos); i++)
 	{
-		dotspos[i]++;
-		if (dotspos[i] >(WIDTH - 1))
+		_dotspos[i]++;
+		if (_dotspos[i] >(WIDTH - 1))
 		{
-			dotspos[i] = 0;
+			_dotspos[i] = 0;
 		}
 
-		matrix[dotspos[i]][HEIGHT - 1] = dotcolors[i];
+		_matrix[_dotspos[i]][HEIGHT - 1] = _dotcolors[i];
 	}
-}
-
-static void RGBEyesController::ctrl_c_handler(int signum) {
-	ws2811_fini(&ledstring);
-}
-
-static void RGBEyesController::setup_handlers(void) {
-	struct sigaction sa =
-	{
-		.sa_handler = ctrl_c_handler,
-	};
-
-	sigaction(SIGINT, &sa, NULL);
-	sigaction(SIGTERM, &sa, NULL);
 }
 
 int RGBEyesController::test(void) {
 	int ret = 0;
 
-	setup_handlers();
 
-	if (ws2811_init(&ledstring))
+	if (ws2811_init(&_ledstring))
 	{
 		return -1;
 	}
@@ -164,7 +122,7 @@ int RGBEyesController::test(void) {
 		matrix_bottom();
 		matrix_render();
 
-		if (ws2811_render(&ledstring))
+		if (ws2811_render(&_ledstring))
 		{
 			ret = -1;
 			break;
@@ -174,7 +132,7 @@ int RGBEyesController::test(void) {
 		usleep(1000000 / 15);
 	}
 
-	ws2811_fini(&ledstring);
+	ws2811_fini(&_ledstring);
 	// end testing part
 
 	return ret;

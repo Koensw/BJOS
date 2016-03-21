@@ -33,6 +33,11 @@ add_library(bjos SHARED
     src/controllers/flight/serial_port.cpp
     src/libs/i2c.cpp
     src/libs/log.cpp
+    src/libs/dma.c
+    src/libs/mailbox.c
+    src/libs/pwm.c
+    src/libs/rpihw.c
+    src/libs/ws2811.c
 )
 target_link_libraries(bjos ${Boost_LIBRARIES} pthread rt wiringPi ${BJCOMM_LIBRARY} zmq) #FIXME: zmq should not need an explicit specification
 
@@ -55,6 +60,12 @@ add_executable(gripper_loader
     src/loader/test_gripper.cpp
 )
 target_link_libraries(gripper_loader bjos)
+
+# rgbeyes loader
+add_executable(rgbeyes_loader
+    src/loader/test_rgbeyes.cpp
+)
+target_link_libraries(rgbeyes_loader bjos)
 
 # default loader
 add_executable(default_loader

@@ -77,7 +77,7 @@ void OSInit(){
         gripper->gripperClosePWM(4095);
         
         //load eyes
-        eyes = new EyesController(0x40, 2);
+/*        eyes = new EyesController(0x40, 2);
         bjos->initController(eyes);
         
         //set the eyes default off
@@ -86,7 +86,7 @@ void OSInit(){
         rgbeyes = new RGBEyesController();
         bjos->initController(rgbeyes);
 		rgbeyes->test();
-
+*/
     }catch(ControllerInitializationError &init_err){
         Log::fatal(init_err.getControllerName(), init_err.what());
         std::exit(0);
@@ -101,9 +101,9 @@ void OSFinalize(){
     
     //wait for finalizing clients (or 5 seconds past)
     int time = 0;
-    while(/*!sonar->canFinalize() ||*/ (!gripper->canFinalize() || !flight->canFinalize())){
+    while(/*!sonar->canFinalize() || (!gripper->canFinalize() || !flight->canFinalize())*/!rgbeyes->canFinalize()){
         if(++time >= 50) break;
-        Log::info("DefaultLoader", "Waiting for %d clients to finish...", /*bjos->getControllerCount("sonar")-1*/ + bjos->getControllerCount("gripper")-1 + bjos->getControllerCount("flight")-1);
+        Log::info("DefaultLoader", "Waiting for %d clients to finish...", /*bjos->getControllerCount("sonar")-1 + */bjos->getControllerCount("gripper")-1 + bjos->getControllerCount("flight")-1/*bjos->getControllerCount("rgbeyes")-1*/);
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
     
