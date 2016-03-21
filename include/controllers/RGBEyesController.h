@@ -73,10 +73,10 @@ namespace bjos {
     public:
         RGBEyesController();
         virtual RGBEyesController();
+		int test(void);
         
 
     private:
-		int test(void);
 		void matrix_render(void);
 		void matrix_raise(void);
 		void matrix_bottom(void);
@@ -96,7 +96,7 @@ namespace bjos {
 		ws2811_led_t _matrix[WIDTH][HEIGHT];
 
 
-		int _dotspos[8]; = { 0, 1, 2, 3, 4, 5, 6, 7 };
+		int _dotspos[8];
 		ws2811_led_t _dotcolors[8]; 
         
         SharedRGBEyesData *_data;
