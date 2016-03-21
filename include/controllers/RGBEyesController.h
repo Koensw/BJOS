@@ -80,8 +80,6 @@ namespace bjos {
 		void matrix_render(void);
 		void matrix_raise(void);
 		void matrix_bottom(void);
-		static void ctrl_c_handler(int signum);
-		static void setup_handlers(void);
         
         /* Initialize the main instance */ 
         void init(BJOS *bjos);
