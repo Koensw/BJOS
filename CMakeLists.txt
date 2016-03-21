@@ -29,6 +29,7 @@ add_library(bjos SHARED
     src/controllers/FlightController.cpp
     src/controllers/GripperController.cpp
     src/controllers/EyesController.cpp
+    src/controllers/RGBEyesController.cpp
     src/controllers/flight/serial_port.cpp
     src/libs/i2c.cpp
     src/libs/log.cpp
