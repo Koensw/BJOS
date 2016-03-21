@@ -15,27 +15,19 @@
 using namespace bjos;
 
 RGBEyesController::RGBEyesController(): _ledstring(-1), _matrix(-1), _dotspos(-1), _dotcolors(-1), _data(0) {
-	_ledstring= {
-		.freq = TARGET_FREQ,
-			.dmanum = DMA,
-			.channel =
-			{
-				[0] =
-			{
-				.gpionum = GPIO_PIN,
-				.count = LED_COUNT,
-				.invert = 0,
-				.brightness = 255,
-			},
-				[1] =
-			{
-				.gpionum = 0,
-				.count = 0,
-				.invert = 0,
-				.brightness = 0,
-			},
-		},
-	};
+
+		_ledstring.freq = TARGET_FREQ,
+		_ledstring.dmanum = DMA,
+
+		_ledstring.channel[0].gpionum = GPIO_PIN,
+		_ledstring.channel[0].count = LED_COUNT,
+		_ledstring.channel[0].invert = 0,
+		_ledstring.channel[0].brightness = 255,
+
+		_ledstring.channel[1].gpionum = 0,
+		_ledstring.channel[1].count = 0,
+		_ledstring.channel[1].invert = 0,
+		_ledstring.channel[1].brightness = 0,
 
 	ws2811_led_t temp[] =
 	{
