@@ -14,6 +14,7 @@
 #include "controllers/FlightController.h"
 #include "controllers/GripperController.h"
 #include "controllers/EyesController.h"
+#include "controllers/RGBEyesController.h"
 
 #include "controllers/sonar/DevantechSonarInterface.h"
 
@@ -27,6 +28,7 @@ SonarController *sonar;
 FlightController *flight;
 GripperController *gripper;
 EyesController *eyes;
+RGBEyesController *rgbeyes;
 
 /* Initialize the OS */
 void OSInit(){
@@ -80,6 +82,10 @@ void OSInit(){
         
         //set the eyes default off
         eyes->setEnabled(false);
+
+        rgbeyes = new RGBEyesController();
+        bjos->initController(rgbeyes);
+
     }catch(ControllerInitializationError &init_err){
         Log::fatal(init_err.getControllerName(), init_err.what());
         std::exit(0);

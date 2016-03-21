@@ -19,7 +19,7 @@ RGBEyesController::RGBEyesController(_ledstring ledstring, ws2811_led_t *matrix,
 RGBEyesController::~RGBEyesController(){
     if(!Controller::isAvailable()) return;
     
-    Controller::finalize<SharedEyesData>();
+    Controller::finalize<SharedRGBEyesData>();
 }
 
 void RGBEyesController::init(BJOS *bjos){        
@@ -129,7 +129,7 @@ static void RGBEyesController::setup_handlers(void) {
 	sigaction(SIGTERM, &sa, NULL);
 }
 
-int RGBEyesController::init(void) {
+int RGBEyesController::test(void) {
 	int ret = 0;
 
 	setup_handlers();
