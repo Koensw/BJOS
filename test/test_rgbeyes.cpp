@@ -16,7 +16,7 @@
 #include "controllers/RGBEyesController.h"
 
 /*
- *  Test gripper
+ *  Test rgbeyes
  */
 
 using namespace bjos;
@@ -31,15 +31,17 @@ int main(){
         return 0;
     }
 
-	RGBEyesController RGBeyes;
+	RGBEyesController rgbeyes;
     printf("loading..\n");
-	bjos->getController("RGBeyes", &RGBeyes);
-    if(!RGBeyes.isAvailable()) {
+	bjos->getController("rgbeyes", &rgbeyes);
+    if(!rgbeyes.isAvailable()) {
         std::cout << "Failed to retrieve RGBEyes controller" << std::endl;
         return 0;
     }
     
 	printf("CODE is running! Press CTRL+C to quit.\n");
+
+    rgbeyes.start();
 
 	int red = 0;
 	int green = 0;
@@ -50,6 +52,6 @@ int main(){
 		std::cin >> red;
 		std::cin >> green;
 		std::cin >> blue;
-		RGBeyes.rgbsollid(red, green, blue);
+		rgbeyes.rgbsollid(red, green, blue);
     }
 }

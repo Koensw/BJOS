@@ -120,8 +120,8 @@ void RGBEyesController::angle(int deg) {
 	{
 		if (i == onled)
 		{
-			_ledstring.channel[0].leds[i] = createRGB(0, 0, blue);
-			_ledstring.channel[0].leds[12 + i] = createRGB(0, 0, blue);
+			_ledstring.channel[0].leds[i] = createRGB(0, 0, 255);
+			_ledstring.channel[0].leds[12 + i] = createRGB(0, 0, 255);
 		}
 		else
 		{

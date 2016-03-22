@@ -99,6 +99,12 @@ add_executable(test_gripper
 )
 target_link_libraries(test_gripper bjos)
 
+# test_gripper
+add_executable(test_rgbeyes
+    test/test_rgbeyes.cpp
+)
+target_link_libraries(test_rgbeyes bjos)
+
 # align
 add_executable(align_frames
     test/align_frames.cpp
