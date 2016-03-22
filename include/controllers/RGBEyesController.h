@@ -63,6 +63,8 @@
 
 namespace bjos {
     struct SharedRGBEyesData{
+		//bool confirm;
+		//bool cancel;
         //int address;
         //int channel;
         
@@ -80,6 +82,7 @@ namespace bjos {
 		void animate();
 		void confirm();
 		void cancel();
+		void rgbmatrix(int rgbmatrix[24][3]);
 
     private:
 		void matrix_render(void);
