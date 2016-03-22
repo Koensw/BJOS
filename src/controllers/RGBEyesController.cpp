@@ -108,76 +108,7 @@ void RGBEyesController::matrix_bottom(void) {
 	}
 }
 
-
-
-
-
-
-
-void RGBEyesController::angle(int deg) {
-
-	int onled= (int)((float)deg*12.0f / 180.0f);
-	for (int i = 0; i < 12; i++)
-	{
-		if (i == onled)
-		{
-			_ledstring.channel[0].leds[i] = createRGB(0, 0, 255);
-			_ledstring.channel[0].leds[12 + i] = createRGB(0, 0, 255);
-		}
-		else
-		{
-			_ledstring.channel[0].leds[i] = createRGB(0, 0, 0);
-			_ledstring.channel[0].leds[12 + i] = createRGB(0, 0, 0);
-		}
-	}
-	ws2811_render(&_ledstring);
-
-}
-
-void RGBEyesController::rgbfill(int red, int green, int blue) {
-
-	for (int i = 0; i < 12; i++)
-	{
-			_ledstring.channel[0].leds[i] = createRGB(0, 0, 0);
-			_ledstring.channel[0].leds[12 + i] = createRGB(0, 0, 0);
-	}
-	ws2811_render(&_ledstring);
-
-	for (int i = 0; i < 12; i++)
-	{
-		_ledstring.channel[0].leds[11 - i] = createRGB(red, green, blue);
-		_ledstring.channel[0].leds[12 + i] = createRGB(red, green, blue);
-		ws2811_render(&_ledstring);
-		// 4 frames /sec
-		usleep(1000000 / 4);
-	}
-	
-
-}
-
-
-
-
-void RGBEyesController::rgbsollid(int red, int green, int blue){
-
-    printf("hex value: %X", createRGB(red,green,blue));
-
-	for (int i = 0; i < LED_COUNT; i++)
-	{
-		_ledstring.channel[0].leds[i]= createRGB(red,green,blue);
-	}
-	ws2811_render(&_ledstring);
-
-}
-
-uint32_t RGBEyesController::createRGB(int r, int g, int b)
-{
-	// 0xRRGGBB
-	return ((r & 0xff) << 16) + ((g & 0xff) << 8) + (b & 0xff);
-}
-
-
-int RGBEyesController::start(void) {
+int RGBEyesController::test(void) {
 	int ret = 0;
 
 
@@ -208,12 +139,3 @@ int RGBEyesController::start(void) {
 	return ret;
 
 }
-
-void RGBEyesController::stop(void) {
-	
-	ws2811_fini(&_ledstring);
-	// end testing part
-	
-}
-
-
