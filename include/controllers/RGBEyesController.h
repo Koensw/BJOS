@@ -76,6 +76,8 @@ namespace bjos {
 		int start(void);
 		void stop(void);
 		void rgbsollid(int red, int green, int blue);
+		void angle(int deg);
+		void rgbfill(int red, int green, int blue);
         
 
     private:
