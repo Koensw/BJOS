@@ -77,6 +77,9 @@ namespace bjos {
 		void rgbsollid(int red, int green, int blue);
 		void rgbfill(int red, int green, int blue);
 		void angle(int deg);
+		void animate();
+		void confirm();
+		void cancel();
 
     private:
 		void matrix_render(void);
