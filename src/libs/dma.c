@@ -38,7 +38,7 @@
 #include <sys/stat.h>
 #include <sys/mman.h>
 
-#include "libs/dma.h"
+#include "dma.h"
 
 
 // DMA address mapping by DMA number index

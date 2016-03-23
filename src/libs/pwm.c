@@ -30,9 +30,9 @@
 
 #include <stdint.h>
 
-#include "libs/ws2811.h"
+#include "ws2811.h"
 
-#include "libs/pwm.h"
+#include "pwm.h"
 
 
 // Mapping of Pin to alternate function for PWM channel 0

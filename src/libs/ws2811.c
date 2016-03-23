@@ -39,14 +39,14 @@
 #include <sys/mman.h>
 #include <signal.h>
 
-#include "libs/mailbox.h"
-#include "libs/clk.h"
-#include "libs/gpio.h"
-#include "libs/dma.h"
-#include "libs/pwm.h"
-#include "libs/rpihw.h"
+#include "mailbox.h"
+#include "clk.h"
+#include "gpio.h"
+#include "dma.h"
+#include "pwm.h"
+#include "rpihw.h"
 
-#include "libs/ws2811.h"
+#include "ws2811.h"
 
 
 #define BUS_TO_PHYS(x)                           ((x)&~0xC0000000)
