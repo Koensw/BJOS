@@ -39,11 +39,6 @@ RGBEyesController::RGBEyesController():  _data(0) {
 		_dotcolors[5] = 0x000020;
 		_dotcolors[6] = 0x100010;
 		_dotcolors[7] = 0x200010;
-
-		/*shared_data_mutex->lock();
-		_data->confirm=false;
-		_data->cancel=false;
-		shared_data_mutex->unlock();*/
 	
 	for (int i = 0; i < 8; i++)
 	{
@@ -144,24 +139,17 @@ void RGBEyesController::rgbfill(int red, int green, int blue) {
 		_ledstring.channel[0].leds[12 + i] = createRGB(0, 0, 0);
 	}
 	ws2811_render(&_ledstring);
-	int i = 0;
-	for (i = 0; i < 12; i++)
+
+	for (int i = 0; i < 12; i++)
 	{
 		_ledstring.channel[0].leds[11 - i] = createRGB(red, green, blue);
 		_ledstring.channel[0].leds[12 + i] = createRGB(red, green, blue);
 		ws2811_render(&_ledstring);
-		if(RGBEyesCont)
 		// 4 frames /sec
 		usleep(1000000 / 4);
-		/*shared_data_mutex->lock();
-		if (_data->cancel)
-			break;
-		shared_data_mutex->unlock();*/
 	}
-	/*while (!(cancel || confirm))
-	{
 
-	}*/
+
 }
 
 
@@ -176,16 +164,6 @@ void RGBEyesController::rgbsollid(int red, int green, int blue) {
 	ws2811_render(&_ledstring);
 
 }
-
-void RGBEyesController::rgbmatrix(int rgbmatrix[24][3]) {
-	for (int i = 0; i < LED_COUNT; i++)
-	{
-		_ledstring.channel[0].leds[i] = createRGB(rgbmatrix[i][0], rgbmatrix[i][1], rgbmatrix[i][2]);
-	}
-	ws2811_render(&_ledstring);
-}
-
-
 
 
 void RGBEyesController::cancel() {
@@ -259,7 +237,6 @@ int RGBEyesController::test(void) {
 		std::cout << "4: confirm:" << std::endl;
 		std::cout << "5: cancel:" << std::endl;
 		std::cout << "6: animate:" << std::endl;
-		std::cout << "7: recieve 24x3 matrix:" << std::endl;
 		std::cin >> option;
 
 		int red;
@@ -282,7 +259,6 @@ int RGBEyesController::test(void) {
 			std::cin >> green;
 			std::cin >> blue;
 			rgbfill(red, green, blue);
-			break;
 
 		case 3:
 			std::cout << "view direction(0-180): " << std::endl;
@@ -300,23 +276,6 @@ int RGBEyesController::test(void) {
 
 		case 6:
 			animate();
-			break;
-
-		case 7:
-			int m[24][3] = {0};
-			std::cout << "RGB matrix: " << std::endl;
-			for (int i = 0; i < 24; i++)
-			{
-				std::cout << "RGB fill color "<< i <<"th led (0-255 0-225 0-255): " << std::endl;
-				std::cin >> m[i][0];
-				std::cin >> m[i][1];
-				std::cin >> m[i][2];
-			}
-			rgbmatrix(m)
-			std::cin >> red;
-			std::cin >> green;
-			std::cin >> blue;
-			rgbfill(red, green, blue);
 			break;
 
 		default:
