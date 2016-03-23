@@ -63,7 +63,7 @@ target_link_libraries(gripper_loader bjos)
 
 # rgbeyes loader
 add_executable(rgbeyes_loader
-    src/loader/test_rgbeyes.cpp
+    src/loader/test_RGBeyes.cpp
 )
 target_link_libraries(rgbeyes_loader bjos)
 
