@@ -165,52 +165,6 @@ void RGBEyesController::rgbsollid(int red, int green, int blue) {
 
 }
 
-
-void RGBEyesController::cancel() {
-
-	for (int i = 0; i < LED_COUNT; i++)
-	{
-		_ledstring.channel[0].leds[i] = createRGB(255, 0, 0);
-	}
-	ws2811_render(&_ledstring);
-	usleep(1000000 / 1);
-	for (int i = 0; i < LED_COUNT; i++)
-	{
-		_ledstring.channel[0].leds[i] = createRGB(0, 0, 0);
-	}
-	ws2811_render(&_ledstring);
-}
-
-void RGBEyesController::confirm() {
-
-	for (int i = 0; i < LED_COUNT; i++)
-	{
-		_ledstring.channel[0].leds[i] = createRGB(0, 255, 0);
-	}
-	ws2811_render(&_ledstring);
-	usleep(1000000 / 1);
-	for (int i = 0; i < LED_COUNT; i++)
-	{
-		_ledstring.channel[0].leds[i] = createRGB(0, 0, 0);
-	}
-	ws2811_render(&_ledstring);
-}
-
-void RGBEyesController::animate() {
-	for (int i = 0; i < 240; i++)
-	{
-		matrix_raise();
-		matrix_bottom();
-		matrix_render();
-
-		ws2811_render(&_ledstring);
-
-
-		// 15 frames /sec
-		usleep(1000000 / 15);
-	}
-}
-
 uint32_t RGBEyesController::createRGB(int r, int g, int b)
 {
 	// 0xRRGGBB
@@ -229,59 +183,25 @@ int RGBEyesController::test(void) {
 	// the next part is only for testing
 	while (1)
 	{
-		int option = 0;
-		std::cout << "chose function:" << std::endl;
-		std::cout << "1: rgb solid on" << std::endl;
-		std::cout << "2: rgb fill" << std::endl;
-		std::cout << "3: blue direction:" << std::endl;
-		std::cout << "4: confirm:" << std::endl;
-		std::cout << "5: cancel:" << std::endl;
-		std::cout << "6: animate:" << std::endl;
-		std::cin >> option;
-
 		int red;
 		int blue;
 		int green;
-		int deg = 0;
-		switch (option)
-		{
-		case 1:
-			std::cout << "RGB color (0-255 0-225 0-255): " << std::endl;
-			std::cin >> red;
-			std::cin >> green;
-			std::cin >> blue;
-			rgbsollid(red, green, blue);
-			break;
+		std::cout << "RGB color (0-255 0-225 0-255): " << std::endl;
+		std::cin >> red;
+		std::cin >> green;
+		std::cin >> blue;
+		rgbsollid(red, green, blue);
+        
+        int deg=0;
+        std::cout << "view direction(0-180): " << std::endl;
+        std::cin >>deg;
+        angle(deg);
 
-		case 2:
-			std::cout << "RGB fill color (0-255 0-225 0-255): " << std::endl;
-			std::cin >> red;
-			std::cin >> green;
-			std::cin >> blue;
-			rgbfill(red, green, blue);
-
-		case 3:
-			std::cout << "view direction(0-180): " << std::endl;
-			std::cin >> deg;
-			angle(deg);
-			break;
-
-		case 4:
-			confirm();
-			break;
-
-		case 5:
-			cancel();
-			break;
-
-		case 6:
-			animate();
-			break;
-
-		default:
-			break;		
-		}
-
+        std::cout << "RGB fill color (0-255 0-225 0-255): " << std::endl;
+        std::cin >> red;
+        std::cin >> green;
+        std::cin >> blue;
+        rgbfill(red, green, blue);
 		/*matrix_raise();
 		matrix_bottom();
 		matrix_render();

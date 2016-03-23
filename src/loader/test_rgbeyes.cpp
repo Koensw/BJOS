@@ -3,12 +3,6 @@
 #include <thread>
 #include <chrono>
 
-#include "../libs/clk.h"
-#include "../libs/gpio.h"
-#include "../libs/dma.h"
-#include "../libs/pwm.h"
-
-#include "../libs/ws2811.h"
 
 #include "bjos/bjos.h"
 #include "bjos/helpers/error.h"
@@ -22,12 +16,12 @@
 
 using namespace bjos;
 
-RGBEyesController *RGBeyes;
+RGBEyesController *rgbeyes;
 
 /* Initialize the OS */
 void OSInit(){
     try{
-        Log::info("RGBeyesLoader", "Starting loader %s", "test_RGBeyes");
+        Log::info("RGBeyesLoader", "Starting loader %s", "test_rgbeyes");
         //if(BJOS::getState() != BJOS::UNINITIALIZED) Log::warn("BJOS already running... expecting incorrect shutdown so will continue.");
         
         //init the OS
@@ -35,10 +29,10 @@ void OSInit(){
         Process::installSignalHandler();
         BJOS *bjos = BJOS::getOS();
         
-        RGBeyes = new RGBEyesController();
-        bjos->initController(RGBeyes);
+        rgbeyes = new RGBEyesController();
+        bjos->initController(rgbeyes);
         
-        RGBeyes->start();
+        rgbeyes->test();
     }catch(ControllerInitializationError &init_err){
         Log::fatal(init_err.getControllerName(), init_err.what());
         std::exit(0);
@@ -52,12 +46,12 @@ void OSFinalize(){
     bjos->shutdown();
     
     //wait for finalizing clients
-    while(!gripper->canFinalize()){
-        Log::info("RGBEyesLoader", "Waiting for %d clients to finish...", bjos->getControllerCount("RGBeyes")-1);
+    while(!rgbeyes->canFinalize()){
+        Log::info("RGBEyesLoader", "Waiting for %d clients to finish...", bjos->getControllerCount("rgbeyes")-1);
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
     //delete pointers
-    delete RGBeyes;
+    delete rgbeyes;
     
     //stop os
     BJOS::finalize();
