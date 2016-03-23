@@ -3,6 +3,12 @@
 #include <thread>
 #include <chrono>
 
+/*#include "../libs/clk.h"
+#include "../libs/gpio.h"
+#include "../libs/dma.h"
+#include "../libs/pwm.h"
+
+#include "../libs/ws2811.h"*/
 
 #include "bjos/bjos.h"
 #include "bjos/helpers/error.h"
