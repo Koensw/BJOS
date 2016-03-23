@@ -111,7 +111,6 @@ void OSFinalize(){
     delete eyes;
     delete flight;
     delete gripper;
-    delete rgbeyes;
     
     //stop i2c
 //    I2C::stop();

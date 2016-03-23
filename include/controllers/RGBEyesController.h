@@ -72,7 +72,7 @@ namespace bjos {
     class RGBEyesController : public Controller{
     public:
         RGBEyesController();
-        virtual ~RGBEyesController();
+        virtual RGBEyesController();
 		int test(void);
         
 
