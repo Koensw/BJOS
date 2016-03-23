@@ -46,7 +46,7 @@ void OSFinalize(){
     bjos->shutdown();
     
     //wait for finalizing clients
-    while(!RGBeyes->canFinalize()){
+    while(!gripper->canFinalize()){
         Log::info("RGBEyesLoader", "Waiting for %d clients to finish...", bjos->getControllerCount("RGBeyes")-1);
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
