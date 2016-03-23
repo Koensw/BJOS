@@ -44,12 +44,12 @@
 #include <sys/mman.h>
 #include <signal.h>
 
-#include "../libs/clk.h"
-#include "../libs/gpio.h"
-#include "../libs/dma.h"
-#include "../libs/pwm.h"
+#include "clk.h"
+#include "gpio.h"
+#include "dma.h"
+#include "pwm.h"
 
-#include "../libs/ws2811.h"
+#include "ws2811.h"
 
 #define ARRAY_SIZE(stuff)                        (sizeof(stuff) / sizeof(stuff[0]))
 
@@ -62,7 +62,7 @@
 #define LED_COUNT                                (WIDTH * HEIGHT)		// Total number of leds
 
 namespace bjos {
-    struct SharedRGBEyesData{
+    struct SharedEyesData{
         //int address;
         //int channel;
         
@@ -82,10 +82,12 @@ namespace bjos {
         void setEnabled(bool state);
 
     private:
-		int test(void);
+		int init(void);
 		void matrix_render(void);
 		void matrix_raise(void);
 		void matrix_bottom(void);
+		static void ctrl_c_handler(int signum);
+		static void setup_handlers(void)
         
         /* Initialize the main instance */ 
         void init(BJOS *bjos);
@@ -133,7 +135,7 @@ namespace bjos {
 			0x200010,  // pink
 		};
         
-        SharedRGBEyesData *_data;
+        SharedEyesData *_data;
     };
 }
 
