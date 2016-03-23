@@ -113,8 +113,11 @@ void RGBEyesController::rgbsollid(int red, int green, int blue){
 	{
 		_ledstring.channel[0].leds[i]= createRGB(red,green,blue);
 	}
-	ws2811_render(&_ledstring);
-
+	if (ws2811_render(&_ledstring))
+	{
+		ret = -1;
+		break;
+	}
 }
 
 unsigned long RGBEyesController::createRGB(int r, int g, int b)

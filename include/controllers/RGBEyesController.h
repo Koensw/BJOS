@@ -74,8 +74,8 @@ namespace bjos {
         RGBEyesController();
         virtual ~RGBEyesController();
 		int start(void);
-		void stop(void);
-		void rgbsollid(int red, int green, int blue);
+		int stop(void);
+		void RGBEyesController::rgbsollid(int red, int green, int blue);
         
 
     private:
