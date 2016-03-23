@@ -113,13 +113,13 @@ void RGBEyesController::matrix_bottom(void) {
 
 void RGBEyesController::angle(int deg) {
 
-	int onled = (int)((float)deg*11.0f / 180.0f);
+	int onled = (int)((float)deg*12.0f / 180.0f);
 	for (int i = 0; i < 12; i++)
 	{
 		if (i == onled)
 		{
-			_ledstring.channel[0].leds[i] = createRGB(0, 0, 255);
-			_ledstring.channel[0].leds[12 + i] = createRGB(0, 0, 255);
+			_ledstring.channel[0].leds[i] = createRGB(0, 0, blue);
+			_ledstring.channel[0].leds[12 + i] = createRGB(0, 0, blue);
 		}
 		else
 		{
@@ -168,7 +168,7 @@ void RGBEyesController::rgbsollid(int red, int green, int blue) {
 uint32_t RGBEyesController::createRGB(int r, int g, int b)
 {
 	// 0xRRGGBB
-	return ((g & 0xff) << 16) + ((r & 0xff) << 8) + (b & 0xff);
+	return ((r & 0xff) << 16) + ((g & 0xff) << 8) + (b & 0xff);
 }
 
 
@@ -191,17 +191,6 @@ int RGBEyesController::test(void) {
 		std::cin >> green;
 		std::cin >> blue;
 		rgbsollid(red, green, blue);
-        
-        int deg=0;
-        std::cout << "view direction(0-180): " << std::endl;
-        std::cin >>deg;
-        angle(deg);
-
-        std::cout << "RGB fill color (0-255 0-225 0-255): " << std::endl;
-        std::cin >> red;
-        std::cin >> green;
-        std::cin >> blue;
-        rgbfill(red, green, blue);
 		/*matrix_raise();
 		matrix_bottom();
 		matrix_render();
