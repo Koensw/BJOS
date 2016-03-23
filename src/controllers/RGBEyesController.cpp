@@ -1,4 +1,3 @@
-
 /**
  * @file GripperController.cpp
  *
@@ -55,7 +54,7 @@ RGBEyesController::~RGBEyesController(){
 }
 
 void RGBEyesController::init(BJOS *bjos){        
-    bool ret = Controller::init(bjos, "rgbeyes", _data);
+    bool ret = Controller::init(bjos, "eyes", _data);
         
     if(!ret){
         //controller cannot be initialized...
@@ -65,7 +64,7 @@ void RGBEyesController::init(BJOS *bjos){
 }
 
 void RGBEyesController::load(BJOS *bjos){    
-    Controller::load(bjos, "rgbeyes", _data);
+    Controller::load(bjos, "eyes", _data);
 }
 
 
@@ -160,8 +159,6 @@ void RGBEyesController::rgbfill(int red, int green, int blue) {
 
 void RGBEyesController::rgbsollid(int red, int green, int blue){
 
-    printf("hex value: %X", createRGB(red,green,blue));
-
 	for (int i = 0; i < LED_COUNT; i++)
 	{
 		_ledstring.channel[0].leds[i]= createRGB(red,green,blue);
@@ -170,7 +167,7 @@ void RGBEyesController::rgbsollid(int red, int green, int blue){
 
 }
 
-uint32_t RGBEyesController::createRGB(int r, int g, int b)
+unsigned long RGBEyesController::createRGB(int r, int g, int b)
 {
 	// 0xRRGGBB
 	return ((r & 0xff) << 16) + ((g & 0xff) << 8) + (b & 0xff);
@@ -186,7 +183,7 @@ int RGBEyesController::start(void) {
 		return -1;
 	}
 	// the next part is only for testing
-	while (1)
+	/*while (1)
 	{
 		matrix_raise();
 		matrix_bottom();
@@ -202,7 +199,7 @@ int RGBEyesController::start(void) {
 		usleep(1000000 / 15);
 	}
 
-	ws2811_fini(&_ledstring);
+	ws2811_fini(&_ledstring);*/
 	// end testing part
 
 	return ret;

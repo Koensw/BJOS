@@ -21,7 +21,7 @@ RGBEyesController *rgbeyes;
 /* Initialize the OS */
 void OSInit(){
     try{
-        Log::info("RGBeyesLoader", "Starting loader %s", "test_rgbeyes");
+        Log::info("RGBeyesLoader", "Starting loader %s", "test_RGBeyes");
         //if(BJOS::getState() != BJOS::UNINITIALIZED) Log::warn("BJOS already running... expecting incorrect shutdown so will continue.");
         
         //init the OS

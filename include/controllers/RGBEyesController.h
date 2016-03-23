@@ -84,7 +84,7 @@ namespace bjos {
 		void matrix_render(void);
 		void matrix_raise(void);
 		void matrix_bottom(void);
-		uint32_t createRGB(int r, int g, int b);
+		unsigned long createRGB(int r, int g, int b);
       
         /* Initialize the main instance */ 
         void init(BJOS *bjos);
