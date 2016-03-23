@@ -14,51 +14,8 @@
 
 using namespace bjos;
 
-RGBEyesController::RGBEyesController(): _ledstring(-1), _matrix(-1), _dotspos(-1), _dotcolors(-1), _data(0) {
-	_ledstring= {
-		.freq = TARGET_FREQ,
-			.dmanum = DMA,
-			.channel =
-			{
-				[0] =
-			{
-				.gpionum = GPIO_PIN,
-				.count = LED_COUNT,
-				.invert = 0,
-				.brightness = 255,
-			},
-				[1] =
-			{
-				.gpionum = 0,
-				.count = 0,
-				.invert = 0,
-				.brightness = 0,
-			},
-		},
-	};
-
-	ws2811_led_t temp[] =
-	{
-		0x200000,  // red
-		0x201000,  // orange
-		0x202000,  // yellow
-		0x002000,  // green
-		0x002020,  // lightblue
-		0x000020,  // blue
-		0x100010,  // purple
-		0x200010,  // pink
-	};
-	
-	
-	for (int i = 0; i < 8; i++)
-	{
-		_dotspos[i] = i;
-		_dotcolors[i] = temp[i];
-	}
-
-	
-}
-
+RGBEyesController::RGBEyesController(): _ledstring(-1), _matrix(-1), _dotspos(-1), _dotcolors(-1), _data(0) {}
+RGBEyesController::RGBEyesController(_ledstring ledstring, ws2811_led_t *matrix, int dotspos, ws2811_led_t dotcolors): _ledstring(ledstring), _matrix(matrix), dotspos(dotpos), _dotcolors(dotcolors), _data(0)  {}
 RGBEyesController::~RGBEyesController(){
     if(!Controller::isAvailable()) return;
     
@@ -86,6 +43,8 @@ void RGBEyesController::init(BJOS *bjos){
     reset();
     set_pwm_freq(EYES_PWM_FREQ);
     
+    //default the eyes to off
+    setEnabled(false);
     
     //save the address
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
@@ -104,6 +63,16 @@ void RGBEyesController::load(BJOS *bjos){
         
     //load i2c (TODO: all I2C operations should take only place in loader and only in main thread?)
     _fd = wiringPiI2CSetup(addr);
+}
+
+bool RGBEyesController::areEnabled(){
+    int pwm = get_pwm(_channel);
+    return (pwm > (EYES_PWM_ON+EYES_PWM_OFF)/2.0);
+}
+
+void RGBEyesController::setEnabled(bool eyes){
+    if(eyes) set_pwm(_channel, EYES_PWM_ON);
+    else set_pwm(_channel, EYES_PWM_OFF);
 }
 
 

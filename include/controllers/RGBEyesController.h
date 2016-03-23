@@ -72,8 +72,14 @@ namespace bjos {
     class RGBEyesController : public Controller{
     public:
         RGBEyesController();
+        RGBEyesController(_ledstring ledstring, ws2811_led_t *matrix, int dotspos, ws2811_led_t dotcolors);
         virtual RGBEyesController();
         
+        //set if they are enabled
+        bool areEnabled();
+        
+        //toggle the state
+        void setEnabled(bool state);
 
     private:
 		int test(void);
@@ -88,14 +94,44 @@ namespace bjos {
         
 
 
-		ws2811_t _ledstring;
-		
+		ws2811_t _ledstring =
+		{
+			.freq = TARGET_FREQ,
+			.dmanum = DMA,
+			.channel =
+		{
+			[0] =
+		{
+			.gpionum = GPIO_PIN,
+			.count = LED_COUNT,
+			.invert = 0,
+			.brightness = 255,
+		},
+			[1] =
+		{
+			.gpionum = 0,
+			.count = 0,
+			.invert = 0,
+			.brightness = 0,
+		},
+		},
+		};
 
 		ws2811_led_t _matrix[WIDTH][HEIGHT];
 
 
-		int _dotspos[8]; = { 0, 1, 2, 3, 4, 5, 6, 7 };
-		ws2811_led_t _dotcolors[8]; 
+		int _dotspos[] = { 0, 1, 2, 3, 4, 5, 6, 7 };
+		ws2811_led_t _dotcolors[] =
+		{
+			0x200000,  // red
+			0x201000,  // orange
+			0x202000,  // yellow
+			0x002000,  // green
+			0x002020,  // lightblue
+			0x000020,  // blue
+			0x100010,  // purple
+			0x200010,  // pink
+		};
         
         SharedRGBEyesData *_data;
     };
