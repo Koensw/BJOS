@@ -32,7 +32,6 @@ void OSInit(){
         rgbeyes = new RGBEyesController();
         bjos->initController(rgbeyes);
         
-        rgbeyes->test();
     }catch(ControllerInitializationError &init_err){
         Log::fatal(init_err.getControllerName(), init_err.what());
         std::exit(0);
