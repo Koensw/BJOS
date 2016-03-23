@@ -73,17 +73,14 @@ namespace bjos {
     public:
         RGBEyesController();
         virtual ~RGBEyesController();
-		int start(void);
-		int stop(void);
-		void RGBEyesController::rgbsollid(int red, int green, int blue);
+		int test(void);
         
 
     private:
 		void matrix_render(void);
 		void matrix_raise(void);
 		void matrix_bottom(void);
-		unsigned long createRGB(int r, int g, int b);
-      
+        
         /* Initialize the main instance */ 
         void init(BJOS *bjos);
         /* load node is called for all childeren */

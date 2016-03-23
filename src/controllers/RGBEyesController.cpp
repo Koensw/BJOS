@@ -107,27 +107,7 @@ void RGBEyesController::matrix_bottom(void) {
 	}
 }
 
-void RGBEyesController::rgbsollid(int red, int green, int blue){
-
-	for (int i = 0; i < LED_COUNT; i++)
-	{
-		_ledstring.channel[0].leds[i]= createRGB(red,green,blue);
-	}
-	if (ws2811_render(&_ledstring))
-	{
-		ret = -1;
-		break;
-	}
-}
-
-unsigned long RGBEyesController::createRGB(int r, int g, int b)
-{
-	// 0xRRGGBB
-	return ((r & 0xff) << 16) + ((g & 0xff) << 8) + (b & 0xff);
-}
-
-
-int RGBEyesController::start(void) {
+int RGBEyesController::test(void) {
 	int ret = 0;
 
 
@@ -136,7 +116,7 @@ int RGBEyesController::start(void) {
 		return -1;
 	}
 	// the next part is only for testing
-	/*while (1)
+	while (1)
 	{
 		matrix_raise();
 		matrix_bottom();
@@ -152,18 +132,9 @@ int RGBEyesController::start(void) {
 		usleep(1000000 / 15);
 	}
 
-	ws2811_fini(&_ledstring);*/
+	ws2811_fini(&_ledstring);
 	// end testing part
 
 	return ret;
 
 }
-
-void RGBEyesController::stop(void) {
-	
-	ws2811_fini(&_ledstring);
-	// end testing part
-	
-}
-
-
