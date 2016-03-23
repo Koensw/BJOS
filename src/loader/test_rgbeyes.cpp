@@ -16,7 +16,7 @@
 
 using namespace bjos;
 
-RGBEyesController *rgbeyes;
+RGBEyesController *RGBeyes;
 
 /* Initialize the OS */
 void OSInit(){
@@ -29,9 +29,10 @@ void OSInit(){
         Process::installSignalHandler();
         BJOS *bjos = BJOS::getOS();
         
-        rgbeyes = new RGBEyesController();
-        bjos->initController(rgbeyes);
+        RGBeyes = new RGBEyesController();
+        bjos->initController(RGBeyes);
         
+        RGBeyes->start();
     }catch(ControllerInitializationError &init_err){
         Log::fatal(init_err.getControllerName(), init_err.what());
         std::exit(0);
@@ -45,12 +46,12 @@ void OSFinalize(){
     bjos->shutdown();
     
     //wait for finalizing clients
-    while(!rgbeyes->canFinalize()){
-        Log::info("RGBEyesLoader", "Waiting for %d clients to finish...", bjos->getControllerCount("rgbeyes")-1);
+    while(!RGBeyes->canFinalize()){
+        Log::info("RGBEyesLoader", "Waiting for %d clients to finish...", bjos->getControllerCount("RGBeyes")-1);
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
     //delete pointers
-    delete rgbeyes;
+    delete RGBeyes;
     
     //stop os
     BJOS::finalize();
