@@ -128,6 +128,51 @@ std::tuple<Eigen::Vector3d, Eigen::Vector3d, uint16_t, bool, int, bool, int> han
             gripPWM += 200;
             break;
             
+        case '1':
+            std::cout << "Going forward: 0.5 m/s" << std::endl;
+            setv[0] = 0.5;
+            break;
+
+        case '2':
+            std::cout << "Going forward: 1.0 m/s" << std::endl;
+            setv[0] = 1.0;
+            break;
+
+        case '3':
+            std::cout << "Going forward: 1.5 m/s" << std::endl;
+            setv[0] = 1.5;
+            break;
+
+        case '4':
+            std::cout << "Going forward: 2.0 m/s" << std::endl;
+            setv[0] = 2.0;
+            break;
+
+        case '5':
+            std::cout << "Going forward: 2.5 m/s" << std::endl;
+            setv[0] = 2.5;
+            break;
+
+        case '6':
+            std::cout << "Going forward: 3.0 m/s" << std::endl;
+            setv[0] = 3.0;
+            break;
+
+        case '7':
+            std::cout << "Going forward: 3.5 m/s" << std::endl;
+            setv[0] = 3.5;
+            break;
+
+        case '8':
+            std::cout << "Going forward: 4.0 m/s" << std::endl;
+            setv[0] = 4.0;
+            break;
+
+        case '9':
+            std::cout << "Going forward: 4.5 m/s" << std::endl;
+            setv[0] = 4.5;
+            break;
+
         case '+':
             std::cout << "Eyes are on" << std::endl;
             eyesActivate = true;
