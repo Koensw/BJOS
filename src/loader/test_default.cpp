@@ -32,7 +32,8 @@ EyesController *eyes;
 void OSInit(){
     try{
         Log::info("DefaultLoader", "Starting loader %s", "test_default");
-        if(BJOS::getState() != BJOS::UNINITIALIZED) Log::warn("DefaultLoader", "BJOS already running! Expecting invalid shutdown so continuing...");
+        //FIXME: fix state after segfault! 
+        //if(BJOS::getState() != BJOS::UNINITIALIZED) Log::warn("DefaultLoader", "BJOS already running! Expecting invalid shutdown so continuing...");
         
         //init the OS
         BJOS::init();
