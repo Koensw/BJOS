@@ -507,6 +507,7 @@ void FlightController::write_thread() {
         try {
             boost::this_thread::sleep_for(boost::chrono::milliseconds(100)); //Stream at 10 Hz
 
+            //TODO lock_guard over scope
             shared_data_mutex->lock();
             bool do_write_estimate = _data->write_estimate;
             bool do_write_thrust_setpoint = _data->write_thrust_setpoint; 
@@ -736,7 +737,7 @@ bool FlightController::motor_killer(bool flag) {
     mavlink_command_long_t com;
     com.target_system = system_id;
     com.target_component = autopilot_id;
-    com.command = 223; //MAV_CMD_DO_LOCKDOWN TODO implement
+    com.command = 223; //MAV_CMD_DO_LOCKDOWN TODO implement into mavlink
     com.confirmation = true;
     com.param1 = (float)flag;
 
