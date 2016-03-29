@@ -1080,6 +1080,32 @@ Eigen::Vector3d FlightController::orientationNEDtoWF(Eigen::Vector3d orientation
     return out;
 }
 
+bool FlightController::writeParameter(float number, float value) {
+    mavlink_command_long_t com;
+    com.target_system = system_id;
+    com.target_component = autopilot_id;
+    com.command = MAV_CMD_DO_SET_PARAMETER;
+    com.confirmation = true;
+    com.param1 = number;
+    com.param2 = value;
+
+    //encode
+    mavlink_message_t message;
+    mavlink_msg_command_long_encode(SYS_ID, COMP_ID, &message, &com);
+
+    //do the write
+    int success = serial_port->write_message(message);
+
+    //error check
+    if (success) {
+        Log::info("FlightController::writeParameter", "Wrote parameter %f with value %f", number, value);
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
 void FlightController::killMotors() {
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
     _data->kill_motors = true;
