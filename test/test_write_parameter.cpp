@@ -43,9 +43,10 @@ int main(){
     }               
   
     std::cout << "Write parameter!\nNumber: ";
-    float number = std::cin.get();
+    float number, value;
+    std::cin >> number;
     std::cout << "Value: ";
-    float value = std::cin.get();
+    std::cin >> value;
 
     if (flight.writeParameter(number, value))
         std::cout << "Succesfully wrote parameter " << number << " with value " << value << "!" << std::endl;
