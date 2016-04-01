@@ -236,9 +236,6 @@ namespace bjos {
         bool inFailsafe();
         /* Terminate flight immediately - overriding any other command and tries shutting down */
         void killMotors();
-
-        /* Write a parameter to the Pixhawk */
-        bool writeParameter(float number, float value);
             
         /* INFO */
         /* Returns current landed state */
