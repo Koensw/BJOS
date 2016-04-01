@@ -699,7 +699,9 @@ bool FlightController::exec_reboot(){
     if (success) return true;
     else {
         Log::info("FlightController::do_reboot", "Reboot failed -- forcing failsafe!");
+        shared_data_mutex->lock();
         _data->force_failsafe = true;
+        shared_data_mutex->unlock();
         return false;
     }
 }
