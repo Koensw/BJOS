@@ -84,6 +84,9 @@ void FlightController::init(bjos::BJOS *bjos) {
     _data->kill_motors = false;
     _data->force_failsafe = false;
     _data->battery_percentage = 1; //assume full battery when not known...
+    _data->vision_sync = false;
+    _data->do_reboot = false;
+    
     //set vision_position_estimate to non-valid
     _data->vision_position_estimate.usec = 0;
     _data->vision_position_estimate.x = NAN;
@@ -173,11 +176,12 @@ void FlightController::read_thread() {
     while (_read_thrd_running) {
         shared_data_mutex->lock();
         bool force_failsafe = _data->force_failsafe;
+        bool do_reboot = _data->do_reboot;
         shared_data_mutex->unlock();
         
         try {
             //stop trying to read info from pixhawk in failsafe, because we cannot trust this anymore 
-            if(force_failsafe) usleep(100000);
+            if(force_failsafe || do_reboot) usleep(100000);
             else read_messages();
             
             //boost::this_thread::sleep_for(boost::chrono::microseconds(500)); //2000 Hz
@@ -234,7 +238,7 @@ void FlightController::read_messages() {
                 _data->velocityNED[2] = local_position_ned.vz;
 
                 //only send bjcomm messages when vision has been synced and therefor WF is enabled
-                if (_data->_vision_sync) {
+                if (_data->vision_sync) {
                     Message msg("position_estimate");
                     Eigen::Vector3d wf = positionNEDtoWF(Eigen::Vector3d(local_position_ned.x, local_position_ned.y, local_position_ned.z), _data->visionPosOffset, _data->visionYawOffset);
                     sstr.clear();
@@ -263,7 +267,7 @@ void FlightController::read_messages() {
                 //Log::info("FlightController::read_messages", "attitude: %.2f %.2f %.2f", attitude.roll, attitude.pitch, attitude.yaw);
 
                 //bjcomm message handling
-                if (_data->_vision_sync) {
+                if (_data->vision_sync) {
                     Message msg("attitude_estimate");
                     Eigen::Vector3d wf = orientationNEDtoWF(Eigen::Vector3d(attitude.roll, attitude.pitch, attitude.yaw), _data->visionYawOffset);
                     sstr.clear();
@@ -331,7 +335,7 @@ void FlightController::read_messages() {
 
                 //send over bjcomm
                 std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
-                if (_data->_vision_sync) {
+                if (_data->vision_sync) {
                     Message msg("position_setpoint");
                     Eigen::Vector3d wf = positionNEDtoWF(Eigen::Vector3d(setpoint.x, setpoint.y, setpoint.z), _data->visionPosOffset, _data->visionYawOffset);
                     sstr.clear();
@@ -514,10 +518,23 @@ void FlightController::write_thread() {
             bool do_end_thrust_setpoint = _data->end_thrust_setpoint;
             bool kill_motors = _data->kill_motors;
             bool force_failsafe = _data->force_failsafe;
+            bool do_reboot = _data->do_reboot;
             shared_data_mutex->unlock();
 
             //check state
-            if (kill_motors) {
+            if (do_reboot){
+                // send reboot command
+                exec_reboot();
+                
+                // wait some time before assuming Pixhawk has rebooted
+                sleep(1);
+                
+                // set reboot complete
+                shared_data_mutex->lock();
+                _data->do_reboot = false;
+                shared_data_mutex->unlock();
+            }
+            else if (kill_motors) {
                 //try to kill motors when requested
                 force_failsafe = true; //this implies forcing failsafe but then request higher emergency state!
                 
@@ -634,6 +651,59 @@ void FlightController::write_thrust_setpoint(bool end) {
     //TODO: check if write is succesfull
 }
 
+
+
+bool FlightController::motor_killer(bool flag) {
+    //prepare command
+    mavlink_command_long_t com;
+    com.target_system = system_id;
+    com.target_component = autopilot_id;
+    com.command = 223; //MAV_CMD_DO_LOCKDOWN TODO implement into mavlink
+    com.confirmation = true;
+    com.param1 = (float)flag;
+
+    //encode
+    mavlink_message_t message;
+    mavlink_msg_command_long_encode(SYS_ID, COMP_ID, &message, &com);
+
+    //do the write
+    int success = serial_port->write_message(message);
+
+    //error check
+    if (success) {
+        if(flag) Log::info("FlightController::motor_killer", "MOTORS ARE KILLED");
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
+bool FlightController::exec_reboot(){
+    //prepare command
+    mavlink_command_long_t com;
+    com.target_system = system_id;
+    com.target_component = autopilot_id;
+    com.command = 246; //MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN
+    com.confirmation = true;
+    com.param1 = 1;
+
+    //encode
+    mavlink_message_t message;
+    mavlink_msg_command_long_encode(SYS_ID, COMP_ID, &message, &com);
+
+    //do the write
+    int success = serial_port->write_message(message);
+
+    //error check
+    if (success) return true;
+    else {
+        Log::info("FlightController::do_reboot", "Reboot failed -- forcing failsafe!");
+        _data->force_failsafe = true;
+        return false;
+    }
+}
+
 //TODO: check mode in order to handle outside mode switching (by a telemetry command for instance)
 int FlightController::toggle_offboard_control(bool flag) {
     //keep track of which mode we're in
@@ -730,32 +800,6 @@ bool FlightController::synchronize_time() {
     
     Log::info("FlightController::synchronize_time", "successfully synchronized, Unix time is %" PRIu64 " and boot time is %" PRIu64, _data->syncUnixTime, _data->syncBootTime);
     return true;
-}
-
-bool FlightController::motor_killer(bool flag) {
-    //prepare command
-    mavlink_command_long_t com;
-    com.target_system = system_id;
-    com.target_component = autopilot_id;
-    com.command = 223; //MAV_CMD_DO_LOCKDOWN TODO implement into mavlink
-    com.confirmation = true;
-    com.param1 = (float)flag;
-
-    //encode
-    mavlink_message_t message;
-    mavlink_msg_command_long_encode(SYS_ID, COMP_ID, &message, &com);
-
-    //do the write
-    int success = serial_port->write_message(message);
-
-    //error check
-    if (success) {
-        if(flag) Log::info("FlightController::motor_killer", "MOTORS ARE KILLED");
-        return true;
-    }
-    else {
-        return false;
-    }
 }
 
 Pose FlightController::getPoseWF(){
@@ -880,12 +924,12 @@ void FlightController::syncVision(Eigen::Vector3d visionPosEstimate, double visi
 
     _data->visionPosOffset = visionPosOffset;
     _data->visionYawOffset = visionYawOffset;
-    _data->_vision_sync = true;
+    _data->vision_sync = true;
 }
 
 bool FlightController::isWFDefined(){
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
-    return _data->_vision_sync;
+    return _data->vision_sync;
 }
 
 //NOTE: this function is a rework of setTargetCF
@@ -1083,6 +1127,49 @@ Eigen::Vector3d FlightController::orientationNEDtoWF(Eigen::Vector3d orientation
 void FlightController::killMotors() {
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
     _data->kill_motors = true;
+}
+
+//WARNING: only do this in landed state else bad things can happen
+void FlightController::reboot() {
+    shared_data_mutex->lock();
+    
+    //reset all variables
+    _data->kill_motors = false;
+    _data->force_failsafe = false;
+    _data->battery_percentage = 1; //assume full battery when not known...
+    //set vision_position_estimate to non-valid
+    _data->vision_position_estimate.usec = 0;
+    _data->vision_position_estimate.x = NAN;
+    _data->vision_position_estimate.y = NAN;
+    _data->vision_position_estimate.z = NAN;
+    _data->vision_position_estimate.roll = NAN;
+    _data->vision_position_estimate.pitch = NAN;
+    _data->vision_position_estimate.yaw = NAN;
+    _data->visionYawOffset = 0;
+    _data->visionPosOffset = {0, 0, 0};
+    
+    //unsync the world frame and the mavlink initialize
+    _data->vision_sync = false;
+    _mavlink_received = false;
+        
+    //execute reboot
+    _data->do_reboot = true;
+    
+    shared_data_mutex->unlock();
+    
+    //wait for mavlink
+    unsigned int n = 0;
+    unsigned int timeout = 20; //deciseconds
+    while (_mavlink_received == false && n < timeout) {
+		n++;
+        usleep(100000); //10 Hz
+    }
+    //we are dead for some reason -- continue with failsafe
+	if (n == timeout) forceFailsafe();
+    
+    int result = synchronize_time();
+    //we are dead for some reason -- continue with failsafe
+    if(result == -1) forceFailsafe();
 }
 
 void FlightController::forceFailsafe(){

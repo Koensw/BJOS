@@ -13,8 +13,6 @@
 #ifndef _BLUEJAY_FLIGHT_CONTROLLER_H
 #define _BLUEJAY_FLIGHT_CONTROLLER_H
 
-#define __STDC_FORMAT_MACROS 1
-
 #include <mutex>
 #include <atomic>
 
@@ -148,12 +146,14 @@ namespace bjos {
         bool end_thrust_setpoint;
 
         /* Current vision syned state */
-        bool _vision_sync;
+        bool vision_sync;
 
         /* Flag for motor kill */
         bool kill_motors;
         /* Flag for failsafe mode */
         bool force_failsafe;
+        /* Flag for a reboot in progress */
+        bool do_reboot;
 
         /* Raw IMU sensor data */
         //TODO: can be removed probably
@@ -236,6 +236,8 @@ namespace bjos {
         bool inFailsafe();
         /* Terminate flight immediately - overriding any other command and tries shutting down */
         void killMotors();
+        /* Reboots the flight controller */
+        void reboot();
             
         /* INFO */
         /* Returns current landed state */
@@ -259,6 +261,9 @@ namespace bjos {
         
         /* Motor kill utility method */
         bool motor_killer(bool flag);
+        
+        /* Reboot utility method */
+        bool exec_reboot();
 
         /* Used by messaging part to allow multiple drone streaming, and to just generally indicate which drone is being sent to */
         int system_id;
