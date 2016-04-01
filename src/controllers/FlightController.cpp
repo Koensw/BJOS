@@ -1081,16 +1081,6 @@ Eigen::Vector3d FlightController::orientationNEDtoWF(Eigen::Vector3d orientation
 }
 
 bool FlightController::writeParameter(float number, float value) {
-    /* Writes parameter number with value
-     * WARN: THIS FUNCTION REQUIRES KNOWLEDGE OF THE PIXHAWK PARAMETER ENUMERATION, DO NOT CALL IF UNSURE
-     * A couple of common parameters known to work with pixhawk-firmware @ db6e954:
-     *      ATT_CRASH_KILL                          22
-     *      ATT_ANGLE_KILL                          24
-     *      MC_ROLL_P t/m MC_ROLLRATE_D             229 - 232
-     *      MC_PITCH_P t/m MC_PITCHRATE_D           234 - 237          
-     *      MPC_XY_P t/m MPC_XY_VEL_D               296 - 299
-     *      MPC_XY_VEL_MAX                          300
-    **/
     mavlink_command_long_t com;
     com.target_system = system_id;
     com.target_component = autopilot_id;
