@@ -1080,35 +1080,33 @@ Eigen::Vector3d FlightController::orientationNEDtoWF(Eigen::Vector3d orientation
     return out;
 }
 
-bool FlightController::writeParameter(float number, float value) {
+bool FlightController::writeParameter(char* id, float value, uint8_t type) {
     /* Writes parameter number with value
-     * WARN: THIS FUNCTION REQUIRES KNOWLEDGE OF THE PIXHAWK PARAMETER ENUMERATION, DO NOT CALL IF UNSURE
-     * A couple of common parameters known to work with pixhawk-firmware @ db6e954:
-     *      ATT_CRASH_KILL                          22
-     *      ATT_ANGLE_KILL                          24
-     *      MC_ROLL_P t/m MC_ROLLRATE_D             229 - 232
-     *      MC_PITCH_P t/m MC_PITCHRATE_D           234 - 237          
-     *      MPC_XY_P t/m MPC_XY_VEL_D               296 - 299
-     *      MPC_XY_VEL_MAX                          300
+     * WARN: THIS FUNCTION REQUIRES KNOWLEDGE OF THE PIXHAWK PARAMETER TYPES, DO NOT CALL IF UNSURE
+     *
+     * TODO: Check if MAVLink returns a PARAM_VALUE message, this is an acknowledgement of this message
     **/
-    mavlink_command_long_t com;
-    com.target_system = system_id;
-    com.target_component = autopilot_id;
-    com.command = MAV_CMD_DO_SET_PARAMETER;
-    com.confirmation = true;
-    com.param1 = number;
-    com.param2 = value;
+    // Param may not be null terminated if exactly fits
+    char paramId[MAVLINK_MSG_PARAM_SET_FIELD_PARAM_ID_LEN + 1];
+    paramId[MAVLINK_MSG_PARAM_SET_FIELD_PARAM_ID_LEN] = 0;
+    strncpy(paramId, id, MAVLINK_MSG_PARAM_SET_FIELD_PARAM_ID_LEN);
 
-    //encode
-    mavlink_message_t message;
-    mavlink_msg_command_long_encode(SYS_ID, COMP_ID, &message, &com);
+    mavlink_message_t msg;
+    mavlink_msg_param_set_pack(0,
+                               0,
+                               &msg,
+                               system_id,
+                               autopilot_id,
+                               paramId,
+                               value,
+                               type);
 
     //do the write
-    int success = serial_port->write_message(message);
+    int success = serial_port->write_message(msg);
 
     //error check
     if (success) {
-        Log::info("FlightController::writeParameter", "Wrote parameter %f with value %f", number, value);
+        Log::info("FlightController::writeParameter", "Wrote parameter %s of type %i with value %f", paramId, type, value);
         return true;
     }
     else {
