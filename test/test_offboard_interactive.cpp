@@ -31,6 +31,8 @@ float TAKEOFF = 2.0;
 float ZVEL = 0.5;
 float YAWR = 0.2;
 
+bool doReboot = false;
+
 #define M_EPS 1e-7
 
 std::tuple<Eigen::Vector3d, Eigen::Vector3d, uint16_t, bool, int, bool, int> handle_input(char c)
@@ -172,6 +174,10 @@ std::tuple<Eigen::Vector3d, Eigen::Vector3d, uint16_t, bool, int, bool, int> han
             std::cout << "Going forward: 4.5 m/s" << std::endl;
             setv[0] = 4.5;
             break;
+            
+        case 'b':
+            std::cout << "Reboot" << std::endl;
+            doReboot = true;
 
         case '+':
             std::cout << "Eyes are on" << std::endl;
@@ -258,6 +264,12 @@ int main(){
         }
         
         auto action = handle_input(ret);
+        
+        if(doReboot){
+            std::cout << "Reboot in progress... please wait" << std::endl;
+            flight.reboot();
+        }
+        
         flight.setTargetCF(std::get<2>(action), Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(0, 0, 0), std::get<0>(action), std::get<1>(action));
         
         if(gripper.isAvailable() && std::get<3>(action)) {
@@ -269,5 +281,5 @@ int main(){
         
     } while (ret != 'q');
     
-    std::cout << "Byebye!";
+    std::cout << "Byebye!" << std::endl;
 }
