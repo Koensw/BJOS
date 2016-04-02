@@ -69,12 +69,6 @@ add_executable(test_offboard_interactive
 )
 target_link_libraries(test_offboard_interactive bjos)
 
-# build the test write parameter executable
-add_executable(test_write_parameter
-    test/test_write_parameter.cpp
-)
-target_link_libraries(test_write_parameter bjos)
-
 # build the test sync vision executable
 add_executable(test_sync_vision
     test/test_sync_vision.cpp
