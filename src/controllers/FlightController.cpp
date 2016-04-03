@@ -296,27 +296,27 @@ void FlightController::read_messages() {
                 break;
             }
             case MAVLINK_MSG_ID_ATTITUDE_QUATERNION:
-            {
+            {                
                 //decode
                 mavlink_attitude_quaternion_t attitude;
                 mavlink_msg_attitude_quaternion_decode(&message, &attitude);
                 
                 //create a quaternion
                 Eigen::Quaterniond q(attitude.q1, attitude.q2, attitude.q3, attitude.q4);
-                //q.normalize();
-                double yaw = atan2(2.0 * (q.w() * q.z() + q.x() * q.y()), 1.0 - 2.0 * (q.y() * q.y() + q.z() * q.z()));
-                Eigen::Quaterniond q2 = q;
-                q2 = Eigen::AngleAxisd(-yaw, Eigen::Vector3d::UnitZ())*q2;
-                std::swap(q2.x(), q2.y());
-                
+                //double yaw = atan2(2.0 * (q.w() * q.z() + q.x() * q.y()), 1.0 - 2.0 * (q.y() * q.y() + q.z() * q.z()));
+                std::swap(q.x(), q.y());
+                q.z() = -q.z();
+
+                //printf("%f %f\n", yaw, q.z());
+
                 //send the attitude to raw stream
                 flight_raw_estimate raw_estimate;
                 raw_estimate.type = FLIGHT_RAW_ORIENTATION;
-                raw_estimate.time = get_time_usec(CLOCK_MONOTONIC)/1000ULL; //.time_boot_ms - pixBootTime + rpiBootTime;
-                raw_estimate.data[0] = q2.w();
-                raw_estimate.data[1] = q2.x();
-                raw_estimate.data[2] = q2.y();
-                raw_estimate.data[3] = q2.z();
+                raw_estimate.time = get_time_usec(CLOCK_MONOTONIC)/1000ULL; //time_boot_ms - pixBootTime + rpiBootTime;
+                raw_estimate.data[0] = q.w();
+                raw_estimate.data[1] = q.x();
+                raw_estimate.data[2] = q.y();
+                raw_estimate.data[3] = q.z();
                 sendto(_raw_sock, &raw_estimate, sizeof(raw_estimate), 0, (struct sockaddr *) &_raw_sock_name, SUN_LEN(&_raw_sock_name));
 
                 //Convert quaternions to euler angles
