@@ -176,12 +176,11 @@ void FlightController::read_thread() {
     while (_read_thrd_running) {
         shared_data_mutex->lock();
         bool force_failsafe = _data->force_failsafe;
-        bool do_reboot = _data->do_reboot;
         shared_data_mutex->unlock();
         
         try {
             //stop trying to read info from pixhawk in failsafe, because we cannot trust this anymore 
-            if(force_failsafe || do_reboot) usleep(100000);
+            if(force_failsafe) usleep(100000);
             else read_messages();
             
             //boost::this_thread::sleep_for(boost::chrono::microseconds(500)); //2000 Hz
@@ -526,17 +525,11 @@ void FlightController::write_thread() {
             bool do_reboot = _data->do_reboot;
             bool do_write_param = _data->write_param;
             shared_data_mutex->unlock();
-
-            //write param if necessary
-            if(do_write_param) write_param();
             
             //check state
             if (do_reboot){
                 // send reboot command
-                exec_reboot();
-                
-                // wait some time before assuming Pixhawk has rebooted
-                sleep(1);
+                execute_reboot();
                 
                 // set reboot complete
                 shared_data_mutex->lock();
@@ -560,13 +553,19 @@ void FlightController::write_thread() {
                 //wait some time to try again
                 usleep(100000);
             }else if (do_write_thrust_setpoint) {
+                //enable writing thrust setpoint
                 write_thrust_setpoint(false);
             }else{
                 if (do_end_thrust_setpoint) write_thrust_setpoint(true);
+                
+                // write setpoint
                 write_setpoint();
             
                 //write setpoint and estimate
                 if(do_write_estimate) write_estimate();
+                
+                //write param if necessary
+                if(do_write_param) write_param();
             }
         }
         catch (boost::thread_interrupted) {
@@ -706,42 +705,119 @@ bool FlightController::motor_killer(bool flag) {
     }
 }
 
-bool FlightController::exec_reboot(){
-    //prepare command
-    mavlink_command_long_t com;
-    com.target_system = system_id;
-    com.target_component = autopilot_id;
-    com.command = 246; //MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN
-    com.confirmation = true;
-    com.param1 = 1;
+bool FlightController::execute_reboot(){
+    Log::info("FlightController::execute_reboot", "Starting reboot process");
+    
+    //stop read thread temporarily and wait till finished
+    _read_thrd_running = false;
+    _read_thrd.interrupt();
+    _read_thrd.join();
+    
+    {
+        // claim the lock for safety (WARNING: this hangs every other instance until reboot is finished!) and goto failsafe on every error
+        std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+        
+        //prepare command
+        mavlink_command_long_t com;
+        com.target_system = system_id;
+        com.target_component = autopilot_id;
+        com.command = 246; //MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN
+        com.confirmation = true;
+        com.param1 = 1;
 
-    //encode
-    mavlink_message_t message;
-    mavlink_msg_command_long_encode(SYS_ID, COMP_ID, &message, &com);
+        //encode
+        mavlink_message_t message;
+        mavlink_msg_command_long_encode(SYS_ID, COMP_ID, &message, &com);
 
-    //do the write
-    int success = serial_port->write_message(message);
+        //do the write
+        int success = serial_port->write_message(message);
+        if (!success){
+            _data->force_failsafe = true;
+            return false;
+        }
 
-    //error check
-    if (success) return true;
-    else {
-        Log::info("FlightController::do_reboot", "Reboot failed -- forcing failsafe!");
-        shared_data_mutex->lock();
+        //stop the serial and clean up the pointer
+        serial_port->stop();
+        delete serial_port;
+        
+        //give the pixhawk some time to restart
+        sleep(REBOOT_SECS);
+        
+        //start the new serial port
+        serial_port = new Serial_Port();
+        serial_port->start();
+        //give the serial port some time
+        usleep(100000);
+        //check the status
+        if (serial_port->status != 1) {
+            _data->force_failsafe = true;
+            return false;
+        }
+        
+        //reset all variables
+        _data->kill_motors = false;
+        _data->force_failsafe = false;
+        _data->battery_percentage = 1; 
+        _data->vision_position_estimate.usec = 0;
+        _data->vision_position_estimate.x = NAN;
+        _data->vision_position_estimate.y = NAN;
+        _data->vision_position_estimate.z = NAN;
+        _data->vision_position_estimate.roll = NAN;
+        _data->vision_position_estimate.pitch = NAN;
+        _data->vision_position_estimate.yaw = NAN;
+        _data->visionYawOffset = 0;
+        _data->visionPosOffset = {0, 0, 0};
+        
+        // set to no mavlink received
+        _mavlink_received = false;
+    }
+    // restart read thread
+    _read_thrd_running = true;
+    _read_thrd = boost::thread(&FlightController::read_thread, this);
+    
+    //wait for mavlink to reinitalize
+    unsigned int n = 0;
+    unsigned int timeout = 20; //deciseconds
+    while (_mavlink_received == false && n < timeout) {        
+		n++;
+        usleep(100000); //10 Hz
+    }
+    //mavlink is dead
+	if (n == timeout) {        
         _data->force_failsafe = true;
-        shared_data_mutex->unlock();
         return false;
     }
+    
+    int result = synchronize_time();
+    //mavlink is dead
+    if(result == -1) {        
+        _data->force_failsafe = true;
+        return false;
+    }
+    
+     //enable offboard in posix mode
+#ifndef __arm__
+    result = toggle_offboard_control(true, true);
+    if (result == -1)
+        throw ControllerInitializationError(this,
+                "Could not set offboard mode: unable to write message on serial port");
+    else if (result == 0)
+        Log::warn("FlightController::init", "double (de-)activation of offboard mode [ignored]");
+#endif
+    
+    Log::info("FlightController::execute_reboot", "Reboot completed!");
+    return true;
 }
 
 //TODO: check mode in order to handle outside mode switching (by a telemetry command for instance)
-int FlightController::toggle_offboard_control(bool flag) {
+int FlightController::toggle_offboard_control(bool flag, bool force) {
     //keep track of which mode we're in
     static bool offboard = false;
 
     Log::info("FlightController::toggle_offboard_control", "entered toggle_offboard_control %i", flag);
 
     //check for double (de-)activation
-    if (offboard == flag) return 0;
+    if (force == false && offboard == flag) return 0;
     else {
         //prepare command for off-board mode
         mavlink_command_long_t com;
@@ -1202,44 +1278,22 @@ void FlightController::killMotors() {
 //WARNING: only do this in landed state else bad things can happen
 void FlightController::reboot() {
     shared_data_mutex->lock();
-    
-    //reset all variables
-    _data->kill_motors = false;
-    _data->force_failsafe = false;
-    _data->battery_percentage = 1; //assume full battery when not known...
-    //set vision_position_estimate to non-valid
-    _data->vision_position_estimate.usec = 0;
-    _data->vision_position_estimate.x = NAN;
-    _data->vision_position_estimate.y = NAN;
-    _data->vision_position_estimate.z = NAN;
-    _data->vision_position_estimate.roll = NAN;
-    _data->vision_position_estimate.pitch = NAN;
-    _data->vision_position_estimate.yaw = NAN;
-    _data->visionYawOffset = 0;
-    _data->visionPosOffset = {0, 0, 0};
-    
-    //unsync the world frame and the mavlink initialize
+    //unsync the world frame (before the actual reboot)
     _data->vision_sync = false;
-    _mavlink_received = false;
-        
-    //execute reboot
-    _data->do_reboot = true;
     
+    //ask for a reboot
+    _data->do_reboot = true;
     shared_data_mutex->unlock();
     
-    //wait for mavlink
-    unsigned int n = 0;
-    unsigned int timeout = 20; //deciseconds
-    while (_mavlink_received == false && n < timeout) {
-		n++;
+    //wait until reboot is done
+    bool reboot = true;
+    while(reboot){
         usleep(100000); //10 Hz
+        shared_data_mutex->lock();
+        reboot = _data->do_reboot;
+        shared_data_mutex->unlock();
     }
-    //we are dead for some reason -- continue with failsafe
-	if (n == timeout) forceFailsafe();
-    
-    int result = synchronize_time();
-    //we are dead for some reason -- continue with failsafe
-    if(result == -1) forceFailsafe();
+    return;
 }
 
 void FlightController::forceFailsafe(){

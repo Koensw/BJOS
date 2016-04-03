@@ -53,6 +53,12 @@
 #include <mavlink/v1.0/common/mavlink.h>
 #endif
 
+/* SETTINGS */
+
+#define SYS_ID 255
+#define COMP_ID 255
+#define REBOOT_SECS 10
+
 // -------------------------------------------------------------------------------------
 //   MAVLink info - latest documentation for reference: https://pixhawk.ethz.ch/mavlink/
 // -------------------------------------------------------------------------------------
@@ -65,9 +71,6 @@
  *	readMessages            --- Decodes the following incoming messages:
  *                                      ATTITUDE, LOCAL_POSITION_NED, STATUSTEXT, SYSTEM_TIME, HIGHRES_IMU, EXTENDED_SYS_STATE
  */
-
-#define SYS_ID 255
-#define COMP_ID 255
 
 // -------------------------------------------------------------------------------------
 //   Defines
@@ -85,6 +88,7 @@
 #define SET_TARGET_TAKEOFF      7623  //0b0001110111000111
 #define SET_THRUST_SETPOINT     191   //0b0000000010111111
 #define END_THRUST_SETPOINT     255   //0b0000000011111111
+
 /* helper function */
 uint64_t get_time_usec();
 
@@ -269,7 +273,7 @@ namespace bjos {
         
         /* Set offboard mode - has to be done in order to send setpoints */
         //NOTE: returns -1 on write error, returns 0 on double (de-)activation, returns 1 on success;
-        int toggle_offboard_control(bool flag);
+        int toggle_offboard_control(bool flag, bool force = false);
         
         /* Synchronizes the time with the Pixhawk (WARNING: this should only be done on primary load, to ensure that monotic time is always consistent!) */
         //NOTE: returns false on error, returns true on success;
@@ -279,7 +283,7 @@ namespace bjos {
         bool motor_killer(bool flag);
         
         /* Reboot utility method */
-        bool exec_reboot();
+        bool execute_reboot();
         
         /* Parameter write utility method */
         bool write_param();

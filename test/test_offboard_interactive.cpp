@@ -176,8 +176,9 @@ std::tuple<Eigen::Vector3d, Eigen::Vector3d, uint16_t, bool, int, bool, int> han
             break;
             
         case 'b':
-            std::cout << "Reboot" << std::endl;
+            std::cout << "Execute reboot" << std::endl;
             doReboot = true;
+            break;
 
         case '+':
             std::cout << "Eyes are on" << std::endl;
@@ -266,8 +267,10 @@ int main(){
         auto action = handle_input(ret);
         
         if(doReboot){
-            std::cout << "Reboot in progress... please wait" << std::endl;
+            std::cout << "Reboot in progress... (please wait)" << std::endl;
             flight.reboot();
+            doReboot = false;
+            std::cout << "Reboot completed!" << std::endl;
         }
         
         flight.setTargetCF(std::get<2>(action), Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(0, 0, 0), std::get<0>(action), std::get<1>(action));
