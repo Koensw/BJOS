@@ -43,17 +43,34 @@ int main(){
         return 0;
     }               
   
-    std::cout << "Write parameter!\nNumber: ";
+    std::cout << "Type (1 = int32, 2 = float): ";
+    int type;
+    std::cin >> type;
     std::string param;
-    float value;
+    std::cout << "Name: ";
     std::cin >> param;
     std::cout << "Value: ";
-    std::cin >> value;
-
-    if (flight.writeParameter(param.c_str(), value, MAV_PARAM_TYPE_UINT8))
-        std::cout << "Succesfully wrote parameter " << param << " with value " << value << "!" << std::endl;
+    
+    int val_int32;
+    float val_float;
+    
+    int ret = 0;
+    switch(type){
+        case 1:
+            std::cin >> val_int32;
+            ret = flight.writeParameter(param.c_str(), *reinterpret_cast<float*>(&val_int32), MAV_PARAM_TYPE_INT32);
+            break;
+        case 2:
+            std::cin >> val_float;
+            ret = flight.writeParameter(param.c_str(), val_float, MAV_PARAM_TYPE_REAL32);
+            break;
+        default:
+            ret = false;
+            return 1;
+    }
+    
+    if (ret)
+        std::cout << "Succesfully wrote parameter " << param << "!" << std::endl;
     else
         std::cout << "Oops! The write failed :(" << std::endl;
-
-    std::cout << "Byebye!";
 }

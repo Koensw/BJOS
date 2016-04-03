@@ -209,6 +209,11 @@ void FlightController::read_messages() {
         if (!_mavlink_received) {
             system_id = message.sysid;
             autopilot_id = message.compid;
+            
+            shared_data_mutex->lock();
+            _data->system_id = message.sysid;
+            _data->autopilot_id = message.compid;
+            shared_data_mutex->unlock();
         }
         
         //get current time
@@ -661,7 +666,7 @@ bool FlightController::write_param() {
     mavlink_message_t message = _data->param;
     _data->write_param = false;
     shared_data_mutex->unlock();
-
+    
     //do the write
     int success = serial_port->write_message(message);
     
@@ -1151,7 +1156,12 @@ Eigen::Vector3d FlightController::orientationNEDtoWF(Eigen::Vector3d orientation
 bool FlightController::writeParameter(const char* id, float value, uint8_t type) {
     shared_data_mutex->lock();
     bool write_param = _data->write_param;
+    
+    int32_t system_id = _data->system_id;
+    int32_t autopilot_id = _data->autopilot_id;
     if(!write_param) _data->write_param = true;
+
+    //set sys and comp_id
     shared_data_mutex->unlock();
     if(write_param) return false;
     
@@ -1180,17 +1190,8 @@ bool FlightController::writeParameter(const char* id, float value, uint8_t type)
     _data->param = msg;
     shared_data_mutex->unlock();
 
-    
+    //FIXME: wait till command is executed and check response
     return true;
-    
-    //error check
-    /*if (success) {
-        Log::info("FlightController::writeParameter", "Wrote parameter %s of type %i with value %f", paramId, type, value);
-        return true;
-    }
-    else {
-        return false;
-    }*/
 }
 
 void FlightController::killMotors() {

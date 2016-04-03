@@ -113,6 +113,10 @@ namespace bjos {
         uint64_t syncUnixTime; //ms
         uint64_t ourBootTime; //ms
         
+        /* System and component id */
+        int32_t system_id;
+        int32_t autopilot_id;
+        
 		/* Offset between vision WF and drone WF (frame configuration flipped from drone NED) */
         Eigen::Vector3d visionPosOffset;
         double visionYawOffset;
