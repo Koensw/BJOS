@@ -155,6 +155,10 @@ namespace bjos {
         /* Flag for a reboot in progress */
         bool do_reboot;
 
+        /* Paremeter to write (FIXME: you can now only write one parameter at a time and should wait for write thread) */
+        bool write_param;
+        mavlink_message_t param;
+        
         /* Raw IMU sensor data */
         //TODO: can be removed probably
         IMUSensorData imuNED;
@@ -245,7 +249,7 @@ namespace bjos {
          * @param value: new value of the parameter as a float
          * @param type: one of the MAV_PARAM_TYPE enums, to specify what type of parameter is set
          */
-        bool writeParameter(char* id, float value, uint8_t type);
+        bool writeParameter(const char* id, float value, uint8_t type);
             
         /* INFO */
         /* Returns current landed state */
@@ -272,6 +276,9 @@ namespace bjos {
         
         /* Reboot utility method */
         bool exec_reboot();
+        
+        /* Parameter write utility method */
+        bool write_param();
 
         /* Used by messaging part to allow multiple drone streaming, and to just generally indicate which drone is being sent to */
         int system_id;

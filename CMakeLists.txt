@@ -87,6 +87,12 @@ add_executable(test_gripper
 )
 target_link_libraries(test_gripper bjos)
 
+# test write paramter
+add_executable(test_write_parameter
+    test/test_write_parameter.cpp
+)
+target_link_libraries(test_write_parameter bjos)
+
 # align
 add_executable(align_frames
     test/align_frames.cpp

@@ -519,8 +519,12 @@ void FlightController::write_thread() {
             bool kill_motors = _data->kill_motors;
             bool force_failsafe = _data->force_failsafe;
             bool do_reboot = _data->do_reboot;
+            bool do_write_param = _data->write_param;
             shared_data_mutex->unlock();
 
+            //write param if necessary
+            if(do_write_param) write_param();
+            
             //check state
             if (do_reboot){
                 // send reboot command
@@ -651,7 +655,25 @@ void FlightController::write_thrust_setpoint(bool end) {
     //TODO: check if write is succesfull
 }
 
+bool FlightController::write_param() {
+    //get param to send
+    shared_data_mutex->lock();
+    mavlink_message_t message = _data->param;
+    _data->write_param = false;
+    shared_data_mutex->unlock();
 
+    //do the write
+    int success = serial_port->write_message(message);
+    
+    //error check
+    if (success) {
+        Log::info("FlightController::write_param", "Parameter is successfully written");
+        return true;
+    }
+    else {
+        return false;
+    }
+}
 
 bool FlightController::motor_killer(bool flag) {
     //prepare command
@@ -1126,7 +1148,13 @@ Eigen::Vector3d FlightController::orientationNEDtoWF(Eigen::Vector3d orientation
     return out;
 }
 
-bool FlightController::writeParameter(char* id, float value, uint8_t type) {
+bool FlightController::writeParameter(const char* id, float value, uint8_t type) {
+    shared_data_mutex->lock();
+    bool write_param = _data->write_param;
+    if(!write_param) _data->write_param = true;
+    shared_data_mutex->unlock();
+    if(write_param) return false;
+    
     /* Writes parameter number with value
      * WARN: THIS FUNCTION REQUIRES KNOWLEDGE OF THE PIXHAWK PARAMETER TYPES, DO NOT CALL IF UNSURE
      *
@@ -1138,26 +1166,31 @@ bool FlightController::writeParameter(char* id, float value, uint8_t type) {
     strncpy(paramId, id, MAVLINK_MSG_PARAM_SET_FIELD_PARAM_ID_LEN);
 
     mavlink_message_t msg;
-    mavlink_msg_param_set_pack(0,
-                               0,
+    mavlink_msg_param_set_pack(SYS_ID,
+                               COMP_ID,
                                &msg,
                                system_id,
                                autopilot_id,
                                paramId,
                                value,
-                               type);
+                               type
+                              );
 
-    //do the write
-    int success = serial_port->write_message(msg);
+    shared_data_mutex->lock();
+    _data->param = msg;
+    shared_data_mutex->unlock();
 
+    
+    return true;
+    
     //error check
-    if (success) {
+    /*if (success) {
         Log::info("FlightController::writeParameter", "Wrote parameter %s of type %i with value %f", paramId, type, value);
         return true;
     }
     else {
         return false;
-    }
+    }*/
 }
 
 void FlightController::killMotors() {
