@@ -238,6 +238,14 @@ namespace bjos {
         void killMotors();
         /* Reboots the flight controller */
         void reboot();
+
+        /* Write a parameter to the Pixhawk 
+         *
+         * @param id: parameter name on the pixhawk: max 16 char's long, strings should be terminated with a '\0' !
+         * @param value: new value of the parameter as a float
+         * @param type: one of the MAV_PARAM_TYPE enums, to specify what type of parameter is set
+         */
+        bool writeParameter(char* id, float value, uint8_t type);
             
         /* INFO */
         /* Returns current landed state */

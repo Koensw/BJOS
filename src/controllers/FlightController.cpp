@@ -1126,6 +1126,40 @@ Eigen::Vector3d FlightController::orientationNEDtoWF(Eigen::Vector3d orientation
     return out;
 }
 
+bool FlightController::writeParameter(char* id, float value, uint8_t type) {
+    /* Writes parameter number with value
+     * WARN: THIS FUNCTION REQUIRES KNOWLEDGE OF THE PIXHAWK PARAMETER TYPES, DO NOT CALL IF UNSURE
+     *
+     * TODO: Check if MAVLink returns a PARAM_VALUE message, this is an acknowledgement of this message
+    **/
+    // Param may not be null terminated if exactly fits
+    char paramId[MAVLINK_MSG_PARAM_SET_FIELD_PARAM_ID_LEN + 1];
+    paramId[MAVLINK_MSG_PARAM_SET_FIELD_PARAM_ID_LEN] = 0;
+    strncpy(paramId, id, MAVLINK_MSG_PARAM_SET_FIELD_PARAM_ID_LEN);
+
+    mavlink_message_t msg;
+    mavlink_msg_param_set_pack(0,
+                               0,
+                               &msg,
+                               system_id,
+                               autopilot_id,
+                               paramId,
+                               value,
+                               type);
+
+    //do the write
+    int success = serial_port->write_message(msg);
+
+    //error check
+    if (success) {
+        Log::info("FlightController::writeParameter", "Wrote parameter %s of type %i with value %f", paramId, type, value);
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
 void FlightController::killMotors() {
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
     _data->kill_motors = true;
