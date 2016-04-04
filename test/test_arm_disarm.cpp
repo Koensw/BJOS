@@ -51,7 +51,7 @@ int main(){
         else
             flight.armDisarm((bool)type);
 
-    } while(type != -1);
+    } while(type != -1 && Process::isActive());
 
     std::cout << "Byebye!";
     
