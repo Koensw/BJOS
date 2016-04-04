@@ -40,14 +40,14 @@ int main(){
         std::cout << "Failed to retrieve flight controller" << std::endl;
         return 0;
     }               
-  
+
+    int type;
     do {
         std::cout << "Arm = 1, disarm = 0, quit = -1: ";
-        int type;
         std::cin >> type;
         
         if(type != -1 || type != 0 || type != 1)
-            std::cout << "That ain't -1, 0 or 1. Dumbass." std::endl;
+            std::cout << "That ain't -1, 0 or 1. Dumbass." << std::endl;
         else
             flight.armDisarm((bool)type);
 
