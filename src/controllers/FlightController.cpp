@@ -692,6 +692,17 @@ bool FlightController::write_param() {
 bool FlightController::write_arm(bool flag) {
     /* This function writes an arming state to the pixhawk and changes offboard mode accordingly */
 
+    if(flag) {
+        int ret = toggle_offboard_control(flag);
+        if (ret == -1) { // write error
+            Log::warn("FlightController::write_arm", "Could not change offboard mode, serial port write error");
+            return false;
+        }
+        else if (ret == 0) {
+            Log::info("FlightController::write_arm", "Did not change offboard mode state, already %s", flag ? "in offboard" : "out of offboard");
+        }
+    }
+
     //prepare command
     mavlink_command_long_t com;
     com.target_system = system_id;
@@ -709,23 +720,26 @@ bool FlightController::write_arm(bool flag) {
 
     //error check
     if (success) {
-        if (flag) Log::info("FlightController::write_arm", "drone is %s", flag ? "armed" : "disarmed");
+        Log::info("FlightController::write_arm", "drone is %s", flag ? "armed" : "disarmed");
         //disable future arming or disarming except for explicit call
         shared_data_mutex->lock();
         _data->arming_flag = 0;
         shared_data_mutex->unlock();
 
         //disable or enable offboard control accordingly
-        int ret = toggle_offboard_control(flag);
-        if (ret == -1) { // write error
-            Log::warn("FlightController::write_arm", "Could not change offboard mode, serial port write error");
-            return false;
-        }
-        else if (ret == 0) {
-            Log::info("FlightController::write_arm", "Did not change offboard mode state, already %s", flag ? "in offboard" : "out of offboard");
-            return false;
-        }
-        else
+        if(!flag) {
+            int ret = toggle_offboard_control(flag);
+            if (ret == -1) { // write error
+                Log::warn("FlightController::write_arm", "Could not change offboard mode, serial port write error");
+                return false;
+            }
+            else if (ret == 0) {
+                Log::info("FlightController::write_arm", "Did not change offboard mode state, already %s", flag ? "in offboard" : "out of offboard");
+                return false;
+            }
+            else
+                return true;
+        } else
             return true;
     }
     else {

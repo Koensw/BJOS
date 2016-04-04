@@ -48,12 +48,12 @@ int main(){
         
         if(type != -1 && type != 0 && type != 1)
             std::cout << "That ain't -1, 0 or 1. Dumbass." << std::endl;
-        else
+        else if(type != -1)
             flight.armDisarm((bool)type);
 
     } while(type != -1 && Process::isActive());
 
-    std::cout << "Byebye!";
+    std::cout << "Byebye!" << std::endl;
     
     return 1;
 }
