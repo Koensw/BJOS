@@ -8,6 +8,7 @@
  * Functions for sending commands to and receiving information from a drone via MAVLink
  *
  * @author Joep Linssen,	<joep.linssen@bluejayeindhoven.nl>
+ * @author Koen Wolters,    <koen.wolters@bluejayeindhoven.nl>
  */
 
 #ifndef _BLUEJAY_FLIGHT_CONTROLLER_H
@@ -166,6 +167,9 @@ namespace bjos {
         /* Paremeter to write (FIXME: you can now only write one parameter at a time and should wait for write thread) */
         bool write_param;
         mavlink_message_t param;
+
+        /* 0 for nothing, 1 for disarm, 2 for arm */
+        uint32_t arming_flag;
         
         /* Raw IMU sensor data */
         //TODO: can be removed probably
@@ -259,6 +263,9 @@ namespace bjos {
          */
         bool writeParameter(const char* id, float value, uint8_t type);
             
+        /* Arm the drone on true, disarm on false */
+        bool armDisarm(bool flag);
+
         /* INFO */
         /* Returns current landed state */
         bool isLanded();
@@ -287,6 +294,9 @@ namespace bjos {
         
         /* Parameter write utility method */
         bool write_param();
+
+        /* Arming state write utility method */
+        bool write_arm(bool flag);
 
         /* Used by messaging part to allow multiple drone streaming, and to just generally indicate which drone is being sent to */
         int system_id;

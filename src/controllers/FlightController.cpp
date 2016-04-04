@@ -6,6 +6,7 @@
  * Functions for sending commands to and receiving information from a drone via MAVLink
  *
  * @author Joep Linssen 	    <joep.linssen@bluejayeindhoven.nl>
+ * @author Koen Wolters         <koen.wolters@bluejayeindhoven.nl>
  * @author Wouter van der Stoel <wouter@bluejayeindhoven.nl>
  */
 
@@ -86,6 +87,8 @@ void FlightController::init(bjos::BJOS *bjos) {
     _data->battery_percentage = 1; //assume full battery when not known...
     _data->vision_sync = false;
     _data->do_reboot = false;
+    _data->write_param = false;
+    _data->arming_flag = 0;
     
     //set vision_position_estimate to non-valid
     _data->vision_position_estimate.usec = 0;
@@ -524,6 +527,8 @@ void FlightController::write_thread() {
             bool force_failsafe = _data->force_failsafe;
             bool do_reboot = _data->do_reboot;
             bool do_write_param = _data->write_param;
+            bool do_write_arm = (bool)_data->arming_flag;
+            bool arming_state = do_write_arm ? (bool)(_data->arming_flag - 1) : false;
             shared_data_mutex->unlock();
             
             //check state
@@ -552,9 +557,14 @@ void FlightController::write_thread() {
                 bjos::BJOS::getOS()->shutdown();
                 //wait some time to try again
                 usleep(100000);
-            }else if (do_write_thrust_setpoint) {
+            }
+            else if (do_write_thrust_setpoint) {
                 //enable writing thrust setpoint
                 write_thrust_setpoint(false);
+            }
+            else if (do_write_arm) {
+                //arm or disarm
+                write_arm(arming_state);
             }else{
                 if (do_end_thrust_setpoint) write_thrust_setpoint(true);
                 
@@ -673,6 +683,50 @@ bool FlightController::write_param() {
     if (success) {
         Log::info("FlightController::write_param", "Parameter is successfully written");
         return true;
+    }
+    else {
+        return false;
+    }
+}
+
+bool FlightController::write_arm(bool flag) {
+    /* This function writes an arming state to the pixhawk and changes offboard mode accordingly */
+
+    //prepare command
+    mavlink_command_long_t com;
+    com.target_system = system_id;
+    com.target_component = autopilot_id;
+    com.command = MAV_CMD_COMPONENT_ARM_DISARM;
+    com.confirmation = true;
+    com.param1 = (float)flag;
+
+    //encode
+    mavlink_message_t message;
+    mavlink_msg_command_long_encode(SYS_ID, COMP_ID, &message, &com);
+
+    //do the write
+    int success = serial_port->write_message(message);
+
+    //error check
+    if (success) {
+        if (flag) Log::info("FlightController::write_arm", "drone is %s", flag ? "armed" : "disarmed");
+        //disable future arming or disarming except for explicit call
+        shared_data_mutex->lock();
+        _data->arming_flag = 0;
+        shared_data_mutex->unlock();
+
+        //disable or enable offboard control accordingly
+        int ret = toggle_offboard_control(flag);
+        if (ret == -1) { // write error
+            Log::warn("FlightController::write_arm", "Could not change offboard mode, serial port write error");
+            return false;
+        }
+        else if (ret == 0) {
+            Log::info("FlightController::write_arm", "Did not change offboard mode state, already %s", flag ? "in offboard" : "out of offboard");
+            return false;
+        }
+        else
+            return true;
     }
     else {
         return false;
@@ -1230,6 +1284,11 @@ Eigen::Vector3d FlightController::orientationNEDtoWF(Eigen::Vector3d orientation
 }
 
 bool FlightController::writeParameter(const char* id, float value, uint8_t type) {
+    /* Writes parameter number with value
+    * WARN: THIS FUNCTION REQUIRES KNOWLEDGE OF THE PIXHAWK PARAMETER TYPES, DO NOT CALL IF UNSURE
+    *
+    * TODO: Check if MAVLink returns a PARAM_VALUE message, this is an acknowledgement of this message
+    **/
     shared_data_mutex->lock();
     bool write_param = _data->write_param;
     
@@ -1241,11 +1300,6 @@ bool FlightController::writeParameter(const char* id, float value, uint8_t type)
     shared_data_mutex->unlock();
     if(write_param) return false;
     
-    /* Writes parameter number with value
-     * WARN: THIS FUNCTION REQUIRES KNOWLEDGE OF THE PIXHAWK PARAMETER TYPES, DO NOT CALL IF UNSURE
-     *
-     * TODO: Check if MAVLink returns a PARAM_VALUE message, this is an acknowledgement of this message
-    **/
     // Param may not be null terminated if exactly fits
     char paramId[MAVLINK_MSG_PARAM_SET_FIELD_PARAM_ID_LEN + 1];
     paramId[MAVLINK_MSG_PARAM_SET_FIELD_PARAM_ID_LEN] = 0;
@@ -1268,6 +1322,13 @@ bool FlightController::writeParameter(const char* id, float value, uint8_t type)
 
     //FIXME: wait till command is executed and check response
     return true;
+}
+
+bool FlightController::armDisarm(bool flag) {
+    uint32_t arming_flag = flag ? 2 : 1;
+
+    std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+    _data->arming_flag = arming_flag;
 }
 
 void FlightController::killMotors() {
