@@ -264,7 +264,7 @@ namespace bjos {
         bool writeParameter(const char* id, float value, uint8_t type);
             
         /* Arm the drone on true, disarm on false */
-        bool armDisarm(bool flag);
+        void armDisarm(bool flag);
 
         /* INFO */
         /* Returns current landed state */

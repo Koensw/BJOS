@@ -692,8 +692,8 @@ bool FlightController::write_param() {
 bool FlightController::write_arm(bool flag) {
     /* This function writes an arming state to the pixhawk and changes offboard mode accordingly */
 
-    if(flag) {
-        int ret = toggle_offboard_control(flag);
+    if(!flag) {
+        int ret = toggle_offboard_control(flag, true);
         if (ret == -1) { // write error
             Log::warn("FlightController::write_arm", "Could not change offboard mode, serial port write error");
             return false;
@@ -701,6 +701,7 @@ bool FlightController::write_arm(bool flag) {
         else if (ret == 0) {
             Log::info("FlightController::write_arm", "Did not change offboard mode state, already %s", flag ? "in offboard" : "out of offboard");
         }
+        usleep(100000); //short time for toggling offboard
     }
 
     //prepare command
@@ -727,8 +728,9 @@ bool FlightController::write_arm(bool flag) {
         shared_data_mutex->unlock();
 
         //disable or enable offboard control accordingly
-        if(!flag) {
-            int ret = toggle_offboard_control(flag);
+        if(flag) {
+            usleep(100000); //short time for disarming
+            int ret = toggle_offboard_control(flag, true);
             if (ret == -1) { // write error
                 Log::warn("FlightController::write_arm", "Could not change offboard mode, serial port write error");
                 return false;
@@ -1338,7 +1340,7 @@ bool FlightController::writeParameter(const char* id, float value, uint8_t type)
     return true;
 }
 
-bool FlightController::armDisarm(bool flag) {
+void FlightController::armDisarm(bool flag) {
     uint32_t arming_flag = flag ? 2 : 1;
 
     std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
