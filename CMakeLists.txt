@@ -93,6 +93,12 @@ add_executable(test_write_parameter
 )
 target_link_libraries(test_write_parameter bjos)
 
+# test write paramter
+add_executable(test_arm_disarm
+    test/test_arm_disarm.cpp
+)
+target_link_libraries(test_arm_disarm bjos)
+
 # align
 add_executable(align_frames
     test/align_frames.cpp
