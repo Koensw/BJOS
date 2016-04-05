@@ -462,6 +462,14 @@ void FlightController::read_messages() {
                 send_state_message(msg);
                 break;
             }
+            case MAVLINK_MSG_ID_PARAM_VALUE:
+            {
+                Log::info("FlightController::read_param", "Received requested parameter");
+                std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
+                _data->param_read = message;
+                _data->read_param_response = true;
+                
+            }
             default:
             {
                 //Log::info("FlightController::read_messages", "Not handling this message: %" PRIu8, message.msgid);
@@ -524,6 +532,7 @@ void FlightController::write_thread() {
             bool force_failsafe = _data->force_failsafe;
             bool do_reboot = _data->do_reboot;
             bool do_write_param = _data->write_param;
+            bool do_read_param = _data->read_param;
             shared_data_mutex->unlock();
             
             //check state
@@ -563,6 +572,9 @@ void FlightController::write_thread() {
             
                 //write setpoint and estimate
                 if(do_write_estimate) write_estimate();
+                
+                //read param if necessary
+                if(do_read_param) read_param();
                 
                 //write param if necessary
                 if(do_write_param) write_param();
@@ -659,10 +671,30 @@ void FlightController::write_thrust_setpoint(bool end) {
     //TODO: check if write is succesfull
 }
 
+bool FlightController::read_param() {
+    //get param to send
+    shared_data_mutex->lock();
+    mavlink_message_t message = _data->param_request;
+    _data->read_param = false;
+    shared_data_mutex->unlock();
+    
+    //do the write
+    int success = serial_port->write_message(message);
+    
+    //error check
+    if (success) {
+        Log::info("FlightController::read_param", "Parameter read request is succesfull");
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
 bool FlightController::write_param() {
     //get param to send
     shared_data_mutex->lock();
-    mavlink_message_t message = _data->param;
+    mavlink_message_t message = _data->param_write;
     _data->write_param = false;
     shared_data_mutex->unlock();
     
@@ -1229,7 +1261,61 @@ Eigen::Vector3d FlightController::orientationNEDtoWF(Eigen::Vector3d orientation
     return out;
 }
 
-bool FlightController::writeParameter(const char* id, float value, uint8_t type) {
+std::pair<float, uint8_t> FlightController::readParameter(const char* id){
+    if(id[0] == 0) return std::make_pair(NAN, UINT8_MAX);
+    
+    shared_data_mutex->lock();
+    bool read_param = _data->read_param;
+    int32_t system_id = _data->system_id;
+    int32_t autopilot_id = _data->autopilot_id;
+    
+    //set sys and comp_id
+    shared_data_mutex->unlock();
+    
+    // FIXME: check if read is fully finished
+    if(read_param) return std::make_pair(NAN, UINT8_MAX);
+        
+    //build mavlink message
+    mavlink_message_t msg;
+    mavlink_param_request_read_t param_request;
+    
+    param_request.param_index = -1;
+    param_request.target_system = system_id;
+    param_request.target_component = autopilot_id;
+    strncpy(param_request.param_id, id, MAVLINK_MSG_PARAM_REQUEST_READ_FIELD_PARAM_ID_LEN);
+    mavlink_msg_param_request_read_encode(SYS_ID, COMP_ID, &msg, &param_request);
+    
+    //set param request
+    shared_data_mutex->lock();  
+    bool read_param_response = _data->read_param_response = false;
+    _data->param_request = msg;
+    _data->read_param = true;
+    shared_data_mutex->unlock();    
+    
+    int cnt = 0;
+    int timeout = 20;
+    while(!read_param_response && cnt < timeout){
+        //wait for read parameter to complete
+        //FIXME: do something better than semi-busy waiting...
+        shared_data_mutex->lock();    
+        read_param_response = _data->read_param_response;
+        shared_data_mutex->unlock();    
+        
+        ++cnt;
+        usleep(100000); //10 Hz
+    }
+    
+    shared_data_mutex->lock();    
+    _data->read_param_response = false;
+    msg = _data->param_read;
+    shared_data_mutex->unlock();
+    
+    if(!read_param_response) return std::make_pair(NAN, UINT8_MAX);    
+    
+    return std::make_pair(mavlink_msg_param_value_get_param_value(&msg), mavlink_msg_param_value_get_param_type(&msg));;
+}
+
+bool FlightController::writeParameter(const char* id, float value, uint8_t type) {    
     shared_data_mutex->lock();
     bool write_param = _data->write_param;
     
@@ -1263,7 +1349,7 @@ bool FlightController::writeParameter(const char* id, float value, uint8_t type)
                               );
 
     shared_data_mutex->lock();
-    _data->param = msg;
+    _data->param_write = msg;
     shared_data_mutex->unlock();
 
     //FIXME: wait till command is executed and check response

@@ -163,9 +163,15 @@ namespace bjos {
         /* Flag for a reboot in progress */
         bool do_reboot;
 
+        /* Parameter to read */
+        bool read_param;
+        mavlink_message_t param_request;
+        bool read_param_response;
+        mavlink_message_t param_read;
+        
         /* Paremeter to write (FIXME: you can now only write one parameter at a time and should wait for write thread) */
         bool write_param;
-        mavlink_message_t param;
+        mavlink_message_t param_write;
         
         /* Raw IMU sensor data */
         //TODO: can be removed probably
@@ -258,6 +264,8 @@ namespace bjos {
          * @param type: one of the MAV_PARAM_TYPE enums, to specify what type of parameter is set
          */
         bool writeParameter(const char* id, float value, uint8_t type);
+        std::pair<float, uint8_t> readParameter(const char* id);
+        
             
         /* INFO */
         /* Returns current landed state */
@@ -284,6 +292,9 @@ namespace bjos {
         
         /* Reboot utility method */
         bool execute_reboot();
+        
+        /* Parameter read utility method */
+        bool read_param();
         
         /* Parameter write utility method */
         bool write_param();
