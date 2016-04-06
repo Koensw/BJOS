@@ -94,6 +94,12 @@ add_executable(test_write_parameter
 target_link_libraries(test_write_parameter bjos)
 
 # test write paramter
+add_executable(test_battery
+    test/test_battery.cpp
+)
+target_link_libraries(test_battery bjos)
+
+# test write paramter
 add_executable(test_arm_disarm
     test/test_arm_disarm.cpp
 )
