@@ -343,12 +343,16 @@ void FlightController::read_messages() {
                 //send over bjcomm
                 std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
                 if (_data->vision_sync) {
-                    Message msg("position_setpoint");
                     Eigen::Vector3d wf = positionNEDtoWF(Eigen::Vector3d(setpoint.x, setpoint.y, setpoint.z), _data->visionPosOffset, _data->visionYawOffset);
                     sstr.clear();
-                    sstr << wf[0] << " " << wf[1] << " " << wf[2];
-                    msg.setData(sstr.str());
-                    send_state_message(msg);
+                    //FIXME: Sometimes the target is very far away, causing the graphs to become crap
+                    // This value should in our use case always be less than 100
+                    if (wf.norm() < 100) {
+                        Message msg("position_setpoint");
+                        sstr << wf[0] << " " << wf[1] << " " << wf[2];
+                        msg.setData(sstr.str());
+                        send_state_message(msg);
+                    }
 
                     msg = Message("velocity_setpoint");
                     //FIXME: missing conversion here...
