@@ -354,7 +354,7 @@ void FlightController::read_messages() {
                         send_state_message(msg);
                     }
 
-                    msg = Message("velocity_setpoint");
+                    Message msg("velocity_setpoint");
                     //FIXME: missing conversion here...
                     sstr.clear();
                     sstr << setpoint.vx << " " << setpoint.vy << " " << setpoint.vz;
