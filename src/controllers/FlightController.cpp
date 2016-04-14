@@ -450,6 +450,7 @@ void FlightController::read_messages() {
                         Log::info("FlightController::read_messages", "Unable to handle landed state %" PRIu8, extended_sys_state.landed_state);
                     }
                 }
+                break;
             }
             case MAVLINK_MSG_ID_SERVO_OUTPUT_RAW:
             {
