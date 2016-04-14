@@ -384,6 +384,8 @@ void FlightController::read_messages() {
                 sstr << _data->battery_percentage;
                 msg.setData(sstr.str());
                 send_state_message(msg);
+                
+                break;
             }
             case MAVLINK_MSG_ID_SYSTEM_TIME:
             {
@@ -476,7 +478,7 @@ void FlightController::read_messages() {
                 std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
                 _data->param_read = message;
                 _data->read_param_response = true;
-                
+                break;
             }
             default:
             {
