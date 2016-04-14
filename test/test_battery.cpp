@@ -55,7 +55,9 @@ int main(){
     uint64_t start = get_time_msec(CLOCK_MONOTONIC);
     while(Process::isActive()){
         uint64_t cur = get_time_msec(CLOCK_MONOTONIC);
-        std::cout << "[" << std::fixed << std::setprecision(2) << (cur - start)/1e3 << "] BATT: " << flight.getBatteryPercentage() << std::endl;
+        std::cout << "[" << std::fixed << std::setprecision(2) << (cur - start)/1e3 << "] BATT: " << flight.getBatteryPercentage();
+        if(!flight.isLanded()) std::cout << " IN AIR";
+        std::cout << std::endl;
         sleep(1);
     }
 }
