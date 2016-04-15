@@ -380,6 +380,12 @@ void FlightController::read_messages() {
                 sstr << static_cast<double>(sys_state.battery_remaining) / 100.0;
                 msg.setData(sstr.str());
                 send_state_message(msg);
+
+                Message msg("sensors_valid");
+                sstr.clear();
+                sstr << sys_state.errors_count1;  //Hijacked MAVLink message field. TODO make a seperate one
+                msg.setData(sstr.str());
+                send_state_message(msg);
             }
             case MAVLINK_MSG_ID_SYSTEM_TIME:
             {
