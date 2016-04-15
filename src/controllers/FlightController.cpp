@@ -343,14 +343,18 @@ void FlightController::read_messages() {
                 //send over bjcomm
                 std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
                 if (_data->vision_sync) {
-                    Message msg("position_setpoint");
                     Eigen::Vector3d wf = positionNEDtoWF(Eigen::Vector3d(setpoint.x, setpoint.y, setpoint.z), _data->visionPosOffset, _data->visionYawOffset);
                     sstr.clear();
-                    sstr << wf[0] << " " << wf[1] << " " << wf[2];
-                    msg.setData(sstr.str());
-                    send_state_message(msg);
+                    //FIXME: Sometimes the target is very far away, causing the graphs to become crap
+                    // This value should in our use case always be less than 100
+                    if (wf.norm() < 100) {
+                        Message msg("position_setpoint");
+                        sstr << wf[0] << " " << wf[1] << " " << wf[2];
+                        msg.setData(sstr.str());
+                        send_state_message(msg);
+                    }
 
-                    msg = Message("velocity_setpoint");
+                    Message msg("velocity_setpoint");
                     //FIXME: missing conversion here...
                     sstr.clear();
                     sstr << setpoint.vx << " " << setpoint.vy << " " << setpoint.vz;
@@ -377,7 +381,7 @@ void FlightController::read_messages() {
 
                 Message msg("battery_remaining");
                 sstr.clear();
-                sstr << static_cast<double>(sys_state.battery_remaining) / 100.0;
+                sstr << _data->battery_percentage;
                 msg.setData(sstr.str());
                 send_state_message(msg);
 
@@ -386,6 +390,8 @@ void FlightController::read_messages() {
                 sstr << sys_state.errors_count1;  //Hijacked MAVLink message field. TODO make a seperate one
                 msg.setData(sstr.str());
                 send_state_message(msg);
+
+                break;
             }
             case MAVLINK_MSG_ID_SYSTEM_TIME:
             {
@@ -452,6 +458,7 @@ void FlightController::read_messages() {
                         Log::info("FlightController::read_messages", "Unable to handle landed state %" PRIu8, extended_sys_state.landed_state);
                     }
                 }
+                break;
             }
             case MAVLINK_MSG_ID_SERVO_OUTPUT_RAW:
             {
@@ -477,7 +484,7 @@ void FlightController::read_messages() {
                 std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
                 _data->param_read = message;
                 _data->read_param_response = true;
-                
+                break;
             }
             default:
             {
