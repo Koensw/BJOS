@@ -385,7 +385,7 @@ void FlightController::read_messages() {
                 msg.setData(sstr.str());
                 send_state_message(msg);
 
-                Message msg("sensors_valid");
+                msg = Message("sensors_valid");
                 sstr.clear();
                 sstr << sys_state.errors_count1;  //Hijacked MAVLink message field. TODO make a seperate one
                 msg.setData(sstr.str());
