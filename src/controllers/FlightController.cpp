@@ -257,6 +257,7 @@ void FlightController::read_messages() {
                     msg = Message("velocity_estimate");
                     //FIXME: missing conversion here...
                     sstr.clear();
+                    sstr.str("");
                     sstr << local_position_ned.vx << " " << local_position_ned.vy << " " << local_position_ned.vz;
                     msg.setData(sstr.str());
                     send_state_message(msg);
@@ -386,6 +387,7 @@ void FlightController::read_messages() {
                 send_state_message(msg);
 
                 msg = Message("sensors_valid");
+                sstr.str("");
                 sstr.clear();
                 sstr << sys_state.errors_count1;  //Hijacked MAVLink message field. TODO make a seperate one
                 msg.setData(sstr.str());
