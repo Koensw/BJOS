@@ -546,7 +546,8 @@ void FlightController::write_thread() {
     // Pixhawk needs to see off-board commands at minimum 2Hz, otherwise it'll go into failsafe
     while (_write_thrd_running) {
         try {
-            boost::this_thread::sleep_for(boost::chrono::milliseconds(75 - (get_time_usec(CLOCK_MONOTONIC) - prev_time)/1000ll)); //Stream at 10 Hz
+            uint64_t time_diff = (get_time_usec(CLOCK_MONOTONIC) - prev_time)/1000ll;
+            if(time_diff < 75ll) boost::this_thread::sleep_for(boost::chrono::milliseconds(75ll - time_diff)); //Stream at 10 Hz
             prev_time = get_time_usec(CLOCK_MONOTONIC);
             
             //TODO lock_guard over scope
