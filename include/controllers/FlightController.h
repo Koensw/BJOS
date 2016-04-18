@@ -91,7 +91,7 @@
 #define END_THRUST_SETPOINT     255   //0b0000000011111111
 
 /* helper function */
-uint64_t get_time_usec();
+uint64_t get_time_usec(clockid_t clk_id);
 
 namespace bjos {
     //TODO: move this to a separate types file when we use more types
