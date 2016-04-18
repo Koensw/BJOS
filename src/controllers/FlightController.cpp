@@ -176,12 +176,18 @@ void FlightController::load(bjos::BJOS *bjos) {
 }
 
 void FlightController::read_thread() {
+    uint64_t prev_time = get_time_usec(CLOCK_MONOTONIC);
+    
     while (_read_thrd_running) {
         shared_data_mutex->lock();
         bool force_failsafe = _data->force_failsafe;
         shared_data_mutex->unlock();
         
         try {
+            uint64_t time_diff = get_time_usec(CLOCK_MONOTONIC) - prev_time;
+            if (time_diff < 10ll) boost::this_thread::sleep_for(boost::chrono::microseconds(10ll - time_diff));
+            prev_time = get_time_usec(CLOCK_MONOTONIC);
+            
             //stop trying to read info from pixhawk in failsafe, because we cannot trust this anymore 
             if(force_failsafe) usleep(100000);
             else read_messages();
@@ -200,14 +206,14 @@ void FlightController::read_thread() {
 
 void FlightController::read_messages() {
     static int errors = 0;
-
+    
     mavlink_message_t message;
     
     int success = serial_port->read_message(message);
-
+    
     if (success > 0) {
         errors = 0;
-        
+                
         if (!_mavlink_received) {
             system_id = message.sysid;
             autopilot_id = message.compid;
@@ -230,7 +236,7 @@ void FlightController::read_messages() {
         //Handle message per id
         switch (message.msgid) {
             case MAVLINK_MSG_ID_LOCAL_POSITION_NED:
-            {                
+            {                             
                 //decode
                 mavlink_local_position_ned_t local_position_ned;
                 mavlink_msg_local_position_ned_decode(&message, &local_position_ned);
@@ -267,7 +273,7 @@ void FlightController::read_messages() {
                 break;
             }
             case MAVLINK_MSG_ID_ATTITUDE:
-            {                
+            {                           
                 //decode
                 mavlink_attitude_t attitude;
                 mavlink_msg_attitude_decode(&message, &attitude);     
@@ -304,7 +310,7 @@ void FlightController::read_messages() {
                 break;
             }
             case MAVLINK_MSG_ID_ATTITUDE_QUATERNION:
-            {                
+            {                       
                 //decode
                 mavlink_attitude_quaternion_t attitude;
                 mavlink_msg_attitude_quaternion_decode(&message, &attitude);
@@ -336,7 +342,7 @@ void FlightController::read_messages() {
                 break;
             }
             case MAVLINK_MSG_ID_POSITION_TARGET_LOCAL_NED:
-            {
+            {                
                 //decode
                 mavlink_position_target_local_ned_t setpoint;
                 mavlink_msg_position_target_local_ned_decode(&message, &setpoint);
@@ -374,7 +380,7 @@ void FlightController::read_messages() {
                 break;
             }
             case MAVLINK_MSG_ID_SYS_STATUS:
-            {
+            {                
                 std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
                 mavlink_sys_status_t sys_state;
                 mavlink_msg_sys_status_decode(&message, &sys_state);
@@ -536,11 +542,13 @@ void FlightController::write_thread() {
     // initialise motors as not killed
     motor_killer(false);
                                                                                    
+    uint64_t prev_time = get_time_usec(CLOCK_MONOTONIC);
     // Pixhawk needs to see off-board commands at minimum 2Hz, otherwise it'll go into failsafe
     while (_write_thrd_running) {
         try {
-            boost::this_thread::sleep_for(boost::chrono::milliseconds(100)); //Stream at 10 Hz
-
+            boost::this_thread::sleep_for(boost::chrono::milliseconds(75 - (get_time_usec(CLOCK_MONOTONIC) - prev_time)/1000ll)); //Stream at 10 Hz
+            prev_time = get_time_usec(CLOCK_MONOTONIC);
+            
             //TODO lock_guard over scope
             shared_data_mutex->lock();
             bool do_write_estimate = _data->write_estimate;
