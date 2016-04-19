@@ -244,7 +244,8 @@ void FlightController::read_messages() {
                 //arming and offboard
                 Message msg ("state");
                 sstr.clear();
-                sstr << (heartbeat.base_mode & MAV_MODE_FLAG_SAFETY_ARMED) << " " << (heartbeat.custom_mode & 6) << std::endl;
+                //8192 is CUSTOM_MODE_OFFBOARD
+                sstr << !!(heartbeat.base_mode & MAV_MODE_FLAG_SAFETY_ARMED) << " " << !!(heartbeat.custom_mode & 393216);
                 msg.setData(sstr.str());
                 send_state_message(msg);
                 break;
