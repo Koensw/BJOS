@@ -235,6 +235,20 @@ void FlightController::read_messages() {
 
         //Handle message per id
         switch (message.msgid) {
+            case MAVLINK_MSG_ID_HEARTBEAT:
+            {
+                //decode
+                mavlink_heartbeat_t heartbeat;
+                mavlink_msg_heartbeat_decode(&message, &heartbeat);
+                
+                //arming and offboard
+                Message msg ("state");
+                sstr.clear();
+                sstr << (heartbeat.base_mode & MAV_MODE_FLAG_SAFETY_ARMED) << " " << (heartbeat.custom_mode & 6) << std::endl;
+                msg.setData(sstr.str());
+                send_state_message(msg);
+                break;
+            }
             case MAVLINK_MSG_ID_LOCAL_POSITION_NED:
             {                             
                 //decode
