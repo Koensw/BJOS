@@ -55,6 +55,7 @@
 // ------------------------------------------------------------------------------
 
 #include <cstdlib>
+#include <sys/ioctl.h>
 #include <stdio.h>   // Standard input/output definitions
 #include <unistd.h>  // UNIX standard function definitions
 #include <fcntl.h>   // File control definitions

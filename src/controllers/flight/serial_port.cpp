@@ -372,6 +372,9 @@ _setup_port(int baud, int data_bits, int stop_bits, bool parity, bool hardware_c
 		fprintf(stderr, "\nERROR: could not read configuration of fd %d\n", fd);
 		return false;
 	}
+	
+	// lock the serial port
+	ioctl(fd, TIOCEXCL);
 
 	// Input flags - Turn off input processing
 	// convert break to null byte, no CR to NL translation,

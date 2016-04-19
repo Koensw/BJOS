@@ -250,7 +250,7 @@ void FlightController::read_messages() {
                 _data->velocityNED[1] = local_position_ned.vy;
                 _data->velocityNED[2] = local_position_ned.vz;
 
-                //only send bjcomm messages when vision has been synced and therefor WF is enabled
+                //only send bjcomm messages when vision has been synced and therefore WF is enabled
                 if (_data->vision_sync) {
                     Message msg("position_estimate");
                     Eigen::Vector3d wf = positionNEDtoWF(Eigen::Vector3d(local_position_ned.x, local_position_ned.y, local_position_ned.z), _data->visionPosOffset, _data->visionYawOffset);
@@ -290,7 +290,6 @@ void FlightController::read_messages() {
                     send_state_message(msg);
                 }
 
-                
                 /*msg = Message("attitude_rate_estimate");
                 sstr.clear();
                 sstr << attitude.rollspeed << " " << attitude.pitchspeed << " " << attitude.yawspeed;
@@ -392,10 +391,19 @@ void FlightController::read_messages() {
                 msg.setData(sstr.str());
                 send_state_message(msg);
 
+                //sys_state.errors_count1 is a hijacked MAVLink message field. TODO make a seperate one
                 msg = Message("sensors_valid");
                 sstr.str("");
                 sstr.clear();
-                sstr << sys_state.errors_count1;  //Hijacked MAVLink message field. TODO make a seperate one
+                sstr << !sys_state.errors_count1;  
+                msg.setData(sstr.str());
+                send_state_message(msg);
+                
+                msg = Message("sensors_status");
+                sstr.str("");
+                sstr.clear();
+                //4 is lidar_hard fault - 8 is lidar hard fault
+                sstr << !!(sys_state.errors_count1 & 4) << " " << !!(sys_state.errors_count1 & 8) << " " << !!(sys_state.errors_count1 & (~(4 + 8)));  
                 msg.setData(sstr.str());
                 send_state_message(msg);
 
