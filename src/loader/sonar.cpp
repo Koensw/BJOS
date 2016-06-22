@@ -16,6 +16,7 @@
 #include "controllers/EyesController.h"
 
 #include "controllers/sonar/DevantechSonarInterface.h"
+#include "controllers/sonar/MaxbotixSonarInterface.h"
 
 /*
  * Test loader for BJOS
@@ -44,23 +45,23 @@ void OSInit(){
         wiringPiSetupSys();
         
         //start i2c
-        /*I2C::start("/dev/i2c-1");
+        I2C::start("/dev/i2c-1");
         
         //load the sonar controller
-        sonar = new SonarController(true);
-        unsigned char address[3] = {0x70, 0x71, 0x72};
-        //double yaw[3] = {-1.57079632679, 3.14159265, 1.57079632679};
-        double yaw[3] = {0, 1.57079632679, 3.14159265};
-        for(int i=0; i<3; ++i){
-            SonarInterface *interface = new DevantechSonarInterface(address[i]);
-            sonar->registerInterface(interface, Eigen::Vector3d(0,0,0),
-                    Eigen::Vector3d(0, yaw[i], 0), (i == 0));
+        //TODO: separate the config from the loader
+        sonar = new SonarController(false);
+        unsigned char address[4] = {0x71, 0x72, 0x73, 0x74};
+        double yaw[4] = {-1.1780972451, -0.39269908169, 0.39269908169, 1.1780972451};
+        for(int i=0; i<4; ++i){
+            SonarInterface *interface = new MaxbotixSonarInterface(address[i]);
+            Pose pose;
+            pose.position = Eigen::Vector3d::Zero();
+            pose.orientation = Eigen::Vector3d(0, 0, yaw[i]);
+            sonar->registerInterface(interface, pose, (i % 2));
         }
-        
         bjos->initController(sonar);
         sonar->setUpdateTime(0.1);
-        */
-        
+                
         //load the flight controller
         flight = new FlightController();
         bjos->initController(flight);
@@ -95,19 +96,20 @@ void OSFinalize(){
     
     //wait for finalizing clients (or 5 seconds past)
     int time = 0;
-    while(/*!sonar->canFinalize() ||*/ (!gripper->canFinalize() || !flight->canFinalize())){
+    while(!sonar->canFinalize() || (!gripper->canFinalize() || !flight->canFinalize())){
         if(++time >= 50) break;
-        Log::info("DefaultLoader", "Waiting for %d clients to finish...", /*bjos->getControllerCount("sonar")-1*/ + bjos->getControllerCount("gripper")-1 + bjos->getControllerCount("flight")-1);
+        Log::info("DefaultLoader", "Waiting for %d clients to finish...", bjos->getControllerCount("sonar")-1 + bjos->getControllerCount("gripper")-1 + bjos->getControllerCount("flight")-1);
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
     
     //delete pointers
+    delete sonar;
     delete eyes;
     delete flight;
     delete gripper;
     
     //stop i2c
-//    I2C::stop();
+    I2C::stop();
     
     //stop os
     BJOS::finalize();

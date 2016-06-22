@@ -12,6 +12,7 @@
 
 #include "controllers/SonarController.h"
 #include "controllers/sonar/DevantechSonarInterface.h"
+#include "controllers/sonar/MaxbotixSonarInterface.h"
 
 /*
  * Test loader for BJOS
@@ -36,13 +37,14 @@ void OSInit(){
         I2C::start("/dev/i2c-1");
         
         sonar = new SonarController(false);
-        unsigned char address[3] = {0x70, 0x71, 0x72};
-        double yaw[3] = {1.57079632679, -1.57079632679, 0};
-        for(int i=0; i<3; ++i){
-            SonarInterface *interface = new DevantechSonarInterface(address[i]);
+        unsigned char address[4] = {0x71, 0x72, 0x73, 0x74};
+        double yaw[4] = {0, 0, 0, 0};
+        for(int i=0; i<4; ++i){
+            SonarInterface *interface = new MaxbotixSonarInterface(address[i]);
             Pose pose;
+            pose.position = Eigen::Vector3d::Zero();
             pose.orientation = Eigen::Vector3d(0, 0, yaw[i]);
-            sonar->registerInterface(interface, pose, (i == 0));
+            sonar->registerInterface(interface, pose, (i % 2));
         }
         
         bjos->initController(sonar);
@@ -87,7 +89,7 @@ int main(){
 		Log::info("SonarLoader", "%f", data[i].distance);
 	}
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(300));
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
     
     //finalize

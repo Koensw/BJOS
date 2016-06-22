@@ -37,30 +37,40 @@ target_link_libraries(bjos ${Boost_LIBRARIES} pthread rt wiringPi ${BJCOMM_LIBRA
 
 #### LOADERS ####
 # flight loader
-add_executable(flight_loader
+add_executable(test_flight_loader
     src/loader/test_flight.cpp
 )
-target_link_libraries(flight_loader bjos)
+target_link_libraries(test_flight_loader bjos)
 
 # sonar loader
-add_executable(sonar_loader
+add_executable(test_sonar_loader
+    src/controllers/sonar/MaxbotixSonarInterface.cpp
     src/controllers/sonar/DevantechSonarInterface.cpp
     src/loader/test_sonar.cpp
 )
-target_link_libraries(sonar_loader bjos)
+target_link_libraries(test_sonar_loader bjos)
 
 # gripper loader
-add_executable(gripper_loader
+add_executable(test_gripper_loader
     src/loader/test_gripper.cpp
 )
-target_link_libraries(gripper_loader bjos)
+target_link_libraries(test_gripper_loader bjos)
 
 # default loader
 add_executable(default_loader
+    src/controllers/sonar/MaxbotixSonarInterface.cpp
     src/controllers/sonar/DevantechSonarInterface.cpp
-    src/loader/test_default.cpp
+    src/loader/default.cpp
 )
 target_link_libraries(default_loader bjos)
+
+# sonar loader
+add_executable(sonar_loader
+    src/controllers/sonar/MaxbotixSonarInterface.cpp
+    src/controllers/sonar/DevantechSonarInterface.cpp
+    src/loader/sonar.cpp
+)
+target_link_libraries(sonar_loader bjos)
 
 ### TEST ###
 # build the test offboard interactive executable

@@ -64,6 +64,47 @@ int I2C::read(unsigned char address, unsigned char reg_addr, unsigned char &data
     return ret_val;
 }
 
+
+int I2C::read_word(unsigned char address, unsigned char reg_addr, unsigned short &data, bool log){
+    data = 0;
+    if(!isStarted()) {
+        if(log) Log::error("I2C", "Trying to read data while interface is not started yet");
+        return -1;
+    }
+    
+    unsigned char outbuff;
+    unsigned char inbuff[2];
+    inbuff[1] = 255; inbuff[2] = 255;
+    struct i2c_rdwr_ioctl_data packets;
+    struct i2c_msg messages[2];
+    
+    outbuff = reg_addr;
+    messages[0].addr = address;
+    messages[0].flags= 0;
+    messages[0].len = sizeof(outbuff);
+    messages[0].buf = &outbuff;
+    
+    messages[1].addr = address;
+    messages[1].flags = I2C_M_RD;
+    messages[1].len = sizeof(inbuff);
+    messages[1].buf = inbuff;
+    
+    packets.msgs = messages;
+    packets.nmsgs = 2;
+        
+    int ret_val = ioctl(_descriptor, I2C_RDWR, &packets);
+    if(log && ret_val < 0){
+        Log::error("I2C", "Cannot read register address %#1x from device %#1x", reg_addr, address);
+    }
+        
+    data |= inbuff[0];
+    data <<= 8;
+    data |= inbuff[1];
+    
+    return ret_val;
+}
+
+
 int I2C::write(unsigned char address, unsigned char reg_addr, unsigned char data, bool log){
     if(!isStarted()) {
         if(log) Log::error("I2C", "Trying to write data while interface is not started yet");

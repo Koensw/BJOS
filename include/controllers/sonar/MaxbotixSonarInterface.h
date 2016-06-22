@@ -1,24 +1,24 @@
-#ifndef _BLUEJAY_DEVANTECH_SONAR_INTERFACE_H_
-#define _BLUEJAY_DEVANTECH_SONAR_INTERFACE_H_
+#ifndef _BLUEJAY_MAXBOTIX_SONAR_INTERFACE_H_
+#define _BLUEJAY_MAXBOTIX_SONAR_INTERFACE_H_
 
 /* 
- * Devantech Sonar interface that works with the real sonars
+ * Maxbotix Sonar interface that works with the real sonars
  */
 
 #include "SonarInterface.h"
 
 namespace bjos{
     /* special devantech range values */
-    const int DEVANTECH_FOV = 1.04719755;
-    const int DEVANTECH_MIN_RANGE = 0.03;
-    const int DEVANTECH_MAX_RANGE = 5;
+    const int MAXBOTIX_FOV = 1.04719755;
+    const int MAXBOTIX_MIN_RANGE = 0.2;
+    const int MAXBOTIX_MAX_RANGE = 7.5;
 
-    const int DEVANTECH_ERROR_RANGE = 10;
+    const int MAXBOTIX_ERROR_RANGE = 10;
 
     //TODO: not threadsafe currently
-    class DevantechSonarInterface : public SonarInterface{
+    class MaxbotixSonarInterface : public SonarInterface{
     public:
-        DevantechSonarInterface(unsigned char addr): _address(addr) {}
+        MaxbotixSonarInterface(unsigned char addr): _address(addr) {}
         
         /* Check if still active */
         bool isActive();
@@ -32,13 +32,13 @@ namespace bjos{
         
         /* Getter for sonar info */
         double getFieldOfView(){
-            return DEVANTECH_FOV;
+            return MAXBOTIX_FOV;
         }
         double getMinRange(){
-            return DEVANTECH_MIN_RANGE;
+            return MAXBOTIX_MIN_RANGE;
         }
         double getMaxRange(){
-            return DEVANTECH_MAX_RANGE;
+            return MAXBOTIX_MAX_RANGE;
         }
     private:
         unsigned char _address;

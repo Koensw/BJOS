@@ -16,6 +16,7 @@ int SonarController::registerInterface(SonarInterface *interface, Pose pose, boo
     
     _interfaces.push_back(std::make_pair(interface, global));
     _poses.push_back(pose);
+
     return _interfaces.size()-1;
 }
 
@@ -83,6 +84,7 @@ void SonarController::update_sonars(){
     bool frst = true;
     
     //FIXME: interrupted over whole block
+    bool even = false;
     while(_thrd_running){
         //TODO: handle sonars that are not active
         try{
@@ -90,16 +92,22 @@ void SonarController::update_sonars(){
                 std::lock_guard<bjos::BJOS::Mutex> lock(*shared_data_mutex);
                 
                 //update data
+                int cnt = 0;
                 for(size_t i=0; i<_interfaces.size(); ++i){
                     _data->sonars[i].distance = _interfaces[i].first->getDistance();
+                    cnt += _interfaces[i].second;
                 }
+                
+                //if all simulatenous skip even / odd runs
+                if(!cnt) even = false; 
             }
             frst = false;
             
             //trigger new read
             for(size_t i=0; i<_interfaces.size(); ++i){
-                if(!_global_read) _interfaces[i].first->readDistance();
-                else if(_interfaces[i].second) _interfaces[i].first->globalReadDistance();
+                if(!_global_read){
+                    if(_interfaces[i].second == even) _interfaces[i].first->readDistance();
+                }else if(_interfaces[i].second) _interfaces[i].first->globalReadDistance();
             }
             
             boost::this_thread::sleep_for(boost::chrono::milliseconds(
@@ -108,5 +116,8 @@ void SonarController::update_sonars(){
             //if interrupt, stop and let the controller finish resources
             return;
         }
+        
+        //switch between even mode
+        even = !even;
     }
 }

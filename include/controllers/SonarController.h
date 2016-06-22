@@ -45,13 +45,19 @@ namespace bjos{
 
     class SonarController : public Controller{
     public:
-        /* Initialize the sonar controller (global variable only used by main instance) */
+        /* Initialize the sonar controller (global variable only used by main instance )
+            global = true -> only trigger a read at the global instances
+            global = false -> trigger a read at every instance
+         */
         SonarController(bool global = false)
             : _data(nullptr), _thrd_running(false), _global_read(global) {}
         
         /* Register a new sonar
         WARNING: all should be added before init
         WARNING: the controller will delete those interfaces when finalizing
+        
+            global = false -> if global mode is set this instance is not used to trigger a read, else used in odd mode (unless all are not global)
+            global = true -> if global mode is set, used to trigger a read, else it is used in odd turns
         */
         int registerInterface(SonarInterface *, Pose pose, bool global = false);
         

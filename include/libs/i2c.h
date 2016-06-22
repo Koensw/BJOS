@@ -31,6 +31,7 @@ public:
     static int write(unsigned char address, unsigned char reg_address, unsigned char data, bool log = true);
     /* Read from an I2C register */
     static int read(unsigned char address, unsigned char reg_address, unsigned char &data, bool log = true);
+    static int read_word(unsigned char address, unsigned char reg_address, unsigned short &data, bool log = true);
 private:
     I2C() {}
     
